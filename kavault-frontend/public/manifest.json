@@ -1,0 +1,18 @@
+{
+  "name": "KAVAULT — Personal Knowledge & Learning Engine",
+  "short_name": "KAVAULT",
+  "description": "Персональная база знаний, разработческий хаб и японские интервальные карточки",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

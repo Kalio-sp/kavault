@@ -1,0 +1,52 @@
+name: Build iOS IPA & Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  build-ios:
+    name: Build Native iOS App
+    runs-on: macos-14
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: kavault-frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          cd kavault-frontend
+          npm ci
+
+      - name: Build Web Assets
+        run: |
+          cd kavault-frontend
+          npm run build
+
+      - name: Sync Capacitor iOS
+        run: |
+          cd kavault-frontend
+          npx cap sync ios
+
+      - name: Build Xcode Project
+        run: |
+          cd kavault-frontend/ios/App
+          xcodebuild build \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Archive iOS Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KAVAULT-iOS-Build
+          path: kavault-frontend/ios/App/build/Release-iphoneos/

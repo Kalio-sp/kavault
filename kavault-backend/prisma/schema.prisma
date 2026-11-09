@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =======================
+// ENUMS (Перечисления)
+// =======================
+
+enum ResourceType {
+  ARTICLE
+  DOCUMENTATION
+  WEBSITE
+  REPOSITORY
+  VIDEO
+}
+
+enum LearningStatus {
+  TO_LEARN
+  LEARNING
+  COMPLETED
+}
+
+enum CardType {
+  VOCABULARY
+  KANJI
+  GRAMMAR
+  KANA
+}
+
+// =======================
+// MODELS (Таблицы)
+// =======================
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Связи с другими таблицами
+  resources     Resource[]
+  japaneseCards JapaneseCard[]
+}
+
+model Resource {
+  id          String         @id @default(uuid())
+  title       String         // Название материала
+  url         String         // Ссылка
+  description String?        // Краткое описание
+  type        ResourceType   @default(ARTICLE)
+  status      LearningStatus @default(TO_LEARN)
+  tags        String[]       // Массив тегов
+  note        String?        @db.Text // Личные заметки
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+}
+
+model JapaneseCard {
+  id          String   @id @default(uuid())
+  
+  word        String   // Слово, кандзи или грамматика
+  reading     String?  // Чтение (хирагана/катакана)
+  meaning     String   // Перевод на русский
+  example     String?  // Пример использования
+  
+  type        CardType @default(VOCABULARY)
+  
+  // Система интервального повторения (SRS)
+  level       Int      @default(0) // 0 - новое, 1+ - в процессе повторения
+  nextReview  DateTime @default(now()) // Когда повторить в следующий раз
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+}

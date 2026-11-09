@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: kavault-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: kavault_user
+      POSTGRES_PASSWORD: kavault_production_password_2026
+      POSTGRES_DB: kavault_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - kavault-net
+
+  backend:
+    build:
+      context: ./kavault-backend
+      dockerfile: Dockerfile
+    container_name: kavault-backend
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: "postgresql://kavault_user:kavault_production_password_2026@postgres:5432/kavault_db?schema=public"
+      JWT_SECRET: "kavault_secret_jwt_key_creator_2026"
+    depends_on:
+      - postgres
+    networks:
+      - kavault-net
+
+  frontend:
+    build:
+      context: ./kavault-frontend
+      dockerfile: Dockerfile
+    container_name: kavault-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - kavault-net
+
+volumes:
+  pgdata:
+
+networks:
+  kavault-net:
+    driver: bridge

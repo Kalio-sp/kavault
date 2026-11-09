@@ -1,0 +1,39 @@
+# Зависимости и сборки
+node_modules/
+dist/
+dist-ssr/
+build/
+release/
+*.zip
+*.tar.gz
+
+# Переменные окружения (секреты)
+.env
+.env.local
+.env.*.local
+
+# Логи и кэш
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+.vite/
+
+# База данных
+*.sqlite
+/kavault-backend/pgdata/
+docker-compose.override.yml
+
+# IDE и ОС
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.pem
+
+# Мобильные сборки
+ios/App/App/public/
+ios/App/Pods/

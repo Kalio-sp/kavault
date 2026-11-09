@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: kavault-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: kavault_user
+      POSTGRES_PASSWORD: kavault_password
+      POSTGRES_DB: kavault_db
+    volumes:
+      - kavault_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  kavault_pgdata:
