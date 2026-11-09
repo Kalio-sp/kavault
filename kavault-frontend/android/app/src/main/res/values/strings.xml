@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KAVAULT</string>
+    <string name="title_activity_main">KAVAULT</string>
+    <string name="package_name">dev.kavault.app</string>
+    <string name="custom_url_scheme">dev.kavault.app</string>
+</resources>

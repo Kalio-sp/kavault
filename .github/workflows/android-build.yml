@@ -1,0 +1,54 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  build-android:
+    name: Build Native Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: kavault-frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd kavault-frontend
+          npm ci
+
+      - name: Build Frontend Web Assets
+        run: |
+          cd kavault-frontend
+          npm run build
+
+      - name: Sync Capacitor Android
+        run: |
+          cd kavault-frontend
+          npx cap sync android
+
+      - name: Build Android APK via Gradle
+        run: |
+          cd kavault-frontend/android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload KAVAULT APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KAVAULT-Android-APK
+          path: kavault-frontend/android/app/build/outputs/apk/debug/*.apk
