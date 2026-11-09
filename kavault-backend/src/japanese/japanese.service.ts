@@ -21,13 +21,29 @@ export class JapaneseService {
     userId: string,
     items: Array<{ word: string; reading?: string; meaning: string; type?: any }>,
   ) {
-    const dataWithUser = items.map((item) => ({
+    if (!items || items.length === 0) return { count: 0 };
+
+    // Проверяем слова, которые уже есть у пользователя, чтобы исключить дубликаты
+    const existingCards = await this.prisma.japaneseCard.findMany({
+      where: {
+        userId,
+        word: { in: items.map((i) => i.word) },
+      },
+      select: { word: true },
+    });
+    const existingWords = new Set(existingCards.map((c) => c.word));
+
+    const newItems = items.filter((item) => !existingWords.has(item.word));
+    if (newItems.length === 0) {
+      return { count: 0, message: 'Все слова уже присутствуют в вашем аккаунте' };
+    }
+
+    const dataWithUser = newItems.map((item) => ({
       ...item,
       userId,
     }));
     return this.prisma.japaneseCard.createMany({
       data: dataWithUser,
-      skipDuplicates: true,
     });
   }
 

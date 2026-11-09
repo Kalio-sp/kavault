@@ -16,13 +16,29 @@ export class ResourcesService {
   }
 
   async createBulk(userId: string, items: CreateResourceDto[]) {
-    const dataWithUser = items.map((item) => ({
+    if (!items || items.length === 0) return { count: 0 };
+
+    // Проверяем материалы по ссылкам, чтобы исключить дублирование стартовых наборов
+    const existingResources = await this.prisma.resource.findMany({
+      where: {
+        userId,
+        url: { in: items.map((i) => i.url) },
+      },
+      select: { url: true },
+    });
+    const existingUrls = new Set(existingResources.map((r) => r.url));
+
+    const newItems = items.filter((item) => !existingUrls.has(item.url));
+    if (newItems.length === 0) {
+      return { count: 0, message: 'Все материалы уже присутствуют в вашем аккаунте' };
+    }
+
+    const dataWithUser = newItems.map((item) => ({
       ...item,
       userId,
     }));
     return this.prisma.resource.createMany({
       data: dataWithUser,
-      skipDuplicates: true,
     });
   }
 

@@ -18,7 +18,11 @@ import {
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { confirmModal } from "../context/DialogContext";
-import { STARTER_JAPANESE_CARDS } from "../data/starterPacks";
+import {
+  STARTER_JAPANESE_CARDS,
+  isPackClaimed,
+  markPackClaimed,
+} from "../data/starterPacks";
 
 type HubSection = "KANJI" | "KANA";
 
@@ -251,10 +255,16 @@ export function JapaneseHub() {
     }
   };
 
+  const isStarterClaimed = useMemo(
+    () => isPackClaimed("japanese", cards),
+    [cards],
+  );
+
   const handleLoadStarterPack = async () => {
     try {
       setIsImporting(true);
       await api.post("/japanese/bulk", { items: STARTER_JAPANESE_CARDS });
+      markPackClaimed("japanese");
       await fetchCards();
     } catch (err) {
       console.error("Ошибка загрузки стартового набора", err);
@@ -687,21 +697,23 @@ export function JapaneseHub() {
                 : `Раздел 2: Колода «Хирагана & Катакана» (${filteredCards.length})`}
             </h3>
 
-            <Button
-              variant="secondary"
-              onClick={handleLoadStarterPack}
-              disabled={isImporting}
-              style={{
-                padding: "4px 10px",
-                fontSize: "12px",
-                color: "var(--accent)",
-                borderColor: "rgba(59, 130, 246, 0.4)",
-                gap: "6px",
-              }}
-              title="Загрузить 36 стартовых слов N5 (Кана и базовые Кандзи)"
-            >
-              <Sparkles size={13} /> {isImporting ? "Загрузка..." : "Загрузить набор N5 (36 слов)"}
-            </Button>
+            {!isStarterClaimed && (
+              <Button
+                variant="secondary"
+                onClick={handleLoadStarterPack}
+                disabled={isImporting}
+                style={{
+                  padding: "4px 10px",
+                  fontSize: "12px",
+                  color: "var(--accent)",
+                  borderColor: "rgba(59, 130, 246, 0.4)",
+                  gap: "6px",
+                }}
+                title="Загрузить 36 стартовых слов N5 (Кана и базовые Кандзи)"
+              >
+                <Sparkles size={13} /> {isImporting ? "Загрузка..." : "Загрузить набор N5 (36 слов)"}
+              </Button>
+            )}
 
             {currentSectionCards.length > 0 && (
               <Button
@@ -771,7 +783,7 @@ export function JapaneseHub() {
                   ? "В разделе Кандзи пока пусто. Добавляйте слова с иероглифами, когда будете готовы!"
                   : "В разделе Хираганы и Катаканы пока нет слов. Добавьте первые слова выше или загрузите готовый набор!"}
             </p>
-            {!searchQuery && (
+            {!searchQuery && !isStarterClaimed && (
               <Button
                 onClick={handleLoadStarterPack}
                 disabled={isImporting}

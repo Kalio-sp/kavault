@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { api } from "../api/axios";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -20,7 +20,11 @@ import {
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { confirmModal } from "../context/DialogContext";
-import { STARTER_DEVELOPER_RESOURCES } from "../data/starterPacks";
+import {
+  STARTER_DEVELOPER_RESOURCES,
+  isPackClaimed,
+  markPackClaimed,
+} from "../data/starterPacks";
 
 interface Resource {
   id: string;
@@ -57,10 +61,16 @@ export function DeveloperHub() {
     }
   };
 
+  const isStarterClaimed = useMemo(
+    () => isPackClaimed("developer", undefined, resources),
+    [resources],
+  );
+
   const handleLoadStarterPack = async () => {
     try {
       setIsImporting(true);
       await api.post("/resources/bulk", { items: STARTER_DEVELOPER_RESOURCES });
+      markPackClaimed("developer");
       await fetchResources();
     } catch (err) {
       console.error("Ошибка загрузки стартового набора", err);
@@ -304,21 +314,23 @@ export function DeveloperHub() {
             >
               {t.dev.savedMaterials} ({resources.length})
             </h3>
-            <Button
-              variant="secondary"
-              onClick={handleLoadStarterPack}
-              disabled={isImporting}
-              style={{
-                padding: "4px 10px",
-                fontSize: "12px",
-                color: "var(--accent)",
-                borderColor: "rgba(59, 130, 246, 0.4)",
-                gap: "6px",
-              }}
-              title="Загрузить 6 полезных шпаргалок и сниппетов (React 19, TypeScript, Docker, Git, NestJS)"
-            >
-              <Sparkles size={13} /> {isImporting ? "Загрузка..." : "Загрузить шпаргалки (6 шт)"}
-            </Button>
+            {!isStarterClaimed && (
+              <Button
+                variant="secondary"
+                onClick={handleLoadStarterPack}
+                disabled={isImporting}
+                style={{
+                  padding: "4px 10px",
+                  fontSize: "12px",
+                  color: "var(--accent)",
+                  borderColor: "rgba(59, 130, 246, 0.4)",
+                  gap: "6px",
+                }}
+                title="Загрузить 6 полезных шпаргалок и сниппетов (React 19, TypeScript, Docker, Git, NestJS)"
+              >
+                <Sparkles size={13} /> {isImporting ? "Загрузка..." : "Загрузить шпаргалки (6 шт)"}
+              </Button>
+            )}
 
             {resources.length > 0 && (
               <Button
@@ -366,7 +378,7 @@ export function DeveloperHub() {
                 ? "Ничего не найдено по запросу."
                 : "В базе пока нет материалов разработчика. Добавьте свои первые статьи или загрузите готовые шпаргалки!"}
             </p>
-            {!searchQuery && (
+            {!searchQuery && !isStarterClaimed && (
               <Button
                 onClick={handleLoadStarterPack}
                 disabled={isImporting}

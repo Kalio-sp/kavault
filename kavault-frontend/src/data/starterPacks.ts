@@ -134,3 +134,55 @@ export const STARTER_GITHUB_REPOSITORIES: StarterResource[] = [
     note: "Огромная коллекция потрясающих библиотек и фреймворков для любого стека.",
   },
 ];
+
+/* ───────────── Утилиты отслеживания использования стартовых наборов ───────────── */
+
+export type StarterPackType = "japanese" | "developer" | "github";
+
+export function isPackClaimed(
+  pack: StarterPackType,
+  cards?: Array<{ word: string }>,
+  resources?: Array<{ url: string }>,
+): boolean {
+  // 1. Проверка явной метки использования в localStorage
+  if (localStorage.getItem(`kavault_pack_claimed_${pack}`) === "true") {
+    return true;
+  }
+
+  // 2. Проверка фактического наличия элементов набора в базе аккаунта
+  if (pack === "japanese" && cards && cards.length > 0) {
+    const starterWords = new Set(STARTER_JAPANESE_CARDS.map((c) => c.word));
+    const matchingCount = cards.filter((c) => starterWords.has(c.word)).length;
+    if (matchingCount >= 2) {
+      return true;
+    }
+  }
+
+  if (pack === "developer" && resources && resources.length > 0) {
+    const starterUrls = new Set(STARTER_DEVELOPER_RESOURCES.map((r) => r.url));
+    const matchingCount = resources.filter((r) => starterUrls.has(r.url)).length;
+    if (matchingCount >= 2) {
+      return true;
+    }
+  }
+
+  if (pack === "github" && resources && resources.length > 0) {
+    const starterUrls = new Set(STARTER_GITHUB_REPOSITORIES.map((r) => r.url));
+    const matchingCount = resources.filter((r) => starterUrls.has(r.url)).length;
+    if (matchingCount >= 2) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function markPackClaimed(pack: StarterPackType | "all") {
+  if (pack === "all") {
+    localStorage.setItem("kavault_pack_claimed_japanese", "true");
+    localStorage.setItem("kavault_pack_claimed_developer", "true");
+    localStorage.setItem("kavault_pack_claimed_github", "true");
+  } else {
+    localStorage.setItem(`kavault_pack_claimed_${pack}`, "true");
+  }
+}

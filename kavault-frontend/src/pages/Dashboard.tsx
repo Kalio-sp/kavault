@@ -25,6 +25,8 @@ import {
   STARTER_JAPANESE_CARDS,
   STARTER_DEVELOPER_RESOURCES,
   STARTER_GITHUB_REPOSITORIES,
+  isPackClaimed,
+  markPackClaimed,
 } from "../data/starterPacks";
 
 interface Resource {
@@ -72,6 +74,23 @@ export function Dashboard() {
   const [dateStr, setDateStr] = useState("");
   const [importingPack, setImportingPack] = useState<string | null>(null);
 
+  // Проверка: использованы ли стартовые наборы на аккаунте
+  const isJapaneseClaimed = useMemo(
+    () => isPackClaimed("japanese", cards, resources),
+    [cards, resources],
+  );
+  const isDeveloperClaimed = useMemo(
+    () => isPackClaimed("developer", cards, resources),
+    [cards, resources],
+  );
+  const isGithubClaimed = useMemo(
+    () => isPackClaimed("github", cards, resources),
+    [cards, resources],
+  );
+
+  const hasAnyUnclaimedPack =
+    !isJapaneseClaimed || !isDeveloperClaimed || !isGithubClaimed;
+
   /* Загрузка стартовых наборов данных */
   const handleLoadStarterPack = async (packType: "japanese" | "developer" | "github" | "all") => {
     try {
@@ -85,6 +104,7 @@ export function Dashboard() {
       if (packType === "github" || packType === "all") {
         await api.post("/resources/bulk", { items: STARTER_GITHUB_REPOSITORIES });
       }
+      markPackClaimed(packType);
       await fetchData();
     } catch (err) {
       console.error("Ошибка загрузки стартового набора", err);
@@ -717,8 +737,8 @@ export function Dashboard() {
         </div>
       </Card>
 
-      {/* Блок быстрого старта (Starter Packs) при пустой базе */}
-      {metrics.totalResources === 0 && metrics.totalCards === 0 && (
+      {/* Блок быстрого старта (Starter Packs) — отображается только если на аккаунте ещё не использованы наборы */}
+      {hasAnyUnclaimedPack && (
         <Card
           style={{
             padding: "var(--space-6)",
@@ -750,11 +770,11 @@ export function Dashboard() {
                   Стартовые наборы данных (1-клик)
                 </h3>
                 <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)" }}>
-                  Начните обучение прямо сейчас: загрузите проверенные материалы и карточки в один клик
+                  Каждый набор можно получить только 1 раз. После добавления кнопка набора скрывается.
                 </p>
               </div>
             </div>
-            <Badge variant="accent">Быстрый старт</Badge>
+            <Badge variant="accent">Доступен 1 раз</Badge>
           </div>
 
           <div
@@ -765,100 +785,108 @@ export function Dashboard() {
             }}
           >
             {/* Японский N5 */}
-            <Button
-              variant="secondary"
-              onClick={() => handleLoadStarterPack("japanese")}
-              disabled={importingPack !== null}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "12px 14px",
-                height: "auto",
-                textAlign: "left",
-                gap: "4px",
-                borderColor: "rgba(59, 130, 246, 0.3)",
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
-                🌸 Японский N5 (36 слов)
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                {importingPack === "japanese" ? "Импорт..." : "Азбука Кана + базовые Кандзи"}
-              </div>
-            </Button>
+            {!isJapaneseClaimed && (
+              <Button
+                variant="secondary"
+                onClick={() => handleLoadStarterPack("japanese")}
+                disabled={importingPack !== null}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  padding: "12px 14px",
+                  height: "auto",
+                  textAlign: "left",
+                  gap: "4px",
+                  borderColor: "rgba(59, 130, 246, 0.3)",
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
+                  🌸 Японский N5 (36 слов)
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  {importingPack === "japanese" ? "Импорт..." : "Азбука Кана + базовые Кандзи"}
+                </div>
+              </Button>
+            )}
 
             {/* База разработчика */}
-            <Button
-              variant="secondary"
-              onClick={() => handleLoadStarterPack("developer")}
-              disabled={importingPack !== null}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "12px 14px",
-                height: "auto",
-                textAlign: "left",
-                gap: "4px",
-                borderColor: "rgba(168, 85, 247, 0.3)",
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
-                💻 Сниппеты Dev Hub (6 шт)
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                {importingPack === "developer" ? "Импорт..." : "React 19, TypeScript, Docker, Git"}
-              </div>
-            </Button>
+            {!isDeveloperClaimed && (
+              <Button
+                variant="secondary"
+                onClick={() => handleLoadStarterPack("developer")}
+                disabled={importingPack !== null}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  padding: "12px 14px",
+                  height: "auto",
+                  textAlign: "left",
+                  gap: "4px",
+                  borderColor: "rgba(168, 85, 247, 0.3)",
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
+                  💻 Сниппеты Dev Hub (6 шт)
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  {importingPack === "developer" ? "Импорт..." : "React 19, TypeScript, Docker, Git"}
+                </div>
+              </Button>
+            )}
 
             {/* GitHub закладки */}
-            <Button
-              variant="secondary"
-              onClick={() => handleLoadStarterPack("github")}
-              disabled={importingPack !== null}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "12px 14px",
-                height: "auto",
-                textAlign: "left",
-                gap: "4px",
-                borderColor: "rgba(245, 158, 11, 0.3)",
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
-                🐙 GitHub проекты (4 шт)
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                {importingPack === "github" ? "Импорт..." : "React, NestJS, Roadmaps, Awesome"}
-              </div>
-            </Button>
+            {!isGithubClaimed && (
+              <Button
+                variant="secondary"
+                onClick={() => handleLoadStarterPack("github")}
+                disabled={importingPack !== null}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  padding: "12px 14px",
+                  height: "auto",
+                  textAlign: "left",
+                  gap: "4px",
+                  borderColor: "rgba(245, 158, 11, 0.3)",
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
+                  🐙 GitHub проекты (4 шт)
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  {importingPack === "github" ? "Импорт..." : "React, NestJS, Roadmaps, Awesome"}
+                </div>
+              </Button>
+            )}
 
             {/* Всё сразу */}
-            <Button
-              onClick={() => handleLoadStarterPack("all")}
-              disabled={importingPack !== null}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "12px 14px",
-                height: "auto",
-                textAlign: "left",
-                gap: "4px",
-                background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
-                color: "#fff",
-              }}
-            >
-              <div style={{ fontWeight: 700, fontSize: "14px" }}>
-                🚀 Загрузить всё сразу
-              </div>
-              <div style={{ fontSize: "12px", opacity: 0.9 }}>
-                {importingPack === "all" ? "Загрузка всей базы..." : "Полный комплект (46 элементов)"}
-              </div>
-            </Button>
+            {!isJapaneseClaimed && !isDeveloperClaimed && !isGithubClaimed && (
+              <Button
+                onClick={() => handleLoadStarterPack("all")}
+                disabled={importingPack !== null}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  padding: "12px 14px",
+                  height: "auto",
+                  textAlign: "left",
+                  gap: "4px",
+                  background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                  color: "#fff",
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: "14px" }}>
+                  🚀 Загрузить всё сразу
+                </div>
+                <div style={{ fontSize: "12px", opacity: 0.9 }}>
+                  {importingPack === "all" ? "Загрузка всей базы..." : "Полный комплект (46 элементов)"}
+                </div>
+              </Button>
+            )}
           </div>
         </Card>
       )}

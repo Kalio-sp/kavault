@@ -40,6 +40,8 @@ import {
   STARTER_JAPANESE_CARDS,
   STARTER_DEVELOPER_RESOURCES,
   STARTER_GITHUB_REPOSITORIES,
+  isPackClaimed,
+  markPackClaimed,
 } from "../data/starterPacks";
 
 type SettingsTab = "appearance" | "account" | "learning" | "vault";
@@ -111,6 +113,8 @@ export function Settings() {
     cardsCount: 0,
     totalNotes: 0,
   });
+  const [userResources, setUserResources] = useState<Array<{ url: string }>>([]);
+  const [userCards, setUserCards] = useState<Array<{ word: string }>>([]);
 
   // Модальные окна подтверждения
   const [isResetSRSModalOpen, setIsResetSRSModalOpen] = useState(false);
@@ -164,10 +168,13 @@ export function Settings() {
         }
 
         const resourcesList = resResp.data || [];
+        const cardsList = japResp.data || [];
         const notesCount = resourcesList.filter((r: any) => Boolean(r.note)).length;
+        setUserResources(resourcesList);
+        setUserCards(cardsList);
         setVaultStats({
           resourcesCount: resourcesList.length,
-          cardsCount: (japResp.data || []).length,
+          cardsCount: cardsList.length,
           totalNotes: notesCount,
         });
       } catch (e) {
@@ -424,16 +431,20 @@ export function Settings() {
       if (packType === "github" || packType === "all") {
         await api.post("/resources/bulk", { items: STARTER_GITHUB_REPOSITORIES });
       }
+      markPackClaimed(packType);
       showToast("Стартовый набор успешно загружен в базу!");
       const [resResp, japResp] = await Promise.all([
         api.get("/resources").catch(() => ({ data: [] })),
         api.get("/japanese").catch(() => ({ data: [] })),
       ]);
       const resourcesList = resResp.data || [];
+      const cardsList = japResp.data || [];
       const notesCount = resourcesList.filter((r: any) => Boolean(r.note)).length;
+      setUserResources(resourcesList);
+      setUserCards(cardsList);
       setVaultStats({
         resourcesCount: resourcesList.length,
-        cardsCount: (japResp.data || []).length,
+        cardsCount: cardsList.length,
         totalNotes: notesCount,
       });
       evaluateAchievements();
@@ -1411,55 +1422,94 @@ export function Settings() {
               <Sparkles size={18} color="var(--accent)" /> Стартовые наборы данных (Starter Packs)
             </h3>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 16px 0" }}>
-              Загрузите готовые наборы слов и конспектов, чтобы быстро наполнить базу полезной информацией.
+              Каждый стартовый набор можно активировать только 1 раз на аккаунт. После получения кнопка набора скрывается.
             </p>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: "12px",
-              }}
-            >
-              <Button
-                variant="secondary"
-                onClick={() => handleLoadStarterPack("japanese")}
-                disabled={importingStarter !== null}
-                style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
-              >
-                <span>🌸</span>
-                <span>{importingStarter === "japanese" ? "Импорт..." : "Японский N5 (36 слов)"}</span>
-              </Button>
+            {(() => {
+              const isJapClaimed = isPackClaimed("japanese", userCards);
+              const isDevClaimed = isPackClaimed("developer", undefined, userResources);
+              const isGitClaimed = isPackClaimed("github", undefined, userResources);
+              const allClaimed = isJapClaimed && isDevClaimed && isGitClaimed;
 
-              <Button
-                variant="secondary"
-                onClick={() => handleLoadStarterPack("developer")}
-                disabled={importingStarter !== null}
-                style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
-              >
-                <span>💻</span>
-                <span>{importingStarter === "developer" ? "Импорт..." : "Dev Hub сниппеты (6 шт)"}</span>
-              </Button>
+              if (allClaimed) {
+                return (
+                  <div
+                    style={{
+                      padding: "16px",
+                      backgroundColor: "rgba(16, 185, 129, 0.1)",
+                      border: "1px solid rgba(16, 185, 129, 0.3)",
+                      borderRadius: "var(--radius-md)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      color: "var(--success)",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    <CheckCircle2 size={18} />
+                    <span>Все доступные стартовые наборы уже успешно активированы на вашем аккаунте.</span>
+                  </div>
+                );
+              }
 
-              <Button
-                variant="secondary"
-                onClick={() => handleLoadStarterPack("github")}
-                disabled={importingStarter !== null}
-                style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
-              >
-                <span>🐙</span>
-                <span>{importingStarter === "github" ? "Импорт..." : "GitHub проекты (4 шт)"}</span>
-              </Button>
+              return (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: "12px",
+                  }}
+                >
+                  {!isJapClaimed && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleLoadStarterPack("japanese")}
+                      disabled={importingStarter !== null}
+                      style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
+                    >
+                      <span>🌸</span>
+                      <span>{importingStarter === "japanese" ? "Импорт..." : "Японский N5 (36 слов)"}</span>
+                    </Button>
+                  )}
 
-              <Button
-                onClick={() => handleLoadStarterPack("all")}
-                disabled={importingStarter !== null}
-                style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
-              >
-                <span>🚀</span>
-                <span>{importingStarter === "all" ? "Загрузка..." : "Загрузить всё сразу"}</span>
-              </Button>
-            </div>
+                  {!isDevClaimed && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleLoadStarterPack("developer")}
+                      disabled={importingStarter !== null}
+                      style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
+                    >
+                      <span>💻</span>
+                      <span>{importingStarter === "developer" ? "Импорт..." : "Dev Hub сниппеты (6 шт)"}</span>
+                    </Button>
+                  )}
+
+                  {!isGitClaimed && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleLoadStarterPack("github")}
+                      disabled={importingStarter !== null}
+                      style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
+                    >
+                      <span>🐙</span>
+                      <span>{importingStarter === "github" ? "Импорт..." : "GitHub проекты (4 шт)"}</span>
+                    </Button>
+                  )}
+
+                  {!isJapClaimed && !isDevClaimed && !isGitClaimed && (
+                    <Button
+                      onClick={() => handleLoadStarterPack("all")}
+                      disabled={importingStarter !== null}
+                      style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
+                    >
+                      <span>🚀</span>
+                      <span>{importingStarter === "all" ? "Загрузка..." : "Загрузить всё сразу"}</span>
+                    </Button>
+                  )}
+                </div>
+              );
+            })()}
           </Card>
 
           {/* Сервер синхронизации для iOS и ПК */}
