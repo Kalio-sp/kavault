@@ -21,6 +21,11 @@ import {
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
 import { api } from "../api/axios";
+import {
+  STARTER_JAPANESE_CARDS,
+  STARTER_DEVELOPER_RESOURCES,
+  STARTER_GITHUB_REPOSITORIES,
+} from "../data/starterPacks";
 
 interface Resource {
   id: string;
@@ -65,6 +70,28 @@ export function Dashboard() {
   const [cards, setCards] = useState<JapaneseCard[]>([]);
   const [streak, setStreak] = useState(0);
   const [dateStr, setDateStr] = useState("");
+  const [importingPack, setImportingPack] = useState<string | null>(null);
+
+  /* Загрузка стартовых наборов данных */
+  const handleLoadStarterPack = async (packType: "japanese" | "developer" | "github" | "all") => {
+    try {
+      setImportingPack(packType);
+      if (packType === "japanese" || packType === "all") {
+        await api.post("/japanese/bulk", { items: STARTER_JAPANESE_CARDS });
+      }
+      if (packType === "developer" || packType === "all") {
+        await api.post("/resources/bulk", { items: STARTER_DEVELOPER_RESOURCES });
+      }
+      if (packType === "github" || packType === "all") {
+        await api.post("/resources/bulk", { items: STARTER_GITHUB_REPOSITORIES });
+      }
+      await fetchData();
+    } catch (err) {
+      console.error("Ошибка загрузки стартового набора", err);
+    } finally {
+      setImportingPack(null);
+    }
+  };
 
   /* Получение данных */
   const fetchData = async () => {
@@ -690,6 +717,152 @@ export function Dashboard() {
         </div>
       </Card>
 
+      {/* Блок быстрого старта (Starter Packs) при пустой базе */}
+      {metrics.totalResources === 0 && metrics.totalCards === 0 && (
+        <Card
+          style={{
+            padding: "var(--space-6)",
+            background: "linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%)",
+            border: "1px solid rgba(59, 130, 246, 0.25)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-4)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "10px",
+                  backgroundColor: "rgba(59, 130, 246, 0.15)",
+                  color: "var(--accent)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Sparkles size={22} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "17px", fontWeight: 600, color: "var(--text-primary)" }}>
+                  Стартовые наборы данных (1-клик)
+                </h3>
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)" }}>
+                  Начните обучение прямо сейчас: загрузите проверенные материалы и карточки в один клик
+                </p>
+              </div>
+            </div>
+            <Badge variant="accent">Быстрый старт</Badge>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "12px",
+            }}
+          >
+            {/* Японский N5 */}
+            <Button
+              variant="secondary"
+              onClick={() => handleLoadStarterPack("japanese")}
+              disabled={importingPack !== null}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                padding: "12px 14px",
+                height: "auto",
+                textAlign: "left",
+                gap: "4px",
+                borderColor: "rgba(59, 130, 246, 0.3)",
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
+                🌸 Японский N5 (36 слов)
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                {importingPack === "japanese" ? "Импорт..." : "Азбука Кана + базовые Кандзи"}
+              </div>
+            </Button>
+
+            {/* База разработчика */}
+            <Button
+              variant="secondary"
+              onClick={() => handleLoadStarterPack("developer")}
+              disabled={importingPack !== null}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                padding: "12px 14px",
+                height: "auto",
+                textAlign: "left",
+                gap: "4px",
+                borderColor: "rgba(168, 85, 247, 0.3)",
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
+                💻 Сниппеты Dev Hub (6 шт)
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                {importingPack === "developer" ? "Импорт..." : "React 19, TypeScript, Docker, Git"}
+              </div>
+            </Button>
+
+            {/* GitHub закладки */}
+            <Button
+              variant="secondary"
+              onClick={() => handleLoadStarterPack("github")}
+              disabled={importingPack !== null}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                padding: "12px 14px",
+                height: "auto",
+                textAlign: "left",
+                gap: "4px",
+                borderColor: "rgba(245, 158, 11, 0.3)",
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
+                🐙 GitHub проекты (4 шт)
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                {importingPack === "github" ? "Импорт..." : "React, NestJS, Roadmaps, Awesome"}
+              </div>
+            </Button>
+
+            {/* Всё сразу */}
+            <Button
+              onClick={() => handleLoadStarterPack("all")}
+              disabled={importingPack !== null}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                padding: "12px 14px",
+                height: "auto",
+                textAlign: "left",
+                gap: "4px",
+                background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                color: "#fff",
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: "14px" }}>
+                🚀 Загрузить всё сразу
+              </div>
+              <div style={{ fontSize: "12px", opacity: 0.9 }}>
+                {importingPack === "all" ? "Загрузка всей базы..." : "Полный комплект (46 элементов)"}
+              </div>
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* Основная часть: Прогресс + Задачи на сегодня */}
       <div
         style={{
@@ -798,7 +971,7 @@ export function Dashboard() {
                 }}
               >
                 {metrics.totalResources === 0 && metrics.totalCards === 0
-                  ? "Ваше хранилище пока пусто. Сохраняйте полезные ссылки, видео и слова, чтобы отслеживать прогресс."
+                  ? "Ваше хранилище пока пусто. Выберите один из стартовых наборов выше или добавьте свои первые материалы."
                   : `Вы освоили ${metrics.masteredWords} слов и изучили часть материалов. Продолжайте в том же духе!`}
               </p>
 

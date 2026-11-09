@@ -33,6 +33,15 @@ export class ResourcesController {
     return this.resourcesService.create(req.user.userId, body);
   }
 
+  @Post('bulk')
+  createBulk(
+    @Request() req,
+    @Body('items')
+    items: any[],
+  ) {
+    return this.resourcesService.createBulk(req.user.userId, items || []);
+  }
+
   @Get()
   findAll(@Request() req) {
     return this.resourcesService.findAll(req.user.userId);

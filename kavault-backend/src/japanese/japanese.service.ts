@@ -17,6 +17,20 @@ export class JapaneseService {
     });
   }
 
+  async createBulk(
+    userId: string,
+    items: Array<{ word: string; reading?: string; meaning: string; type?: any }>,
+  ) {
+    const dataWithUser = items.map((item) => ({
+      ...item,
+      userId,
+    }));
+    return this.prisma.japaneseCard.createMany({
+      data: dataWithUser,
+      skipDuplicates: true,
+    });
+  }
+
   async findAll(userId: string) {
     return this.prisma.japaneseCard.findMany({
       where: { userId },

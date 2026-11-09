@@ -36,6 +36,11 @@ import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
 import { api } from "../api/axios";
 import { confirmModal } from "../context/DialogContext";
+import {
+  STARTER_JAPANESE_CARDS,
+  STARTER_DEVELOPER_RESOURCES,
+  STARTER_GITHUB_REPOSITORIES,
+} from "../data/starterPacks";
 
 type SettingsTab = "appearance" | "account" | "learning" | "vault";
 
@@ -401,6 +406,41 @@ export function Settings() {
       showToast(e.response?.data?.message || "Ошибка удаления аккаунта", "error");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const [importingStarter, setImportingStarter] = useState<string | null>(null);
+
+  /* Загрузка стартовых наборов данных */
+  const handleLoadStarterPack = async (packType: "japanese" | "developer" | "github" | "all") => {
+    try {
+      setImportingStarter(packType);
+      if (packType === "japanese" || packType === "all") {
+        await api.post("/japanese/bulk", { items: STARTER_JAPANESE_CARDS });
+      }
+      if (packType === "developer" || packType === "all") {
+        await api.post("/resources/bulk", { items: STARTER_DEVELOPER_RESOURCES });
+      }
+      if (packType === "github" || packType === "all") {
+        await api.post("/resources/bulk", { items: STARTER_GITHUB_REPOSITORIES });
+      }
+      showToast("Стартовый набор успешно загружен в базу!");
+      const [resResp, japResp] = await Promise.all([
+        api.get("/resources").catch(() => ({ data: [] })),
+        api.get("/japanese").catch(() => ({ data: [] })),
+      ]);
+      const resourcesList = resResp.data || [];
+      const notesCount = resourcesList.filter((r: any) => Boolean(r.note)).length;
+      setVaultStats({
+        resourcesCount: resourcesList.length,
+        cardsCount: (japResp.data || []).length,
+        totalNotes: notesCount,
+      });
+      evaluateAchievements();
+    } catch (e: any) {
+      showToast(e.response?.data?.message || "Ошибка загрузки набора", "error");
+    } finally {
+      setImportingStarter(null);
     }
   };
 
@@ -1353,6 +1393,72 @@ export function Settings() {
                 style={{ display: "none" }}
                 onChange={handleImportFile}
               />
+            </div>
+          </Card>
+
+          {/* Стартовые наборы данных */}
+          <Card style={{ padding: "var(--space-6)" }}>
+            <h3
+              style={{
+                margin: "0 0 var(--space-2) 0",
+                fontSize: "16px",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <Sparkles size={18} color="var(--accent)" /> Стартовые наборы данных (Starter Packs)
+            </h3>
+            <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 16px 0" }}>
+              Загрузите готовые наборы слов и конспектов, чтобы быстро наполнить базу полезной информацией.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: "12px",
+              }}
+            >
+              <Button
+                variant="secondary"
+                onClick={() => handleLoadStarterPack("japanese")}
+                disabled={importingStarter !== null}
+                style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
+              >
+                <span>🌸</span>
+                <span>{importingStarter === "japanese" ? "Импорт..." : "Японский N5 (36 слов)"}</span>
+              </Button>
+
+              <Button
+                variant="secondary"
+                onClick={() => handleLoadStarterPack("developer")}
+                disabled={importingStarter !== null}
+                style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
+              >
+                <span>💻</span>
+                <span>{importingStarter === "developer" ? "Импорт..." : "Dev Hub сниппеты (6 шт)"}</span>
+              </Button>
+
+              <Button
+                variant="secondary"
+                onClick={() => handleLoadStarterPack("github")}
+                disabled={importingStarter !== null}
+                style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
+              >
+                <span>🐙</span>
+                <span>{importingStarter === "github" ? "Импорт..." : "GitHub проекты (4 шт)"}</span>
+              </Button>
+
+              <Button
+                onClick={() => handleLoadStarterPack("all")}
+                disabled={importingStarter !== null}
+                style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
+              >
+                <span>🚀</span>
+                <span>{importingStarter === "all" ? "Загрузка..." : "Загрузить всё сразу"}</span>
+              </Button>
             </div>
           </Card>
 

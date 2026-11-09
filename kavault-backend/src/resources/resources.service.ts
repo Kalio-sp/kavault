@@ -15,6 +15,17 @@ export class ResourcesService {
     });
   }
 
+  async createBulk(userId: string, items: CreateResourceDto[]) {
+    const dataWithUser = items.map((item) => ({
+      ...item,
+      userId,
+    }));
+    return this.prisma.resource.createMany({
+      data: dataWithUser,
+      skipDuplicates: true,
+    });
+  }
+
   async findAll(userId: string) {
     return this.prisma.resource.findMany({
       where: { userId },

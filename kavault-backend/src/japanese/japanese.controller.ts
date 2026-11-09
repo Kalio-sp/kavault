@@ -26,6 +26,15 @@ export class JapaneseController {
     return this.japaneseService.create(req.user.userId, body);
   }
 
+  @Post('bulk')
+  createBulk(
+    @Request() req,
+    @Body('items')
+    items: Array<{ word: string; reading?: string; meaning: string; type?: any }>,
+  ) {
+    return this.japaneseService.createBulk(req.user.userId, items || []);
+  }
+
   @Get()
   findAll(@Request() req) {
     return this.japaneseService.findAll(req.user.userId);

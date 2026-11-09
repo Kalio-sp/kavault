@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -120,6 +120,27 @@ export function ReviewSession() {
   const [sessionCompleted, setSessionCompleted] = useState(false);
   const [stats, setStats] = useState({ correct: 0, wrong: 0 });
 
+  // Свайп-жесты (Tinder/Anki Style)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [flyDirection, setFlyDirection] = useState<"left" | "right" | null>(null);
+  const dragStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  // Озвучка слова на японском языке
+  const speakWord = useCallback((text: string) => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "ja-JP";
+        u.rate = 0.85;
+        window.speechSynthesis.speak(u);
+      } catch (err) {
+        console.warn("Speech synthesis error", err);
+      }
+    }
+  }, []);
+
   const [soundEnabled, setSoundEnabled] = useState(() => {
     return localStorage.getItem("kavault_sound_fx") !== "false";
   });
@@ -192,8 +213,12 @@ export function ReviewSession() {
     if (!isFlipped) {
       playSound("flip");
       setIsFlipped(true);
+      const cur = activeDeck[currentIndex];
+      if (cur && soundEnabled) {
+        speakWord(cur.word);
+      }
     }
-  }, [isFlipped]);
+  }, [isFlipped, activeDeck, currentIndex, soundEnabled, speakWord]);
 
   const handleAnswer = useCallback(
     async (isCorrect: boolean) => {
@@ -226,8 +251,104 @@ export function ReviewSession() {
         console.error("Ошибка отправки результата", error);
       }
     },
-    [activeDeck, currentIndex, isPracticeMode],
+    [activeDeck, currentIndex, isPracticeMode, incrementReviewCount, evaluateAchievements],
   );
+
+  // Обработка свайпов (Touch и Mouse)
+  const finalizeDrag = useCallback(() => {
+    if (!dragStartRef.current) {
+      setIsDragging(false);
+      return;
+    }
+    const dx = dragOffset.x;
+    const dy = dragOffset.y;
+    const dist = Math.hypot(dx, dy);
+    const duration = Date.now() - dragStartRef.current.time;
+    const velocity = Math.abs(dx) / Math.max(1, duration);
+
+    dragStartRef.current = null;
+    setIsDragging(false);
+
+    // 1. Короткий клик/тап на карточку -> Переворот
+    if (dist < 12 && duration < 350) {
+      handleFlipCard();
+      setDragOffset({ x: 0, y: 0 });
+      return;
+    }
+
+    // 2. Свайп вправо (ПОМНЮ)
+    if (dx > 85 || (dx > 45 && velocity > 0.35)) {
+      setFlyDirection("right");
+      setTimeout(() => {
+        handleAnswer(true);
+        setDragOffset({ x: 0, y: 0 });
+        setFlyDirection(null);
+      }, 200);
+      return;
+    }
+
+    // 3. Свайп влево (НЕ ПОМНЮ)
+    if (dx < -85 || (dx < -45 && velocity > 0.35)) {
+      setFlyDirection("left");
+      setTimeout(() => {
+        handleAnswer(false);
+        setDragOffset({ x: 0, y: 0 });
+        setFlyDirection(null);
+      }, 200);
+      return;
+    }
+
+    // Иначе плавный возврат карточки
+    setDragOffset({ x: 0, y: 0 });
+  }, [dragOffset.x, dragOffset.y, handleFlipCard, handleAnswer]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    dragStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!dragStartRef.current) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - dragStartRef.current.x;
+    const dy = touch.clientY - dragStartRef.current.y;
+    setDragOffset({ x: dx, y: dy });
+  };
+
+  const handleTouchEnd = () => {
+    finalizeDrag();
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("button")) return;
+    dragStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !dragStartRef.current) return;
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      setDragOffset({ x: dx, y: dy });
+    };
+
+    const handleMouseUp = () => {
+      if (isDragging) {
+        finalizeDrag();
+      }
+    };
+
+    if (isDragging) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, finalizeDrag]);
 
   /* Горячие клавиши */
   useEffect(() => {
@@ -622,96 +743,228 @@ export function ReviewSession() {
         />
       </div>
 
-      {/* Карточка */}
-      <Card
+      {/* Интерактивная карточка со свайп-жестами */}
+      <div
         style={{
           width: "100%",
-          minHeight: "320px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: isFlipped ? "default" : "pointer",
-          textAlign: "center",
-          transition: "all 0.25s ease",
-          backgroundColor: isFlipped ? "var(--surface-raised)" : "var(--surface)",
-          border: isFlipped
-            ? `1px solid ${isCurrentCardKanji ? "#a855f7" : "var(--accent)"}`
-            : "1px solid var(--border)",
-          padding: "var(--space-6)",
           position: "relative",
+          perspective: "1000px",
+          touchAction: "pan-y",
+          userSelect: "none",
         }}
-        onClick={handleFlipCard}
       >
-        <div
+        <Card
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleMouseDown}
           style={{
+            width: "100%",
+            minHeight: "340px",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: "var(--space-2)",
-            marginBottom: "var(--space-4)",
+            justifyContent: "center",
+            cursor: isDragging ? "grabbing" : "grab",
+            textAlign: "center",
+            backgroundColor: isFlipped ? "var(--surface-raised)" : "var(--surface)",
+            border: isFlipped
+              ? `1px solid ${isCurrentCardKanji ? "#a855f7" : "var(--accent)"}`
+              : "1px solid var(--border)",
+            padding: "var(--space-6)",
+            position: "relative",
+            overflow: "hidden",
+            boxShadow: isDragging
+              ? "0 20px 40px rgba(0,0,0,0.4)"
+              : "0 4px 20px rgba(0,0,0,0.15)",
+            transform:
+              flyDirection === "right"
+                ? "translate3d(120vw, 30px, 0) rotate(30deg)"
+                : flyDirection === "left"
+                  ? "translate3d(-120vw, 30px, 0) rotate(-30deg)"
+                  : `translate3d(${dragOffset.x}px, ${dragOffset.y * 0.35}px, 0) rotate(${dragOffset.x * 0.08}deg)`,
+            transition: isDragging
+              ? "none"
+              : flyDirection
+                ? "transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.22s ease"
+                : "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease",
+            opacity: flyDirection ? 0 : 1,
           }}
         >
-          {currentCard.reading && isCurrentCardKanji && (
-            <span
-              style={{
-                fontSize: "18px",
-                color: "var(--text-secondary)",
-                fontFamily: "var(--font-jp)",
-              }}
-            >
-              {currentCard.reading}
-            </span>
-          )}
-          <span
-            style={{
-              fontSize: isCurrentCardKanji ? "64px" : "48px",
-              fontFamily: "var(--font-jp)",
-              color: "var(--text-primary)",
-              lineHeight: "1.15",
-              letterSpacing: isCurrentCardKanji ? "2px" : "1px",
-            }}
-          >
-            {currentCard.word}
-          </span>
-        </div>
-
-        {!isFlipped ? (
+          {/* Визуальный штамп свайпа ВПРАВО (ПОМНЮ) */}
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              color: "var(--text-muted)",
-              fontSize: "14px",
+              position: "absolute",
+              top: "22px",
+              left: "22px",
+              padding: "6px 14px",
+              border: "3px solid var(--success)",
+              borderRadius: "8px",
+              color: "var(--success)",
+              fontWeight: 800,
+              fontSize: "16px",
+              letterSpacing: "1px",
+              textTransform: "uppercase",
+              transform: "rotate(-12deg)",
+              opacity: Math.min(1, Math.max(0, dragOffset.x / 75)),
+              pointerEvents: "none",
+              zIndex: 10,
+              backgroundColor: "rgba(16, 185, 129, 0.12)",
+              backdropFilter: "blur(4px)",
+              transition: isDragging ? "none" : "opacity 0.2s ease",
             }}
           >
-            Нажмите или <kbd style={{ padding: "2px 6px", background: "var(--surface-raised)", borderRadius: "4px", border: "1px solid var(--border)" }}>Space</kbd> чтобы открыть перевод
+            ✓ ПОМНЮ
           </div>
-        ) : (
+
+          {/* Визуальный штамп свайпа ВЛЕВО (НЕ ПОМНЮ) */}
+          <div
+            style={{
+              position: "absolute",
+              top: "22px",
+              right: "22px",
+              padding: "6px 14px",
+              border: "3px solid var(--error)",
+              borderRadius: "8px",
+              color: "var(--error)",
+              fontWeight: 800,
+              fontSize: "16px",
+              letterSpacing: "1px",
+              textTransform: "uppercase",
+              transform: "rotate(12deg)",
+              opacity: Math.min(1, Math.max(0, -dragOffset.x / 75)),
+              pointerEvents: "none",
+              zIndex: 10,
+              backgroundColor: "rgba(239, 68, 68, 0.12)",
+              backdropFilter: "blur(4px)",
+              transition: isDragging ? "none" : "opacity 0.2s ease",
+            }}
+          >
+            ✕ НЕ ПОМНЮ
+          </div>
+
+          {/* Контент карточки */}
           <div
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: "var(--space-2)",
               alignItems: "center",
-              borderTop: "1px solid var(--border)",
-              paddingTop: "var(--space-4)",
-              width: "100%",
+              gap: "var(--space-2)",
+              marginBottom: "var(--space-4)",
             }}
           >
-            <span
+            {currentCard.reading && isCurrentCardKanji && (
+              <span
+                style={{
+                  fontSize: "18px",
+                  color: "var(--text-secondary)",
+                  fontFamily: "var(--font-jp)",
+                }}
+              >
+                {currentCard.reading}
+              </span>
+            )}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span
+                style={{
+                  fontSize: isCurrentCardKanji ? "64px" : "50px",
+                  fontFamily: "var(--font-jp)",
+                  color: "var(--text-primary)",
+                  lineHeight: "1.15",
+                  letterSpacing: isCurrentCardKanji ? "2px" : "1px",
+                }}
+              >
+                {currentCard.word}
+              </span>
+
+              {/* Кнопка произношения голосом */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  speakWord(currentCard.word);
+                }}
+                style={{
+                  background: "var(--surface-raised)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "50%",
+                  width: "38px",
+                  height: "38px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--accent)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  flexShrink: 0,
+                }}
+                title="Озвучить на японском"
+                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+              >
+                <Volume2 size={18} />
+              </button>
+            </div>
+          </div>
+
+          {!isFlipped ? (
+            <div
               style={{
-                fontSize: "24px",
-                color: isCurrentCardKanji ? "#c084fc" : "var(--accent)",
-                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                color: "var(--text-muted)",
+                fontSize: "14px",
               }}
             >
-              {currentCard.meaning}
-            </span>
-          </div>
-        )}
-      </Card>
+              Нажмите или <kbd style={{ padding: "2px 6px", background: "var(--surface-raised)", borderRadius: "4px", border: "1px solid var(--border)" }}>Space</kbd> чтобы открыть перевод
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-2)",
+                alignItems: "center",
+                borderTop: "1px solid var(--border)",
+                paddingTop: "var(--space-4)",
+                width: "100%",
+                animation: "fadeIn 0.2s ease",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "24px",
+                  color: isCurrentCardKanji ? "#c084fc" : "var(--accent)",
+                  fontWeight: 600,
+                }}
+              >
+                {currentCard.meaning}
+              </span>
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {/* Подсказка жестов для мобильных и десктопа */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "12px",
+          color: "var(--text-muted)",
+          fontSize: "12px",
+          userSelect: "none",
+          flexWrap: "wrap",
+        }}
+      >
+        <span>👈 Свайп влево: Не помню</span>
+        <span>•</span>
+        <span>Тап: Перевернуть</span>
+        <span>•</span>
+        <span>👉 Свайп вправо: Помню</span>
+      </div>
 
       {/* Кнопки ответа */}
       {isFlipped && (
@@ -727,7 +980,7 @@ export function ReviewSession() {
             }}
             onClick={() => handleAnswer(false)}
           >
-            <span>Не помню (1 / ←)</span>
+            <span>✕ Не помню (1 / ←)</span>
           </Button>
 
           <Button
@@ -740,7 +993,7 @@ export function ReviewSession() {
             }}
             onClick={() => handleAnswer(true)}
           >
-            <span>Помню (2 / →)</span>
+            <span>✓ Помню (2 / →)</span>
           </Button>
         </div>
       )}

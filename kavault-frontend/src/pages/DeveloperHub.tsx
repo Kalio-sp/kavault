@@ -16,9 +16,11 @@ import {
   CheckCircle2,
   Clock,
   Circle,
+  Sparkles,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { confirmModal } from "../context/DialogContext";
+import { STARTER_DEVELOPER_RESOURCES } from "../data/starterPacks";
 
 interface Resource {
   id: string;
@@ -41,6 +43,7 @@ export function DeveloperHub() {
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [activeResource, setActiveResource] = useState<Resource | null>(null);
   const [noteText, setNoteText] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
 
   const fetchResources = async () => {
     try {
@@ -51,6 +54,18 @@ export function DeveloperHub() {
       setResources(filtered);
     } catch (error) {
       console.error("Ошибка загрузки ресурсов", error);
+    }
+  };
+
+  const handleLoadStarterPack = async () => {
+    try {
+      setIsImporting(true);
+      await api.post("/resources/bulk", { items: STARTER_DEVELOPER_RESOURCES });
+      await fetchResources();
+    } catch (err) {
+      console.error("Ошибка загрузки стартового набора", err);
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -289,6 +304,22 @@ export function DeveloperHub() {
             >
               {t.dev.savedMaterials} ({resources.length})
             </h3>
+            <Button
+              variant="secondary"
+              onClick={handleLoadStarterPack}
+              disabled={isImporting}
+              style={{
+                padding: "4px 10px",
+                fontSize: "12px",
+                color: "var(--accent)",
+                borderColor: "rgba(59, 130, 246, 0.4)",
+                gap: "6px",
+              }}
+              title="Загрузить 6 полезных шпаргалок и сниппетов (React 19, TypeScript, Docker, Git, NestJS)"
+            >
+              <Sparkles size={13} /> {isImporting ? "Загрузка..." : "Загрузить шпаргалки (6 шт)"}
+            </Button>
+
             {resources.length > 0 && (
               <Button
                 variant="secondary"
@@ -319,7 +350,32 @@ export function DeveloperHub() {
         </div>
 
         {filteredResources.length === 0 ? (
-          <p style={{ color: "var(--text-muted)" }}>{t.dev.noResources}</p>
+          <Card
+            style={{
+              padding: "var(--space-8)",
+              textAlign: "center",
+              color: "var(--text-muted)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <p style={{ margin: 0, fontSize: "15px" }}>
+              {searchQuery
+                ? "Ничего не найдено по запросу."
+                : "В базе пока нет материалов разработчика. Добавьте свои первые статьи или загрузите готовые шпаргалки!"}
+            </p>
+            {!searchQuery && (
+              <Button
+                onClick={handleLoadStarterPack}
+                disabled={isImporting}
+                style={{ gap: "8px", marginTop: "6px" }}
+              >
+                <Sparkles size={16} /> {isImporting ? "Импорт сниппетов..." : "💻 Загрузить шпаргалки и конспекты (6 шт)"}
+              </Button>
+            )}
+          </Card>
         ) : (
           <div
             style={{
