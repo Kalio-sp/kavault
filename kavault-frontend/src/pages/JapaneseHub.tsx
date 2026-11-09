@@ -22,6 +22,7 @@ import {
   STARTER_JAPANESE_CARDS,
   isPackClaimed,
   markPackClaimed,
+  unmarkPackClaimed,
 } from "../data/starterPacks";
 
 type HubSection = "KANJI" | "KANA";
@@ -376,6 +377,7 @@ export function JapaneseHub() {
 
     try {
       await api.delete(`/japanese/clear/all?section=${activeSection}`);
+      unmarkPackClaimed("japanese");
       fetchCards();
     } catch (error) {
       console.error("Ошибка очистки раздела", error);
@@ -396,6 +398,7 @@ export function JapaneseHub() {
 
     try {
       await api.delete("/japanese/clear/all");
+      unmarkPackClaimed("japanese");
       fetchCards();
     } catch (error) {
       console.error("Ошибка очистки всей колоды", error);

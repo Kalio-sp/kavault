@@ -24,6 +24,7 @@ import {
   STARTER_DEVELOPER_RESOURCES,
   isPackClaimed,
   markPackClaimed,
+  unmarkPackClaimed,
 } from "../data/starterPacks";
 
 interface Resource {
@@ -157,6 +158,7 @@ export function DeveloperHub() {
 
     try {
       await api.delete("/resources/clear/all?type=DEVELOPER");
+      unmarkPackClaimed("developer");
       fetchResources();
     } catch (error) {
       console.error("Ошибка очистки материалов", error);

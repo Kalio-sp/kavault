@@ -42,6 +42,7 @@ import {
   STARTER_GITHUB_REPOSITORIES,
   isPackClaimed,
   markPackClaimed,
+  unmarkPackClaimed,
 } from "../data/starterPacks";
 
 type SettingsTab = "appearance" | "account" | "learning" | "vault";
@@ -391,7 +392,15 @@ export function Settings() {
     try {
       await api.delete("/resources/clear/all");
       await api.delete("/japanese/clear/all");
-      showToast("Все материалы и карточки успешно очищены!");
+      unmarkPackClaimed("all");
+      setUserResources([]);
+      setUserCards([]);
+      setVaultStats({
+        resourcesCount: 0,
+        cardsCount: 0,
+        totalNotes: 0,
+      });
+      showToast("Все материалы и карточки успешно очищены! Стартовые наборы снова доступны.");
     } catch {
       showToast("Не удалось очистить материалы", "error");
     }

@@ -144,34 +144,57 @@ export function isPackClaimed(
   cards?: Array<{ word: string }>,
   resources?: Array<{ url: string }>,
 ): boolean {
-  // 1. Проверка явной метки использования в localStorage
-  if (localStorage.getItem(`kavault_pack_claimed_${pack}`) === "true") {
-    return true;
-  }
-
-  // 2. Проверка фактического наличия элементов набора в базе аккаунта
-  if (pack === "japanese" && cards && cards.length > 0) {
-    const starterWords = new Set(STARTER_JAPANESE_CARDS.map((c) => c.word));
-    const matchingCount = cards.filter((c) => starterWords.has(c.word)).length;
-    if (matchingCount >= 2) {
+  // Проверка по фактическому наличию в базе аккаунта (приоритетный источник правды).
+  // Если массив передан, но пуст — значит данных в аккаунте нет (или прогресс сброшен), набор доступен!
+  if (pack === "japanese") {
+    if (cards !== undefined) {
+      if (cards.length === 0) {
+        localStorage.removeItem("kavault_pack_claimed_japanese");
+        return false;
+      }
+      const starterWords = new Set(STARTER_JAPANESE_CARDS.map((c) => c.word));
+      const matchingCount = cards.filter((c) => starterWords.has(c.word)).length;
+      if (matchingCount < 2) {
+        localStorage.removeItem("kavault_pack_claimed_japanese");
+        return false;
+      }
       return true;
     }
+    return localStorage.getItem("kavault_pack_claimed_japanese") === "true";
   }
 
-  if (pack === "developer" && resources && resources.length > 0) {
-    const starterUrls = new Set(STARTER_DEVELOPER_RESOURCES.map((r) => r.url));
-    const matchingCount = resources.filter((r) => starterUrls.has(r.url)).length;
-    if (matchingCount >= 2) {
+  if (pack === "developer") {
+    if (resources !== undefined) {
+      if (resources.length === 0) {
+        localStorage.removeItem("kavault_pack_claimed_developer");
+        return false;
+      }
+      const starterUrls = new Set(STARTER_DEVELOPER_RESOURCES.map((r) => r.url));
+      const matchingCount = resources.filter((r) => starterUrls.has(r.url)).length;
+      if (matchingCount < 2) {
+        localStorage.removeItem("kavault_pack_claimed_developer");
+        return false;
+      }
       return true;
     }
+    return localStorage.getItem("kavault_pack_claimed_developer") === "true";
   }
 
-  if (pack === "github" && resources && resources.length > 0) {
-    const starterUrls = new Set(STARTER_GITHUB_REPOSITORIES.map((r) => r.url));
-    const matchingCount = resources.filter((r) => starterUrls.has(r.url)).length;
-    if (matchingCount >= 2) {
+  if (pack === "github") {
+    if (resources !== undefined) {
+      if (resources.length === 0) {
+        localStorage.removeItem("kavault_pack_claimed_github");
+        return false;
+      }
+      const starterUrls = new Set(STARTER_GITHUB_REPOSITORIES.map((r) => r.url));
+      const matchingCount = resources.filter((r) => starterUrls.has(r.url)).length;
+      if (matchingCount < 2) {
+        localStorage.removeItem("kavault_pack_claimed_github");
+        return false;
+      }
       return true;
     }
+    return localStorage.getItem("kavault_pack_claimed_github") === "true";
   }
 
   return false;
@@ -184,5 +207,15 @@ export function markPackClaimed(pack: StarterPackType | "all") {
     localStorage.setItem("kavault_pack_claimed_github", "true");
   } else {
     localStorage.setItem(`kavault_pack_claimed_${pack}`, "true");
+  }
+}
+
+export function unmarkPackClaimed(pack?: StarterPackType | "all") {
+  if (!pack || pack === "all") {
+    localStorage.removeItem("kavault_pack_claimed_japanese");
+    localStorage.removeItem("kavault_pack_claimed_developer");
+    localStorage.removeItem("kavault_pack_claimed_github");
+  } else {
+    localStorage.removeItem(`kavault_pack_claimed_${pack}`);
   }
 }
