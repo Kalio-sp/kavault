@@ -30,6 +30,11 @@ export function Login() {
     e.preventDefault();
     setError("");
 
+    if (mode === "register" && !nickname.trim()) {
+      setError("Пожалуйста, введите ваше имя или никнейм");
+      return;
+    }
+
     if (mode === "register" && password !== confirmPassword) {
       setError("Пароли не совпадают");
       return;
@@ -369,7 +374,7 @@ export function Login() {
                     marginBottom: "var(--space-2)",
                   }}
                 >
-                  Никнейм / Имя (необязательно)
+                  Никнейм / Имя
                 </label>
                 <div style={{ position: "relative" }}>
                   <div
@@ -386,9 +391,10 @@ export function Login() {
                   </div>
                   <input
                     type="text"
-                    placeholder="Например: Андрей"
+                    placeholder="Введите ваше имя или никнейм"
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
+                    required
                     style={{
                       width: "100%",
                       backgroundColor: "var(--bg)",
