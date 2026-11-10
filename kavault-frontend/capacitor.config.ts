@@ -6,8 +6,11 @@ const config: CapacitorConfig = {
   webDir: "dist",
   server: {
     // Используется для iOS и Android
-    androidScheme: "https",
+    androidScheme: "http",
     iosScheme: "kavault",
+  },
+  android: {
+    allowMixedContent: true,
   },
   ios: {
     contentInset: "always",

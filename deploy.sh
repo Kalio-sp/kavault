@@ -20,9 +20,14 @@ fi
 # 2. Проверка и установка Docker
 if ! command -v docker &> /dev/null; then
     echo "Docker не найден. Устанавливаем официальный Docker..."
+    while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+        echo "Ожидание завершения фонового apt-get..."
+        sleep 3
+    done
     curl -fsSL https://get.docker.com -o get-docker.sh
-    sudo sh get-docker.sh
-    rm get-docker.sh
+    sudo sh get-docker.sh || sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin docker-buildx-plugin
+    rm -f get-docker.sh
+    sudo systemctl enable --now docker || true
     sudo usermod -aG docker $USER || true
     echo "Docker установлен."
 fi
@@ -40,7 +45,7 @@ fi
 # 4. Сборка и запуск контейнеров в фоне
 echo "Собираем образы и запускаем KAVAULT..."
 DOCKER_CMD="docker compose"
-if ! docker compose version &> /dev/null; then
+if ! docker info &> /dev/null; then
     DOCKER_CMD="sudo docker compose"
 fi
 
@@ -49,7 +54,7 @@ $DOCKER_CMD -f docker-compose.production.yml up -d --build
 echo ""
 echo "=========================================================="
 echo "   Успешно! KAVAULT запущен 24/7 на сервере Yandex Cloud! "
-echo "   - Веб-версия (iPhone/ПК):  http://111.88.154.23"
-echo "   - Бэкенд API:              http://111.88.154.23:4000"
+echo "   - Веб-версия (iPhone/ПК):  http://51.250.64.21"
+echo "   - Бэкенд API:              http://51.250.64.21:4000"
 echo "=========================================================="
 $DOCKER_CMD -f docker-compose.production.yml ps

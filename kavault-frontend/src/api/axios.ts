@@ -1,4 +1,5 @@
 import axios from "axios";
+import { Capacitor } from "@capacitor/core";
 
 export const getApiBaseURL = (): string => {
   // 1. Из переменной окружения Vite
@@ -10,16 +11,18 @@ export const getApiBaseURL = (): string => {
     const customUrl = localStorage.getItem("kavault_api_url");
     if (customUrl) return customUrl;
 
-    // 3. Если запущено локально в браузере разработчика (localhost / 127.0.0.1)
+    // 3. Если запущено локально в веб-браузере разработчика (но НЕ внутри мобильного APK/IPA)
     if (
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1"
+      !Capacitor.isNativePlatform() &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1")
     ) {
       return "http://localhost:4000";
     }
 
     // 4. Если открыто в веб-браузере по сетевому IP сервера или домену
     if (
+      !Capacitor.isNativePlatform() &&
       window.location.hostname &&
       !window.location.protocol.startsWith("file")
     ) {
@@ -27,9 +30,9 @@ export const getApiBaseURL = (): string => {
     }
   }
 
-  // 5. По умолчанию для скомпилированного KAVAULT.exe и iOS (где protocol file:// или capacitor://):
-  // подключаемся к серверу в Yandex Cloud!
-  return "http://111.88.154.23:4000";
+  // 5. По умолчанию для скомпилированного KAVAULT.exe, Android APK и iOS:
+  // подключаемся к новому серверу в Yandex Cloud!
+  return "http://51.250.64.21:4000";
 };
 
 export const api = axios.create({

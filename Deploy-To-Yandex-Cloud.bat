@@ -1,9 +1,9 @@
 @echo off
 chcp 65001 >nul
-title Развёртывание KAVAULT в Yandex Cloud (111.88.154.23)
+title Развёртывание KAVAULT в Yandex Cloud (51.250.64.21)
 echo ===================================================================
 echo            РАЗВЁРТЫВАНИЕ KAVAULT В YANDEX CLOUD
-echo                 Сервер: 111.88.154.23 (Ubuntu)
+echo                 Сервер: 51.250.64.21 (Ubuntu)
 echo ===================================================================
 echo.
 echo ВНИМАНИЕ:
@@ -15,7 +15,7 @@ pause
 
 echo.
 echo [1/3] Создание чистого архива проекта (без node_modules и лишних файлов)...
-tar.exe --exclude="node_modules" --exclude="release" --exclude=".git" --exclude="*.tar.gz" --exclude="*.zip" --exclude="ios" --exclude=".github" -czf kavault-deploy.tar.gz .
+tar.exe --exclude="node_modules" --exclude="release" --exclude=".git" --exclude="*.tar.gz" --exclude="*.zip" --exclude="ios" --exclude="android" --exclude="dist" --exclude=".github" -czf kavault-deploy.tar.gz .
 
 if not exist kavault-deploy.tar.gz (
     echo Ошибка архивации!
@@ -24,8 +24,8 @@ if not exist kavault-deploy.tar.gz (
 )
 
 echo.
-echo [2/3] Копирование архива на сервер Yandex Cloud (111.88.154.23)...
-scp -o StrictHostKeyChecking=no kavault-deploy.tar.gz kalio-453@111.88.154.23:~/
+echo [2/3] Копирование архива на сервер Yandex Cloud (51.250.64.21)...
+scp -o StrictHostKeyChecking=no kavault-deploy.tar.gz kalio-453@51.250.64.21:~/
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
@@ -39,7 +39,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo [3/3] Запуск сборки Docker-контейнеров на сервере...
-ssh -o StrictHostKeyChecking=no kalio-453@111.88.154.23 "mkdir -p ~/kavault && tar -xzf ~/kavault-deploy.tar.gz -C ~/kavault && rm -f ~/kavault-deploy.tar.gz && cd ~/kavault && chmod +x deploy.sh && ./deploy.sh"
+ssh -o StrictHostKeyChecking=no kalio-453@51.250.64.21 "mkdir -p ~/kavault && tar -xzf ~/kavault-deploy.tar.gz -C ~/kavault && rm -f ~/kavault-deploy.tar.gz && cd ~/kavault && chmod +x deploy.sh && ./deploy.sh"
 
 echo.
 echo Очистка локального архива...
@@ -49,6 +49,6 @@ echo.
 echo ===================================================================
 echo    ДЕПЛОЙ УСПЕШНО ЗАВЕРШЕН!
 echo    Веб-версия KAVAULT доступна по ссылке:
-echo    http://111.88.154.23
+echo    http://51.250.64.21
 echo ===================================================================
 pause

@@ -1,4 +1,6 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
+
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 
@@ -12,7 +14,9 @@ COPY . .
 
 RUN npm run build
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
+
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 
@@ -26,4 +30,4 @@ COPY --from=builder /app/dist ./dist
 
 EXPOSE 4000
 
-CMD ["sh", "-c", "npx prisma db push && node dist/main"]
+CMD ["sh", "-c", "npx prisma db push && if [ -f dist/src/main.js ]; then node dist/src/main; else node dist/main; fi"]
