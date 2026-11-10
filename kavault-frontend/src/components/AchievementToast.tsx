@@ -1,7 +1,9 @@
 import { Trophy, X, Sparkles } from "lucide-react";
 import { useAchievements } from "../context/AchievementContext";
+import { useApp } from "../context/AppContext";
 
 export function AchievementToast() {
+  const { t } = useApp();
   const { newlyUnlocked, dismissToast, openModal } = useAchievements();
 
   if (!newlyUnlocked) return null;
@@ -27,14 +29,14 @@ export function AchievementToast() {
         }}
         style={{
           cursor: "pointer",
-          backgroundColor: isSecret ? "rgba(24, 18, 38, 0.95)" : "rgba(18, 18, 24, 0.95)",
+          backgroundColor: "var(--tooltip-bg)",
           backdropFilter: "blur(16px)",
           border: isSecret ? "1px solid #eab308" : "1px solid rgba(234, 179, 8, 0.4)",
           borderRadius: "16px",
           padding: "16px 20px",
           boxShadow: isSecret
             ? "0 12px 36px rgba(234, 179, 8, 0.25), 0 0 20px rgba(168, 85, 247, 0.3)"
-            : "0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(234, 179, 8, 0.15)",
+            : "0 10px 30px rgba(0, 0, 0, 0.25), 0 0 15px rgba(234, 179, 8, 0.15)",
           display: "flex",
           alignItems: "center",
           gap: "16px",
@@ -93,13 +95,13 @@ export function AchievementToast() {
             }}
           >
             {isSecret ? <Sparkles size={13} /> : <Trophy size={13} />}
-            {isSecret ? "СЕКРЕТНОЕ ДОСТИЖЕНИЕ!" : "НОВОЕ ДОСТИЖЕНИЕ!"}
+            {isSecret ? t.achievements.toastSecretHeader : t.achievements.toastNormalHeader}
           </div>
           <div
             style={{
               fontSize: "15px",
               fontWeight: 700,
-              color: "#ffffff",
+              color: "var(--text-primary)",
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -110,14 +112,12 @@ export function AchievementToast() {
           <div
             style={{
               fontSize: "12px",
-              color: "rgba(255, 255, 255, 0.7)",
+              color: "var(--text-secondary)",
               marginTop: "2px",
               lineHeight: 1.3,
             }}
           >
-            {isSecret
-              ? newlyUnlocked.description
-              : newlyUnlocked.description}
+            {newlyUnlocked.description}
           </div>
           <div
             style={{
@@ -131,7 +131,7 @@ export function AchievementToast() {
               borderRadius: "6px",
             }}
           >
-            +{newlyUnlocked.points} Очков Хранилища
+            +{newlyUnlocked.points} {t.achievements.toastPointsSuffix}
           </div>
         </div>
 
@@ -144,7 +144,7 @@ export function AchievementToast() {
           style={{
             background: "none",
             border: "none",
-            color: "rgba(255, 255, 255, 0.4)",
+            color: "var(--text-muted)",
             cursor: "pointer",
             padding: "4px",
             display: "flex",
@@ -153,8 +153,8 @@ export function AchievementToast() {
             borderRadius: "6px",
             transition: "color 0.2s",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255, 255, 255, 0.4)")}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
         >
           <X size={16} />
         </button>

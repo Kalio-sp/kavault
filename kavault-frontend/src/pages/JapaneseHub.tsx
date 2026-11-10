@@ -69,6 +69,7 @@ function FlashcardItem({
   section: HubSection;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useApp();
   const [isFlipped, setIsFlipped] = useState(false);
 
   const handleFlip = () => {
@@ -104,7 +105,7 @@ function FlashcardItem({
           e.stopPropagation();
           onDelete(item.id);
         }}
-        title="Удалить карточку"
+        title={t.jap.deleteCardTitle}
         style={{
           position: "absolute",
           top: "8px",
@@ -143,7 +144,7 @@ function FlashcardItem({
           color: isKanjiSection ? "#c084fc" : "#60a5fa",
         }}
       >
-        {isKanjiSection ? "1. Кандзи" : "2. Кана"}
+        {isKanjiSection ? `1. ${t.review.badgeKanji}` : `2. ${t.review.badgeKana}`}
       </div>
 
       {!isFlipped ? (
@@ -184,7 +185,7 @@ function FlashcardItem({
 
           <div style={{ marginTop: "var(--space-3)" }}>
             <Badge variant={item.level > 0 ? "success" : "default"}>
-              Lvl {item.level}
+              {t.jap.levelPrefix} {item.level}
             </Badge>
           </div>
         </div>
@@ -220,7 +221,7 @@ function FlashcardItem({
             {item.meaning}
           </span>
           <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-            (нажмите, чтобы скрыть)
+            {t.jap.clickToHide}
           </span>
         </div>
       )}
@@ -342,10 +343,10 @@ export function JapaneseHub() {
     const cardToDelete = cards.find((c) => c.id === id);
     const wordLabel = cardToDelete ? ` «${cardToDelete.word}»` : "";
     const confirmed = await confirmModal({
-      title: "Удалить карточку?",
-      message: `Вы действительно хотите удалить карточку${wordLabel} из колоды? Это действие нельзя будет отменить.`,
-      confirmText: "Удалить",
-      cancelText: "Отмена",
+      title: t.jap.deleteCardTitle,
+      message: `${t.jap.deleteCardMsgPrefix}${wordLabel}${t.jap.deleteCardMsgSuffix}`,
+      confirmText: t.common.delete,
+      cancelText: t.common.cancel,
       variant: "danger",
     });
 
@@ -363,13 +364,13 @@ export function JapaneseHub() {
     if (currentSectionCards.length === 0) return;
     const sectionName =
       activeSection === "KANJI"
-        ? "«1. Слова с Кандзи»"
-        : "«2. Слова с Хираганой и Катаканой»";
+        ? t.jap.section1Title
+        : t.jap.section2Title;
     const confirmed = await confirmModal({
-      title: `Очистить раздел ${sectionName}?`,
-      message: `Все карточки этого раздела (${currentSectionCards.length} шт.) будут безвозвратно удалены. Другой раздел затронут не будет.`,
-      confirmText: "Да, очистить раздел",
-      cancelText: "Отмена",
+      title: `${t.jap.clearSectionTitlePrefix} «${sectionName}»?`,
+      message: `${t.jap.clearSectionMsgPrefix} (${currentSectionCards.length}) ${t.jap.clearSectionMsgSuffix}`,
+      confirmText: t.jap.clearSectionConfirm,
+      cancelText: t.common.cancel,
       variant: "danger",
     });
 
@@ -387,10 +388,10 @@ export function JapaneseHub() {
   const handleClearAllDeck = async () => {
     if (cards.length === 0) return;
     const confirmed = await confirmModal({
-      title: "Очистить абсолютно всю японскую колоду?",
-      message: `Будут безвозвратно удалены ВСЕ карточки японского языка (${cards.length} шт.), включая Хирагану, Катакану и Кандзи. Это действие нельзя отменить.`,
-      confirmText: "Да, удалить всю колоду",
-      cancelText: "Отмена",
+      title: t.jap.clearAllTitle,
+      message: `${t.jap.clearAllMsgPrefix} (${cards.length}) ${t.jap.clearAllMsgSuffix}`,
+      confirmText: t.jap.clearAllConfirm,
+      cancelText: t.common.cancel,
       variant: "danger",
     });
 
@@ -436,8 +437,8 @@ export function JapaneseHub() {
           </h2>
           <p style={{ color: "var(--text-muted)", margin: 0 }}>
             {activeSection === "KANJI"
-              ? "1 раздел: Слова с иероглифами кандзи и фуриганой"
-              : "2 раздел: Слова на хирагане и катакане (для начинающих без кандзи)"}
+              ? t.jap.subtitleKanji
+              : t.jap.subtitleKana}
           </p>
         </div>
 
@@ -449,7 +450,8 @@ export function JapaneseHub() {
             backgroundColor: activeSection === "KANJI" ? "#a855f7" : "var(--accent)",
           }}
         >
-          <Sparkles size={16} /> Повторить {activeSection === "KANJI" ? "Кандзи" : "Кану"} (
+          <Sparkles size={16} />{" "}
+          {activeSection === "KANJI" ? t.jap.repeatKanjiBtn : t.jap.repeatKanaBtn} (
           {currentSectionCards.length}) →
         </Button>
       </div>
@@ -511,15 +513,15 @@ export function JapaneseHub() {
                   gap: "6px",
                 }}
               >
-                1. Слова с Кандзи
+                {t.jap.section1Title}
               </div>
               <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                Иероглифы с фуриганой и чтениями
+                {t.jap.section1Desc}
               </div>
             </div>
           </div>
           <Badge variant={activeSection === "KANJI" ? "accent" : "default"}>
-            {kanjiCards.length} слов
+            {kanjiCards.length} {t.jap.wordsUnit}
           </Badge>
         </Card>
 
@@ -572,15 +574,15 @@ export function JapaneseHub() {
                   gap: "6px",
                 }}
               >
-                2. Хирагана и Катакана
+                {t.jap.section2Title}
               </div>
               <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                Слова азбукой без иероглифов (для начинающих)
+                {t.jap.section2Desc}
               </div>
             </div>
           </div>
           <Badge variant={activeSection === "KANA" ? "accent" : "default"}>
-            {kanaCards.length} слов
+            {kanaCards.length} {t.jap.wordsUnit}
           </Badge>
         </Card>
       </div>
@@ -599,13 +601,11 @@ export function JapaneseHub() {
         >
           {activeSection === "KANJI" ? (
             <>
-              <Scroll size={18} color="#a855f7" /> Раздел 1: Добавить слово с Кандзи
-              (иероглифом)
+              <Scroll size={18} color="#a855f7" /> {t.jap.addKanjiTitle}
             </>
           ) : (
             <>
-              <BookA size={18} color="var(--accent)" /> Раздел 2: Добавить слово на
-              Хирагане / Катакане
+              <BookA size={18} color="var(--accent)" /> {t.jap.addKanaTitle}
             </>
           )}
         </h3>
@@ -625,8 +625,8 @@ export function JapaneseHub() {
               icon={<Type size={16} />}
               placeholder={
                 activeSection === "KANJI"
-                  ? "Кандзи / Иероглиф (напр. 未来, 桜, 日本語)"
-                  : "Слово на кане (напр. ありがとう, ねこ, コーヒー)"
+                  ? t.jap.wordKanjiPlaceholder
+                  : t.jap.wordKanaPlaceholder
               }
               value={word}
               onChange={(e) => setWord(e.target.value)}
@@ -639,7 +639,7 @@ export function JapaneseHub() {
             <div style={{ flex: "1 1 200px" }}>
               <Input
                 icon={<Languages size={16} />}
-                placeholder="Чтение каной / фуригана (напр. みらい)"
+                placeholder={t.jap.readingPlaceholder}
                 value={reading}
                 onChange={(e) => setReading(e.target.value)}
               />
@@ -652,8 +652,8 @@ export function JapaneseHub() {
               icon={<BookOpen size={16} />}
               placeholder={
                 activeSection === "KANJI"
-                  ? "Перевод (напр. Будущее, Сакура, Японский язык)"
-                  : "Перевод (напр. Спасибо, Кот, Кофе)"
+                  ? t.jap.meaningKanjiPlaceholder
+                  : t.jap.meaningKanaPlaceholder
               }
               value={meaning}
               onChange={(e) => setMeaning(e.target.value)}
@@ -669,7 +669,7 @@ export function JapaneseHub() {
                 activeSection === "KANJI" ? "#a855f7" : "var(--accent)",
             }}
           >
-            <Plus size={18} /> Добавить
+            <Plus size={18} /> {t.jap.addBtn}
           </Button>
         </form>
       </Card>
@@ -696,8 +696,8 @@ export function JapaneseHub() {
               }}
             >
               {activeSection === "KANJI"
-                ? `Раздел 1: Колода «Кандзи» (${filteredCards.length})`
-                : `Раздел 2: Колода «Хирагана & Катакана» (${filteredCards.length})`}
+                ? `${t.jap.deckKanjiTitle} (${filteredCards.length})`
+                : `${t.jap.deckKanaTitle} (${filteredCards.length})`}
             </h3>
 
             {!isStarterClaimed && (
@@ -712,9 +712,9 @@ export function JapaneseHub() {
                   borderColor: "rgba(59, 130, 246, 0.4)",
                   gap: "6px",
                 }}
-                title="Загрузить 36 стартовых слов N5 (Кана и базовые Кандзи)"
+                title={t.jap.loadStarterFullBtn}
               >
-                <Sparkles size={13} /> {isImporting ? "Загрузка..." : "Загрузить набор N5 (36 слов)"}
+                <Sparkles size={13} /> {isImporting ? t.jap.loadingBtn : t.jap.loadStarterBtn}
               </Button>
             )}
 
@@ -731,9 +731,9 @@ export function JapaneseHub() {
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
-                title={`Удалить только карточки раздела ${activeSection === "KANJI" ? "Кандзи" : "Хирагана & Катакана"}`}
+                title={activeSection === "KANJI" ? t.jap.clearKanjiBtn : t.jap.clearKanaBtn}
               >
-                <Trash2 size={13} /> Очистить {activeSection === "KANJI" ? "слова с Кандзи" : "слова на Кане"}
+                <Trash2 size={13} /> {activeSection === "KANJI" ? t.jap.clearKanjiBtn : t.jap.clearKanaBtn}
               </Button>
             )}
 
@@ -750,9 +750,9 @@ export function JapaneseHub() {
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
-                title="Очистить абсолютно всю японскую колоду (и кану, и кандзи)"
+                title={t.jap.clearAllDeckBtn}
               >
-                <Trash2 size={13} /> Очистить всю колоду ({cards.length})
+                <Trash2 size={13} /> {t.jap.clearAllDeckBtn} ({cards.length})
               </Button>
             )}
           </div>
@@ -760,7 +760,7 @@ export function JapaneseHub() {
           <div style={{ width: "250px" }}>
             <Input
               icon={<Search size={15} />}
-              placeholder="Поиск в этом разделе..."
+              placeholder={t.jap.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -781,10 +781,10 @@ export function JapaneseHub() {
           >
             <p style={{ margin: 0, fontSize: "15px" }}>
               {searchQuery
-                ? "Ничего не найдено по запросу."
+                ? t.jap.notFound
                 : activeSection === "KANJI"
-                  ? "В разделе Кандзи пока пусто. Добавляйте слова с иероглифами, когда будете готовы!"
-                  : "В разделе Хираганы и Катаканы пока нет слов. Добавьте первые слова выше или загрузите готовый набор!"}
+                  ? t.jap.emptyKanji
+                  : t.jap.emptyKana}
             </p>
             {!searchQuery && !isStarterClaimed && (
               <Button
@@ -792,7 +792,7 @@ export function JapaneseHub() {
                 disabled={isImporting}
                 style={{ gap: "8px", marginTop: "6px" }}
               >
-                <Sparkles size={16} /> {isImporting ? "Импорт карточек..." : "🌸 Загрузить стартовый набор N5 (36 слов)"}
+                <Sparkles size={16} /> {isImporting ? t.jap.importingCardsBtn : t.jap.loadStarterFullBtn}
               </Button>
             )}
           </Card>

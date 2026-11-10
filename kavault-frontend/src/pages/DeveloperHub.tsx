@@ -127,10 +127,10 @@ export function DeveloperHub() {
     const itemToDelete = resources.find((r) => r.id === id);
     const titleLabel = itemToDelete ? ` «${itemToDelete.title}»` : "";
     const confirmed = await confirmModal({
-      title: "Удалить материал?",
-      message: `Вы действительно хотите удалить${titleLabel}? Все прикреплённые заметки также будут удалены.`,
-      confirmText: "Удалить",
-      cancelText: "Отмена",
+      title: t.dev.deleteConfirmTitle,
+      message: `${t.dev.deleteConfirmMsgPrefix}${titleLabel}${t.dev.deleteConfirmMsgSuffix}`,
+      confirmText: t.common.delete,
+      cancelText: t.common.cancel,
       variant: "danger",
     });
 
@@ -140,17 +140,17 @@ export function DeveloperHub() {
       await api.delete(`/resources/${id}`);
       fetchResources();
     } catch (error) {
-      console.error("Ошибка удаления", error);
+      console.error("Error deleting resource", error);
     }
   };
 
   const handleClearAll = async () => {
     if (resources.length === 0) return;
     const confirmed = await confirmModal({
-      title: "Очистить все материалы?",
-      message: `Вы действительно хотите безвозвратно удалить все сохранённые статьи, видео и документацию (${resources.length} шт.)? Это действие нельзя отменить.`,
-      confirmText: "Да, удалить всё",
-      cancelText: "Отмена",
+      title: t.dev.clearConfirmTitle,
+      message: `${t.dev.clearConfirmMsgPrefix} (${resources.length})${t.dev.clearConfirmMsgSuffix}`,
+      confirmText: t.common.yesDeleteAll,
+      cancelText: t.common.cancel,
       variant: "danger",
     });
 
@@ -161,7 +161,7 @@ export function DeveloperHub() {
       unmarkPackClaimed("developer");
       fetchResources();
     } catch (error) {
-      console.error("Ошибка очистки материалов", error);
+      console.error("Error clearing resources", error);
     }
   };
 
@@ -244,7 +244,7 @@ export function DeveloperHub() {
                 fontWeight: type === "ARTICLE" ? 600 : 400,
               }}
             >
-              <BookOpen size={13} /> Статья
+              <BookOpen size={13} /> {t.dev.articleType}
             </button>
             <button
               type="button"
@@ -263,7 +263,7 @@ export function DeveloperHub() {
                 fontWeight: type === "VIDEO" ? 600 : 400,
               }}
             >
-              <Video size={13} /> Видео
+              <Video size={13} /> {t.dev.videoType}
             </button>
           </div>
         </div>
@@ -328,9 +328,8 @@ export function DeveloperHub() {
                   borderColor: "rgba(59, 130, 246, 0.4)",
                   gap: "6px",
                 }}
-                title="Загрузить 6 полезных шпаргалок и сниппетов (React 19, TypeScript, Docker, Git, NestJS)"
               >
-                <Sparkles size={13} /> {isImporting ? "Загрузка..." : "Загрузить шпаргалки (6 шт)"}
+                <Sparkles size={13} /> {isImporting ? t.dev.importingBtn : t.dev.loadStarterBtn}
               </Button>
             )}
 
@@ -347,9 +346,9 @@ export function DeveloperHub() {
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
-                title="Очистить все сохранённые материалы"
+                title={t.dev.clearAllBtn}
               >
-                <Trash2 size={13} /> Очистить все материалы
+                <Trash2 size={13} /> {t.dev.clearAllBtn}
               </Button>
             )}
           </div>
@@ -377,8 +376,8 @@ export function DeveloperHub() {
           >
             <p style={{ margin: 0, fontSize: "15px" }}>
               {searchQuery
-                ? "Ничего не найдено по запросу."
-                : "В базе пока нет материалов разработчика. Добавьте свои первые статьи или загрузите готовые шпаргалки!"}
+                ? t.dev.noResources
+                : t.dev.emptyDbText}
             </p>
             {!searchQuery && !isStarterClaimed && (
               <Button
@@ -386,7 +385,7 @@ export function DeveloperHub() {
                 disabled={isImporting}
                 style={{ gap: "8px", marginTop: "6px" }}
               >
-                <Sparkles size={16} /> {isImporting ? "Импорт сниппетов..." : "💻 Загрузить шпаргалки и конспекты (6 шт)"}
+                <Sparkles size={16} /> {isImporting ? t.dev.importingFullBtn : t.dev.loadStarterFullBtn}
               </Button>
             )}
           </Card>
@@ -460,7 +459,6 @@ export function DeveloperHub() {
                   {/* Кликабельный статус-бейдж */}
                   <button
                     onClick={() => handleToggleStatus(item)}
-                    title="Нажмите, чтобы сменить статус"
                     style={{
                       background: "none",
                       border: "none",
@@ -487,7 +485,7 @@ export function DeveloperHub() {
                       ) : (
                         <Circle size={12} style={{ marginRight: 4 }} />
                       )}
-                      {item.status.replace("_", " ")}
+                      {t.dash.statusLabels[item.status] || item.status.replace("_", " ")}
                     </Badge>
                   </button>
 
@@ -501,7 +499,7 @@ export function DeveloperHub() {
                         padding: "6px 8px",
                         color: item.note ? "var(--accent)" : "inherit",
                       }}
-                      title="Заметки (Notes)"
+                      title={t.dev.notesBtnTitle}
                     >
                       <FileText size={14} />
                     </Button>
@@ -509,7 +507,7 @@ export function DeveloperHub() {
                       variant="secondary"
                       onClick={() => window.open(item.url, "_blank")}
                       style={{ padding: "6px 8px" }}
-                      title="Открыть ссылку"
+                      title={t.dev.openLinkTitle}
                     >
                       <ExternalLink size={14} />
                     </Button>
@@ -517,7 +515,7 @@ export function DeveloperHub() {
                       variant="secondary"
                       onClick={() => handleDelete(item.id)}
                       style={{ padding: "6px 8px", color: "var(--error)" }}
-                      title="Удалить"
+                      title={t.dev.deleteBtnTitle}
                     >
                       <Trash2 size={14} />
                     </Button>

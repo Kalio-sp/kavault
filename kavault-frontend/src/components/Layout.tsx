@@ -10,7 +10,6 @@ import {
   Settings as SettingsIcon,
   Crown,
   Menu,
-  X,
   Trophy,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
@@ -28,12 +27,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     const next = logoClicks + 1;
     if (next >= 5) {
       setLogoClicks(0);
-      const pass = window.prompt("Введите мастер-пароль Создателя (Root-доступ):");
+      const pass = window.prompt(t.nav.creatorPrompt);
       if (pass) {
         if (activateCreatorMode(pass)) {
-          window.alert("👑 Режим Создателя успешно активирован!");
+          window.alert(t.nav.creatorSuccess);
         } else {
-          window.alert("Неверный пароль Создателя.");
+          window.alert(t.nav.creatorInvalid);
         }
       }
     } else {
@@ -45,19 +44,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && (e.key === "C" || e.key === "c" || e.key === "С" || e.key === "с")) {
         e.preventDefault();
-        const pass = window.prompt("Вход в Панель Создателя (Root Access). Введите пароль:");
+        const pass = window.prompt(t.nav.creatorPrompt);
         if (pass) {
           if (activateCreatorMode(pass)) {
-            window.alert("👑 Режим Создателя успешно активирован!");
+            window.alert(t.nav.creatorSuccess);
           } else {
-            window.alert("Неверный пароль Создателя.");
+            window.alert(t.nav.creatorInvalid);
           }
         }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activateCreatorMode]);
+  }, [activateCreatorMode, t.nav.creatorPrompt, t.nav.creatorSuccess, t.nav.creatorInvalid]);
 
   useEffect(() => {
     trackPageVisit(location.pathname);
@@ -92,10 +91,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   // Главные пункты для мобильного нижнего таб-бара
   const mobileTabs = [
-    { path: "/dashboard", label: "Главная", icon: LayoutDashboard },
-    { path: "/developer", label: "Dev Hub", icon: Code2 },
-    { path: "/japanese", label: "Японский", icon: Languages },
-    { path: "/tracker", label: "Трекер", icon: BarChart2 },
+    { path: "/dashboard", label: t.nav.mobileDash, icon: LayoutDashboard },
+    { path: "/developer", label: t.nav.mobileDev, icon: Code2 },
+    { path: "/japanese", label: t.nav.mobileJap, icon: Languages },
+    { path: "/tracker", label: t.nav.mobileTrack, icon: BarChart2 },
   ];
 
   return (
@@ -247,7 +246,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   transition: "all 0.2s",
                 }}
               >
-                <Crown size={18} color="#f59e0b" /> Панель Создателя
+                <Crown size={18} color="#f59e0b" /> {t.nav.admin}
               </Link>
             )}
           </nav>
@@ -271,8 +270,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 justifyContent: "space-between",
                 padding: "9px 12px",
                 borderRadius: "var(--radius-md)",
-                border: "1px solid rgba(234, 179, 8, 0.2)",
-                backgroundColor: "rgba(234, 179, 8, 0.06)",
+                border: "1px solid rgba(234, 179, 8, 0.25)",
+                backgroundColor: "rgba(234, 179, 8, 0.08)",
                 color: "#eab308",
                 cursor: "pointer",
                 fontWeight: 600,
@@ -281,7 +280,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               }}
             >
               <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <Trophy size={16} /> Достижения
+                <Trophy size={16} /> {t.nav.achievements}
               </span>
               <span
                 style={{
@@ -384,7 +383,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 display: "flex",
                 alignItems: "center",
               }}
-              title="Достижения"
+              title={t.nav.achievements}
             >
               <Trophy size={20} />
             </button>
@@ -396,23 +395,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 display: "flex",
                 alignItems: "center",
               }}
+              title={t.nav.settings}
             >
               <SettingsIcon size={20} />
             </Link>
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "var(--text-primary)",
-                padding: "8px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-            </button>
           </div>
         </header>
       )}
@@ -442,8 +428,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             top: 0,
             left: 0,
             right: 0,
-            bottom: "calc(58px + env(safe-area-inset-bottom, 0px))",
-            backgroundColor: "rgba(9, 9, 11, 0.8)",
+            bottom: "calc(62px + env(safe-area-inset-bottom, 0px))",
+            backgroundColor: "var(--overlay-bg)",
             backdropFilter: "blur(8px)",
             zIndex: 45,
             display: "flex",
@@ -463,7 +449,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               display: "flex",
               flexDirection: "column",
               gap: "8px",
-              boxShadow: "0 -10px 30px rgba(0, 0, 0, 0.5)",
+              boxShadow: "var(--tabbar-shadow)",
               animation: "kavaultScaleIn 0.25s ease-out",
             }}
           >
@@ -476,7 +462,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 marginBottom: "4px",
               }}
             >
-              Все разделы KAVAULT
+              {t.nav.allSections}
             </div>
 
             <Link
@@ -566,7 +552,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   marginTop: "4px",
                 }}
               >
-                <Crown size={18} color="#f59e0b" /> Панель Создателя
+                <Crown size={18} color="#f59e0b" /> {t.nav.admin}
               </Link>
             )}
           </div>
@@ -581,12 +567,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
             bottom: 0,
             left: 0,
             right: 0,
-            height: "calc(58px + env(safe-area-inset-bottom, 0px))",
+            height: "calc(62px + env(safe-area-inset-bottom, 0px))",
             paddingBottom: "env(safe-area-inset-bottom, 0px)",
-            backgroundColor: "rgba(24, 24, 27, 0.92)",
+            paddingLeft: "6px",
+            paddingRight: "6px",
+            backgroundColor: "var(--tabbar-bg)",
             backdropFilter: "blur(16px)",
             WebkitBackdropFilter: "blur(16px)",
-            borderTop: "1px solid var(--border)",
+            borderTop: "1px solid var(--tabbar-border)",
+            boxShadow: "var(--tabbar-shadow)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-around",
@@ -606,16 +595,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "3px",
-                  color: isActive ? "var(--accent)" : "var(--text-muted)",
+                  color: isActive ? "var(--accent)" : "var(--text-secondary)",
+                  backgroundColor: isActive ? "var(--accent-soft)" : "transparent",
+                  borderRadius: "10px",
                   textDecoration: "none",
                   fontSize: "11px",
-                  fontWeight: isActive ? 600 : 400,
-                  width: "20%",
-                  height: "100%",
+                  fontWeight: isActive ? 600 : 500,
+                  width: "19%",
+                  height: "48px",
+                  transition: "all 0.15s ease",
                 }}
               >
                 <Icon size={20} />
-                <span>{tab.label}</span>
+                <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+                  {tab.label}
+                </span>
               </Link>
             );
           })}
@@ -629,18 +623,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
               alignItems: "center",
               justifyContent: "center",
               gap: "3px",
-              color: mobileMenuOpen ? "var(--accent)" : "var(--text-muted)",
-              background: "none",
+              color: mobileMenuOpen ? "var(--accent)" : "var(--text-secondary)",
+              backgroundColor: mobileMenuOpen ? "var(--accent-soft)" : "transparent",
+              borderRadius: "10px",
               border: "none",
               cursor: "pointer",
               fontSize: "11px",
-              fontWeight: mobileMenuOpen ? 600 : 400,
-              width: "20%",
-              height: "100%",
+              fontWeight: mobileMenuOpen ? 600 : 500,
+              width: "19%",
+              height: "48px",
+              transition: "all 0.15s ease",
             }}
           >
             <Menu size={20} />
-            <span>Ещё</span>
+            <span>{t.nav.more}</span>
           </button>
         </nav>
       )}

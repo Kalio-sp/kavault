@@ -2,8 +2,10 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import {
   ACHIEVEMENTS,
   checkIsMrA,
+  localizeAchievement,
 } from "../data/achievements";
 import type { Achievement } from "../data/achievements";
+import { useApp } from "./AppContext";
 
 export interface AchievementItem extends Achievement {
   unlocked: boolean;
@@ -74,6 +76,7 @@ function playChimeSound() {
 }
 
 export function AchievementProvider({ children }: { children: React.ReactNode }) {
+  const { language, t } = useApp();
   const [unlockedMap, setUnlockedMap] = useState<Record<string, { unlockedAt: string }>>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -267,9 +270,9 @@ export function AchievementProvider({ children }: { children: React.ReactNode })
     evaluateAchievements();
   }, [evaluateAchievements]);
 
-  // Подготовка списка с текущими статусами
+  // Подготовка списка с текущими статусами и локализацией
   const achievements: AchievementItem[] = ACHIEVEMENTS.map((ach) => ({
-    ...ach,
+    ...localizeAchievement(ach, language),
     unlocked: Boolean(unlockedMap[ach.id]),
     unlockedAt: unlockedMap[ach.id]?.unlockedAt,
   }));
@@ -281,13 +284,17 @@ export function AchievementProvider({ children }: { children: React.ReactNode })
     .filter((a) => a.unlocked)
     .reduce((sum, a) => sum + a.points, 0);
 
-  // Определение ранга пользователя по очкам
-  let rankTitle = "Новичок";
-  if (earnedPoints >= 100) rankTitle = "Искатель Знаний";
-  if (earnedPoints >= 250) rankTitle = "Архитектор Памяти";
-  if (earnedPoints >= 450) rankTitle = "Сенсей Продуктивности";
-  if (earnedPoints >= 700) rankTitle = "Магистр KAVAULT";
-  if (earnedPoints >= 1000) rankTitle = "Легенда Хранилища";
+  // Определение ранга пользователя по очкам на текущем языке
+  let rankTitle = t.achievements.ranks.novice;
+  if (earnedPoints >= 100) rankTitle = t.achievements.ranks.seeker;
+  if (earnedPoints >= 250) rankTitle = t.achievements.ranks.architect;
+  if (earnedPoints >= 450) rankTitle = t.achievements.ranks.sensei;
+  if (earnedPoints >= 700) rankTitle = t.achievements.ranks.magister;
+  if (earnedPoints >= 1000) rankTitle = t.achievements.ranks.legend;
+
+  const localizedToast = toastQueue[0]
+    ? localizeAchievement(toastQueue[0], language)
+    : null;
 
   return (
     <AchievementContext.Provider
@@ -301,7 +308,7 @@ export function AchievementProvider({ children }: { children: React.ReactNode })
         isModalOpen,
         openModal: () => setIsModalOpen(true),
         closeModal: () => setIsModalOpen(false),
-        newlyUnlocked: toastQueue[0] || null,
+        newlyUnlocked: localizedToast,
         dismissToast,
         evaluateAchievements,
         trackPageVisit,

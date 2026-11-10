@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/axios";
+import { useApp } from "../context/AppContext";
 import { Mail, Lock, ArrowRight, Eye, EyeOff, User } from "lucide-react";
 
 type AuthMode = "login" | "register";
 
 export function Login() {
+  const { t } = useApp();
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [nickname, setNickname] = useState("");
@@ -31,17 +33,17 @@ export function Login() {
     setError("");
 
     if (mode === "register" && !nickname.trim()) {
-      setError("Пожалуйста, введите ваше имя или никнейм");
+      setError(t.auth.errors.noNickname);
       return;
     }
 
     if (mode === "register" && password !== confirmPassword) {
-      setError("Пароли не совпадают");
+      setError(t.auth.errors.mismatch);
       return;
     }
 
     if (password.length < 6) {
-      setError("Пароль должен содержать минимум 6 символов");
+      setError(t.auth.errors.shortPass);
       return;
     }
 
@@ -67,7 +69,7 @@ export function Login() {
       if (Array.isArray(msg)) {
         setError(msg.join(", "));
       } else {
-        setError(msg || "Ошибка подключения к серверу");
+        setError(msg || t.auth.errors.serverError);
       }
     } finally {
       setIsLoading(false);
@@ -151,9 +153,9 @@ export function Login() {
               lineHeight: 1.2,
             }}
           >
-            Храни знания.
+            {t.auth.brandLine1}
             <br />
-            Учись каждый день.
+            {t.auth.brandLine2}
           </h1>
           <p
             style={{
@@ -163,8 +165,7 @@ export function Login() {
               margin: 0,
             }}
           >
-            Платформа для организации знаний, трекинга обучения
-            <br />и интервального повторения.
+            {t.auth.brandSubtitle}
           </p>
 
           {/* Фичи */}
@@ -177,11 +178,7 @@ export function Login() {
               textAlign: "left",
             }}
           >
-            {[
-              "Интервальное повторение (SRS)",
-              "Трекер активности и стриков",
-              "Граф знаний",
-            ].map((feature) => (
+            {t.auth.features.map((feature) => (
               <div
                 key={feature}
                 style={{
@@ -269,7 +266,7 @@ export function Login() {
               margin: "0 0 var(--space-2) 0",
             }}
           >
-            {mode === "login" ? "Вход в аккаунт" : "Создать аккаунт"}
+            {mode === "login" ? t.auth.loginTitle : t.auth.registerTitle}
           </h2>
           <p
             style={{
@@ -279,8 +276,8 @@ export function Login() {
             }}
           >
             {mode === "login"
-              ? "Введите свои данные для входа"
-              : "Заполните данные для регистрации"}
+              ? t.auth.loginSubtitle
+              : t.auth.registerSubtitle}
           </p>
 
           {/* Ошибка */}
@@ -319,7 +316,7 @@ export function Login() {
                   marginBottom: "var(--space-2)",
                 }}
               >
-                Email
+                {t.auth.emailLabel}
               </label>
               <div style={{ position: "relative" }}>
                 <div
@@ -374,7 +371,7 @@ export function Login() {
                     marginBottom: "var(--space-2)",
                   }}
                 >
-                  Никнейм / Имя
+                  {t.auth.nicknameLabel}
                 </label>
                 <div style={{ position: "relative" }}>
                   <div
@@ -391,7 +388,7 @@ export function Login() {
                   </div>
                   <input
                     type="text"
-                    placeholder="Введите ваше имя или никнейм"
+                    placeholder={t.auth.nicknamePlaceholder}
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
                     required
@@ -429,7 +426,7 @@ export function Login() {
                   marginBottom: "var(--space-2)",
                 }}
               >
-                Пароль
+                {t.auth.passwordLabel}
               </label>
               <div style={{ position: "relative" }}>
                 <div
@@ -502,7 +499,7 @@ export function Login() {
                     marginBottom: "var(--space-2)",
                   }}
                 >
-                  Подтвердите пароль
+                  {t.auth.confirmPasswordLabel}
                 </label>
                 <div style={{ position: "relative" }}>
                   <div
@@ -571,10 +568,10 @@ export function Login() {
               }}
             >
               {isLoading
-                ? "Загрузка..."
+                ? t.auth.loadingBtn
                 : mode === "login"
-                  ? "Войти"
-                  : "Создать аккаунт"}
+                  ? t.auth.loginBtn
+                  : t.auth.registerBtn}
               {!isLoading && <ArrowRight size={16} />}
             </button>
           </form>
@@ -588,7 +585,7 @@ export function Login() {
               color: "var(--text-muted)",
             }}
           >
-            {mode === "login" ? "Нет аккаунта?" : "Уже есть аккаунт?"}{" "}
+            {mode === "login" ? t.auth.noAccountPrompt : t.auth.hasAccountPrompt}{" "}
             <button
               onClick={switchMode}
               style={{
@@ -602,7 +599,7 @@ export function Login() {
                 textDecoration: "none",
               }}
             >
-              {mode === "login" ? "Зарегистрироваться" : "Войти"}
+              {mode === "login" ? t.auth.switchToRegister : t.auth.switchToLogin}
             </button>
           </div>
         </div>

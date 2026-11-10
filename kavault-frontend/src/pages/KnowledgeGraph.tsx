@@ -87,6 +87,9 @@ const getTopic = (r: Record<string, any>): string => {
   return "General";
 };
 
+const translateTopic = (raw: string, categories: Record<string, string>): string =>
+  categories[raw] || raw;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getLabel = (r: Record<string, any>): string =>
   String(r.title ?? r.name ?? r.url ?? "Untitled");
@@ -212,6 +215,8 @@ function buildGraph(items: RawItem[], japanese: number): Graph {
 
 export function KnowledgeGraph() {
   const { t } = useApp();
+  const tRef = useRef(t);
+  tRef.current = t;
   const [graph, setGraph] = useState<Graph | null>(null);
   const [tooltip, setTooltip] = useState<TooltipInfo | null>(null);
 
@@ -714,13 +719,17 @@ export function KnowledgeGraph() {
         ctx.fillStyle = textPrimary;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(topicNames[i], x[i], y[i]);
+        ctx.fillText(
+          translateTopic(topicNames[i], tRef.current.graph.categories),
+          x[i],
+          y[i],
+        );
 
         // Число под кругом
         const count = childEnd[i] - childStart[i];
         ctx.font = `500 ${Math.max(10, 11 / zoom)}px Inter, sans-serif`;
         ctx.fillStyle = textSecondary;
-        ctx.fillText(`${count} items`, x[i], y[i] + rad + 14 / zoom);
+        ctx.fillText(`(${count})`, x[i], y[i] + rad + 14 / zoom);
       }
 
       // 7. Центральный узел (KAVAULT Vault Core)
@@ -854,13 +863,14 @@ export function KnowledgeGraph() {
 
           if (hit >= 0) {
             const sc = toScreen(x[hit], y[hit]);
+            const tg = tRef.current.graph;
             if (hit === 0) {
               setTooltip({
                 x: sc.x,
                 y: sc.y - radius[0] * zoom - 14,
-                title: "KAVAULT Core",
-                subtitle: "Центральное хранилище знаний",
-                category: "Vault",
+                title: tg.coreTitle,
+                subtitle: tg.coreSubtitle,
+                category: tg.vault,
                 badgeColor: accent,
               });
             } else if (kind[hit] === TOPIC) {
@@ -868,9 +878,9 @@ export function KnowledgeGraph() {
               setTooltip({
                 x: sc.x,
                 y: sc.y - radius[hit] * zoom - 14,
-                title: topicNames[hit],
-                subtitle: `${count} связанных материалов`,
-                category: "Topic",
+                title: translateTopic(topicNames[hit], tg.categories),
+                subtitle: `${count} ${tg.topicRelatedSuffix}`,
+                category: tg.topicCategory,
                 badgeColor: topicColors[hit].main,
               });
             } else {
@@ -878,8 +888,8 @@ export function KnowledgeGraph() {
                 x: sc.x,
                 y: sc.y - RES_R * zoom - 14,
                 title: labels[hit],
-                subtitle: urls[hit] ? "Нажмите, чтобы открыть ссылку" : undefined,
-                category: topicNames[hit],
+                subtitle: urls[hit] ? tg.clickToOpenUrl : undefined,
+                category: translateTopic(topicNames[hit], tg.categories),
                 badgeColor: topicColors[parent[hit]].main,
                 url: urls[hit],
               });
@@ -1061,7 +1071,7 @@ export function KnowledgeGraph() {
           <button
             onClick={() => cameraRef.current.zoomBy(1.25)}
             style={controlBtnStyle}
-            title="Приблизить (+)"
+            title={t.graph.zoomIn}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = "var(--surface-raised)";
               e.currentTarget.style.color = "var(--text-primary)";
@@ -1076,7 +1086,7 @@ export function KnowledgeGraph() {
           <button
             onClick={() => cameraRef.current.zoomBy(0.8)}
             style={controlBtnStyle}
-            title="Отдалить (−)"
+            title={t.graph.zoomOut}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = "var(--surface-raised)";
               e.currentTarget.style.color = "var(--text-primary)";
@@ -1091,7 +1101,7 @@ export function KnowledgeGraph() {
           <button
             onClick={() => cameraRef.current.fit()}
             style={controlBtnStyle}
-            title="Центрировать весь граф"
+            title={t.graph.fitGraph}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = "var(--surface-raised)";
               e.currentTarget.style.color = "var(--text-primary)";
@@ -1113,12 +1123,12 @@ export function KnowledgeGraph() {
               left: tooltip.x,
               top: tooltip.y,
               transform: "translate(-50%, -100%)",
-              backgroundColor: "rgba(24, 24, 27, 0.95)",
+              backgroundColor: "var(--tooltip-bg)",
               backdropFilter: "blur(8px)",
               border: "1px solid var(--border)",
               borderRadius: "var(--radius-md)",
               padding: "8px 12px",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
               pointerEvents: "none",
               zIndex: 20,
               maxWidth: "280px",
@@ -1192,7 +1202,7 @@ export function KnowledgeGraph() {
             display: "flex",
             alignItems: "center",
             gap: "var(--space-4)",
-            backgroundColor: "rgba(24, 24, 27, 0.85)",
+            backgroundColor: "var(--tooltip-bg)",
             backdropFilter: "blur(6px)",
             padding: "8px 14px",
             borderRadius: "var(--radius-md)",

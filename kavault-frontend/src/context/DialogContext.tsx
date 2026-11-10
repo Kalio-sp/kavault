@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { useApp } from "./AppContext";
 
 export type DialogVariant = "danger" | "warning" | "info" | "success";
 
@@ -68,6 +69,7 @@ export const alertModal = (
 };
 
 export function DialogProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useApp();
   const [dialogState, setDialogState] = useState<DialogState>({
     isOpen: false,
     type: "confirm",
@@ -79,19 +81,22 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
 
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const confirm = useCallback((options: DialogOptions): Promise<boolean> => {
-    return new Promise((resolve) => {
-      setDialogState({
-        ...options,
-        isOpen: true,
-        type: "confirm",
-        variant: options.variant || "info",
-        confirmText: options.confirmText || "Подтвердить",
-        cancelText: options.cancelText || "Отмена",
-        resolve,
+  const confirm = useCallback(
+    (options: DialogOptions): Promise<boolean> => {
+      return new Promise((resolve) => {
+        setDialogState({
+          ...options,
+          isOpen: true,
+          type: "confirm",
+          variant: options.variant || "info",
+          confirmText: options.confirmText || t.common.confirm,
+          cancelText: options.cancelText || t.common.cancel,
+          resolve,
+        });
       });
-    });
-  }, []);
+    },
+    [t.common.confirm, t.common.cancel],
+  );
 
   const alert = useCallback(
     (options: Omit<DialogOptions, "cancelText">): Promise<void> => {
@@ -101,12 +106,12 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
           isOpen: true,
           type: "alert",
           variant: options.variant || "info",
-          confirmText: options.confirmText || "Понятно",
+          confirmText: options.confirmText || t.common.ok,
           resolve: () => resolve(),
         });
       });
     },
-    [],
+    [t.common.ok],
   );
 
   useEffect(() => {
@@ -220,7 +225,7 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(9, 9, 11, 0.8)",
+            backgroundColor: "var(--overlay-bg)",
             backdropFilter: "blur(10px)",
             WebkitBackdropFilter: "blur(10px)",
             display: "flex",

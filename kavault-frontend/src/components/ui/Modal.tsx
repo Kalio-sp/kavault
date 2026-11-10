@@ -49,7 +49,7 @@ export function Modal({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: "rgba(9, 9, 11, 0.75)",
+        backgroundColor: "var(--overlay-bg)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
         display: "flex",

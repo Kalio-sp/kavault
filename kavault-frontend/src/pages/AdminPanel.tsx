@@ -18,6 +18,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { api } from "../api/axios";
+import { useApp } from "../context/AppContext";
 import { confirmModal, alertModal } from "../context/DialogContext";
 
 interface GlobalStats {
@@ -47,6 +48,7 @@ interface UserRow {
 }
 
 export function AdminPanel() {
+  const { t, locale } = useApp();
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,7 +74,7 @@ export function AdminPanel() {
       setUsers(usersResp.data);
     } catch (e: any) {
       console.error(e);
-      showStatus(e.response?.data?.message || "Ошибка загрузки данных админки", "error");
+      showStatus(e.response?.data?.message || t.admin.toasts.loadErr, "error");
     } finally {
       setLoading(false);
     }
@@ -85,19 +87,18 @@ export function AdminPanel() {
   const handleDeleteUser = async (user: UserRow) => {
     if (user.isCreator) {
       await alertModal({
-        title: "Действие заблокировано",
-        message:
-          "Нельзя удалить аккаунт Создателя платформы! Он защищён на уровне ядра KAVAULT.",
+        title: t.admin.blockedTitle,
+        message: t.admin.blockedMsg,
         variant: "warning",
       });
       return;
     }
 
     const confirmed = await confirmModal({
-      title: "Удалить пользователя?",
-      message: `Вы действительно хотите удалить пользователя «${user.email}» и все его данные безвозвратно?`,
-      confirmText: "Удалить аккаунт",
-      cancelText: "Отмена",
+      title: t.admin.deleteConfirmTitle,
+      message: `${t.admin.deleteConfirmMsgPrefix} «${user.email}»${t.admin.deleteConfirmMsgSuffix}`,
+      confirmText: t.admin.deleteConfirmBtn,
+      cancelText: t.common.cancel,
       variant: "danger",
     });
 
@@ -105,37 +106,36 @@ export function AdminPanel() {
 
     try {
       await api.delete(`/admin/users/${user.id}`);
-      showStatus(`Пользователь ${user.email} успешно удален`);
+      showStatus(`${t.admin.toasts.userDeleted}: ${user.email}`);
       loadData();
     } catch (e: any) {
-      showStatus(e.response?.data?.message || "Ошибка удаления пользователя", "error");
+      showStatus(e.response?.data?.message || t.admin.toasts.deleteErr, "error");
     }
   };
 
   const handleSeedDemo = async () => {
     const confirmed = await confirmModal({
-      title: "Создать демонстрационные данные?",
-      message:
-        "В базу данных будут добавлены готовые материалы по веб-разработке и начальные карточки японского языка.",
-      confirmText: "Сгенерировать",
-      cancelText: "Отмена",
+      title: t.admin.seedConfirmTitle,
+      message: t.admin.seedConfirmMsg,
+      confirmText: t.admin.seedConfirmBtn,
+      cancelText: t.common.cancel,
       variant: "info",
     });
     if (!confirmed) return;
 
     try {
-      showStatus("Генерация демонстрационных материалов...", "info");
+      showStatus(t.admin.toasts.seeding, "info");
       const resp = await api.post("/admin/seed-demo");
-      showStatus(resp.data.message || "Демо-контент успешно сгенерирован!");
+      showStatus(resp.data.message || t.admin.toasts.seedDone);
       loadData();
     } catch (e: any) {
-      showStatus(e.response?.data?.message || "Ошибка генерации демо-контента", "error");
+      showStatus(e.response?.data?.message || t.admin.toasts.seedErr, "error");
     }
   };
 
   const handleExportAll = async () => {
     try {
-      showStatus("Формирование полного системного дампа...", "info");
+      showStatus(t.admin.toasts.exporting, "info");
       const resp = await api.get("/admin/export-all");
       const dataStr =
         "data:text/json;charset=utf-8," +
@@ -147,9 +147,9 @@ export function AdminPanel() {
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
-      showStatus("Полный системный дамп успешно скачан!");
+      showStatus(t.admin.toasts.exportDone);
     } catch {
-      showStatus("Не удалось выгрузить системный дамп", "error");
+      showStatus(t.admin.toasts.exportErr, "error");
     }
   };
 
@@ -172,7 +172,7 @@ export function AdminPanel() {
         <div
           style={{
             padding: "12px 18px",
-            backgroundColor: "rgba(24, 24, 27, 0.95)",
+            backgroundColor: "var(--tooltip-bg)",
             border: `1px solid ${
               statusMessage.type === "error"
                 ? "var(--error)"
@@ -186,7 +186,7 @@ export function AdminPanel() {
             display: "flex",
             alignItems: "center",
             gap: "10px",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
           }}
         >
           {statusMessage.type === "error" ? (
@@ -203,7 +203,7 @@ export function AdminPanel() {
         style={{
           padding: "var(--space-6)",
           background:
-            "linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(24, 24, 27, 0.9) 60%)",
+            "linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, var(--surface) 60%)",
           border: "1px solid rgba(245, 158, 11, 0.35)",
           display: "flex",
           justifyContent: "space-between",
@@ -240,7 +240,7 @@ export function AdminPanel() {
                   color: "var(--text-primary)",
                 }}
               >
-                Панель управления Создателя
+                {t.admin.title}
               </h2>
               <span
                 style={{
@@ -252,21 +252,21 @@ export function AdminPanel() {
                   color: "#000",
                 }}
               >
-                SUPERADMIN
+                {t.admin.superadminBadge}
               </span>
             </div>
             <p style={{ color: "var(--text-secondary)", margin: "4px 0 0 0", fontSize: "14px" }}>
-              Авторизован как <strong>zerkalovandrey@kavoult.dev</strong> · Полный доступ к инфраструктуре
+              {t.admin.authorizedAsPrefix} <strong>zerkalovandrey@kavoult.dev</strong> {t.admin.authorizedAsSuffix}
             </p>
           </div>
         </div>
 
         <div style={{ display: "flex", gap: "8px" }}>
           <Button variant="secondary" onClick={loadData} style={{ gap: "6px" }}>
-            <RotateCw size={14} /> Обновить
+            <RotateCw size={14} /> {t.admin.refreshBtn}
           </Button>
           <Button onClick={handleSeedDemo} style={{ gap: "6px", backgroundColor: "#f59e0b", color: "#000", border: "none" }}>
-            <Sparkles size={14} /> Сгенерировать демо-контент
+            <Sparkles size={14} /> {t.admin.seedDemoBtn}
           </Button>
         </div>
       </Card>
@@ -281,31 +281,31 @@ export function AdminPanel() {
       >
         <Card style={{ padding: "var(--space-5)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-secondary)", fontSize: "13px", marginBottom: "8px" }}>
-            <Users size={16} color="var(--accent)" /> Всего пользователей
+            <Users size={16} color="var(--accent)" /> {t.admin.totalUsers}
           </div>
           <div style={{ fontSize: "32px", fontWeight: 700, color: "var(--text-primary)" }}>
             {stats?.totalUsers ?? "..."}
           </div>
           <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
-            Зарегистрировано в базе данных
+            {t.admin.registeredInDb}
           </div>
         </Card>
 
         <Card style={{ padding: "var(--space-5)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-secondary)", fontSize: "13px", marginBottom: "8px" }}>
-            <Database size={16} color="#10b981" /> Объектов в хранилище
+            <Database size={16} color="#10b981" /> {t.admin.vaultObjects}
           </div>
           <div style={{ fontSize: "32px", fontWeight: 700, color: "var(--text-primary)" }}>
             {(stats?.totalResources ?? 0) + (stats?.totalCards ?? 0)}
           </div>
           <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
-            {stats?.totalResources ?? 0} материалов, {stats?.totalCards ?? 0} карточек
+            {stats?.totalResources ?? 0} {t.admin.materialsSuffix}, {stats?.totalCards ?? 0} {t.admin.cardsSuffix}
           </div>
         </Card>
 
         <Card style={{ padding: "var(--space-5)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-secondary)", fontSize: "13px", marginBottom: "8px" }}>
-            <Cpu size={16} color="#f59e0b" /> Статус сервера
+            <Cpu size={16} color="#f59e0b" /> {t.admin.serverStatus}
           </div>
           <div style={{ fontSize: "28px", fontWeight: 700, color: "var(--success)" }}>
             {stats?.system.status ?? "ONLINE"}
@@ -319,14 +319,14 @@ export function AdminPanel() {
       {/* Быстрые команды Создателя (Creator Tools) */}
       <Card style={{ padding: "var(--space-5)" }}>
         <h3 style={{ fontSize: "16px", fontWeight: 600, margin: "0 0 12px 0" }}>
-          Инструменты Создателя (God Mode Tools)
+          {t.admin.creatorToolsTitle}
         </h3>
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <Button variant="secondary" onClick={handleExportAll} style={{ gap: "8px" }}>
-            <Download size={16} /> Полный дамп платформы (JSON)
+            <Download size={16} /> {t.admin.exportAllBtn}
           </Button>
           <Button variant="secondary" onClick={handleSeedDemo} style={{ gap: "8px" }}>
-            <Sparkles size={16} /> Добавить демо-набор карточек и статей
+            <Sparkles size={16} /> {t.admin.seedDemoPackBtn}
           </Button>
         </div>
       </Card>
@@ -345,17 +345,17 @@ export function AdminPanel() {
         >
           <div>
             <h3 style={{ margin: "0 0 4px 0", fontSize: "17px", fontWeight: 600 }}>
-              Реестр пользователей системы ({users.length})
+              {t.admin.usersRegistryTitle} ({users.length})
             </h3>
             <p style={{ margin: 0, fontSize: "13px", color: "var(--text-muted)" }}>
-              Управление зарегистрированными аккаунтами
+              {t.admin.manageAccountsDesc}
             </p>
           </div>
 
           <div style={{ width: "260px" }}>
             <Input
               icon={<Search size={15} />}
-              placeholder="Поиск по email..."
+              placeholder={t.admin.searchEmailPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -364,7 +364,7 @@ export function AdminPanel() {
 
         {loading ? (
           <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>
-            Загрузка списка пользователей...
+            {t.admin.loadingUsers}
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
@@ -385,12 +385,12 @@ export function AdminPanel() {
                     textTransform: "uppercase",
                   }}
                 >
-                  <th style={{ padding: "12px 14px" }}>Email</th>
-                  <th style={{ padding: "12px 14px" }}>Роль</th>
-                  <th style={{ padding: "12px 14px" }}>Дата регистрации</th>
-                  <th style={{ padding: "12px 14px" }}>Материалы</th>
-                  <th style={{ padding: "12px 14px" }}>Слова</th>
-                  <th style={{ padding: "12px 14px", textAlign: "right" }}>Действия</th>
+                  <th style={{ padding: "12px 14px" }}>{t.admin.cols.email}</th>
+                  <th style={{ padding: "12px 14px" }}>{t.admin.cols.role}</th>
+                  <th style={{ padding: "12px 14px" }}>{t.admin.cols.registered}</th>
+                  <th style={{ padding: "12px 14px" }}>{t.admin.cols.resources}</th>
+                  <th style={{ padding: "12px 14px" }}>{t.admin.cols.words}</th>
+                  <th style={{ padding: "12px 14px", textAlign: "right" }}>{t.admin.cols.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -434,7 +434,7 @@ export function AdminPanel() {
                       )}
                     </td>
                     <td style={{ padding: "12px 14px", color: "var(--text-muted)", fontSize: "13px" }}>
-                      {new Date(u.createdAt).toLocaleDateString(undefined, {
+                      {new Date(u.createdAt).toLocaleDateString(locale, {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
@@ -453,14 +453,14 @@ export function AdminPanel() {
                             gap: "4px",
                           }}
                         >
-                          <ShieldCheck size={14} color="#f59e0b" /> Защищён
+                          <ShieldCheck size={14} color="#f59e0b" /> {t.admin.protectedLabel}
                         </span>
                       ) : (
                         <Button
                           variant="secondary"
                           onClick={() => handleDeleteUser(u)}
                           style={{ padding: "4px 8px", color: "var(--error)" }}
-                          title="Удалить пользователя"
+                          title={t.admin.deleteUserTitleAttr}
                         >
                           <Trash2 size={14} />
                         </Button>

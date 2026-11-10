@@ -9,40 +9,38 @@ import {
   Award,
 } from "lucide-react";
 import { useAchievements } from "../context/AchievementContext";
-import { CATEGORY_LABELS } from "../data/achievements";
+import { useApp } from "../context/AppContext";
+import { CATEGORY_LABELS_BY_LANG } from "../data/achievements";
 import type {
   AchievementCategory,
   AchievementRarity,
 } from "../data/achievements";
 
-const RARITY_COLORS: Record<AchievementRarity, { border: string; bg: string; text: string; label: string }> = {
+const RARITY_STYLES: Record<AchievementRarity, { border: string; bg: string; text: string }> = {
   common: {
     border: "rgba(148, 163, 184, 0.3)",
     bg: "rgba(148, 163, 184, 0.1)",
-    text: "#94a3b8",
-    label: "Обычное",
+    text: "#64748b",
   },
   rare: {
     border: "rgba(59, 130, 246, 0.4)",
     bg: "rgba(59, 130, 246, 0.1)",
-    text: "#60a5fa",
-    label: "Редкое",
+    text: "#3b82f6",
   },
   epic: {
     border: "rgba(168, 85, 247, 0.4)",
     bg: "rgba(168, 85, 247, 0.1)",
-    text: "#c084fc",
-    label: "Эпическое",
+    text: "#a855f7",
   },
   legendary: {
     border: "rgba(234, 179, 8, 0.5)",
     bg: "rgba(234, 179, 8, 0.12)",
-    text: "#facc15",
-    label: "Легендарное",
+    text: "#eab308",
   },
 };
 
 export function AchievementsModal() {
+  const { language, t } = useApp();
   const {
     achievements,
     unlockedCount,
@@ -53,6 +51,8 @@ export function AchievementsModal() {
     isModalOpen,
     closeModal,
   } = useAchievements();
+
+  const categoryLabels = CATEGORY_LABELS_BY_LANG[language];
 
   const [selectedCategory, setSelectedCategory] = useState<AchievementCategory>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -79,11 +79,11 @@ export function AchievementsModal() {
         !q ||
         ach.title.toLowerCase().includes(q) ||
         ach.description.toLowerCase().includes(q) ||
-        (ach.isSecret && !ach.unlocked && "секрет".includes(q));
+        (ach.isSecret && !ach.unlocked && t.achievements.secretKeyword.includes(q));
 
       return matchesCategory && matchesSearch;
     });
-  }, [achievements, selectedCategory, searchQuery]);
+  }, [achievements, selectedCategory, searchQuery, t.achievements.secretKeyword]);
 
   const percent = Math.round((unlockedCount / totalCount) * 100) || 0;
 
@@ -144,7 +144,7 @@ export function AchievementsModal() {
                       letterSpacing: "-0.02em",
                     }}
                   >
-                    Зал Достижений
+                    {t.achievements.modalTitle}
                   </h2>
                   <div
                     style={{
@@ -157,7 +157,7 @@ export function AchievementsModal() {
                     }}
                   >
                     <Award size={14} color="#eab308" />
-                    Ранг:{" "}
+                    {t.achievements.rankLabel}{" "}
                     <span style={{ color: "#eab308", fontWeight: 700 }}>
                       {rankTitle}
                     </span>
@@ -184,7 +184,7 @@ export function AchievementsModal() {
                 }}
               >
                 <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>
-                  Очки
+                  {t.achievements.pointsLabel}
                 </div>
                 <div style={{ fontSize: "18px", fontWeight: 800, color: "#eab308" }}>
                   {earnedPoints}{" "}
@@ -204,7 +204,7 @@ export function AchievementsModal() {
                 }}
               >
                 <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>
-                  Прогресс
+                  {t.achievements.progressLabel}
                 </div>
                 <div style={{ fontSize: "18px", fontWeight: 800, color: "var(--text-primary)" }}>
                   {unlockedCount} / {totalCount}
@@ -225,7 +225,7 @@ export function AchievementsModal() {
                 fontWeight: 600,
               }}
             >
-              <span>Разблокировано</span>
+              <span>{t.achievements.unlockedLabel}</span>
               <span>{percent}%</span>
             </div>
             <div
@@ -272,7 +272,7 @@ export function AchievementsModal() {
             />
             <input
               type="text"
-              placeholder="Поиск по достижениям..."
+              placeholder={t.achievements.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -326,12 +326,12 @@ export function AchievementsModal() {
                   }}
                 >
                   {cat === "secret" && <Sparkles size={13} color="#eab308" />}
-                  {CATEGORY_LABELS[cat]}
+                  {categoryLabels[cat]}
                   <span
                     style={{
                       fontSize: "11px",
-                      opacity: 0.6,
-                      backgroundColor: "rgba(255,255,255,0.06)",
+                      opacity: 0.75,
+                      backgroundColor: "var(--surface-raised)",
                       padding: "1px 6px",
                       borderRadius: "10px",
                     }}
@@ -358,7 +358,8 @@ export function AchievementsModal() {
           {filteredAchievements.map((ach) => {
             const isUnlocked = ach.unlocked;
             const isSecret = ach.isSecret;
-            const rarity = RARITY_COLORS[ach.rarity];
+            const rarity = RARITY_STYLES[ach.rarity];
+            const rarityLabel = t.achievements.rarityLabels[ach.rarity];
 
             // Секретная ачивка, которая ЕЩЁ НЕ открыта
             if (isSecret && !isUnlocked) {
@@ -366,8 +367,8 @@ export function AchievementsModal() {
                 <div
                   key={ach.id}
                   style={{
-                    backgroundColor: "rgba(20, 16, 30, 0.6)",
-                    border: "1px dashed rgba(168, 85, 247, 0.4)",
+                    backgroundColor: "rgba(168, 85, 247, 0.06)",
+                    border: "1px dashed rgba(168, 85, 247, 0.45)",
                     borderRadius: "14px",
                     padding: "16px",
                     display: "flex",
@@ -382,7 +383,7 @@ export function AchievementsModal() {
                         width: "44px",
                         height: "44px",
                         borderRadius: "12px",
-                        backgroundColor: "rgba(168, 85, 247, 0.1)",
+                        backgroundColor: "rgba(168, 85, 247, 0.12)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -397,22 +398,22 @@ export function AchievementsModal() {
                         style={{
                           fontSize: "14px",
                           fontWeight: 700,
-                          color: "#c084fc",
+                          color: "#a855f7",
                           display: "flex",
                           alignItems: "center",
                           gap: "6px",
                         }}
                       >
-                        <Sparkles size={14} /> Тайное Достижение
+                        <Sparkles size={14} /> {t.achievements.secretTitle}
                       </div>
                       <div
                         style={{
                           fontSize: "11px",
-                          color: "rgba(255, 255, 255, 0.4)",
+                          color: "var(--text-muted)",
                           marginTop: "2px",
                         }}
                       >
-                        Скрытое испытание
+                        {t.achievements.secretSubtitle}
                       </div>
                     </div>
                   </div>
@@ -420,12 +421,12 @@ export function AchievementsModal() {
                   <div
                     style={{
                       fontSize: "12px",
-                      color: "rgba(255, 255, 255, 0.5)",
+                      color: "var(--text-secondary)",
                       fontStyle: "italic",
                       lineHeight: 1.4,
                     }}
                   >
-                    «{ach.secretHint || "Условие скрыто в глубинах KAVAULT..."}»
+                    «{ach.secretHint || t.achievements.secretDefaultHint}»
                   </div>
 
                   <div
@@ -435,7 +436,7 @@ export function AchievementsModal() {
                       justifyContent: "space-between",
                       alignItems: "center",
                       paddingTop: "6px",
-                      borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+                      borderTop: "1px solid var(--border)",
                     }}
                   >
                     <span
@@ -449,7 +450,7 @@ export function AchievementsModal() {
                         borderRadius: "6px",
                       }}
                     >
-                      Секретно
+                      {t.achievements.secretBadge}
                     </span>
                     <span style={{ fontSize: "12px", fontWeight: 700, color: "#eab308" }}>
                       +{ach.points} XP
@@ -466,14 +467,14 @@ export function AchievementsModal() {
                 style={{
                   backgroundColor: isUnlocked
                     ? isSecret
-                      ? "rgba(35, 25, 12, 0.4)"
+                      ? "rgba(234, 179, 8, 0.08)"
                       : "var(--surface)"
-                    : "rgba(255, 255, 255, 0.02)",
+                    : "var(--surface-raised)",
                   border: isUnlocked
                     ? isSecret
                       ? "1px solid #eab308"
                       : "1px solid var(--border)"
-                    : "1px solid rgba(255, 255, 255, 0.05)",
+                    : "1px solid var(--border)",
                   borderRadius: "14px",
                   padding: "16px",
                   display: "flex",
@@ -515,7 +516,7 @@ export function AchievementsModal() {
                         fontWeight: 700,
                         color: isUnlocked
                           ? isSecret
-                            ? "#fbbf24"
+                            ? "#d97706"
                             : "var(--text-primary)"
                           : "var(--text-muted)",
                         display: "flex",
@@ -539,7 +540,7 @@ export function AchievementsModal() {
                         marginTop: "2px",
                       }}
                     >
-                      {isSecret ? "Легендарное (Секретное)" : rarity.label}
+                      {isSecret ? t.achievements.rarityLabels.secretLegendary : rarityLabel}
                     </div>
                   </div>
                 </div>
@@ -558,7 +559,7 @@ export function AchievementsModal() {
                       style={{
                         marginTop: "6px",
                         fontSize: "11px",
-                        color: "#fbbf24",
+                        color: "#d97706",
                         fontWeight: 500,
                       }}
                     >
@@ -585,7 +586,7 @@ export function AchievementsModal() {
                       fontWeight: 500,
                     }}
                   >
-                    {isUnlocked ? "Выполнено" : "Не открыто"}
+                    {isUnlocked ? t.achievements.statusDone : t.achievements.statusLocked}
                   </span>
                   <span
                     style={{

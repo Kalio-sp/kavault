@@ -51,10 +51,8 @@ const getCellBg = (count: number) => {
 
 const LEGEND_LEVELS = [0, 1, 3, 5, 8];
 
-const WEEK_DAYS = ["Пн", "", "Ср", "", "Пт", "", ""];
-
 export function LearningTracker() {
-  const { t } = useApp();
+  const { t, locale } = useApp();
   const navigate = useNavigate();
 
   const goalResources = useMemo(
@@ -195,7 +193,7 @@ export function LearningTracker() {
         prevMonth = d.getMonth();
         monthLabels.push({
           col: w,
-          label: d.toLocaleDateString(undefined, { month: "short" }),
+          label: d.toLocaleDateString(locale, { month: "short" }),
         });
       }
     }
@@ -249,53 +247,53 @@ export function LearningTracker() {
       weeklyStats: { resources: recentRes, cards: recentCards },
       todayCount,
     };
-  }, [resources, cards, weeksCount]);
+  }, [resources, cards, weeksCount, locale]);
 
   /* Список достижений (Gamified Milestones) */
   const achievements = useMemo(() => {
     return [
       {
         id: "first_step",
-        title: "Первый шаг",
-        desc: "Сохранить первый материал или слово",
+        title: t.track.milestones.first_step.title,
+        desc: t.track.milestones.first_step.desc,
         icon: Sparkles,
         unlocked: totalContributions >= 1,
         progress: `${Math.min(totalContributions, 1)} / 1`,
       },
       {
         id: "streak_3",
-        title: "На волне",
-        desc: "Учиться 3 дня подряд",
+        title: t.track.milestones.streak_3.title,
+        desc: t.track.milestones.streak_3.desc,
         icon: Flame,
         unlocked: currentStreak >= 3 || longestStreak >= 3,
-        progress: `${Math.min(currentStreak, 3)} / 3 дня`,
+        progress: `${Math.min(currentStreak, 3)} / 3 ${t.track.days}`,
       },
       {
         id: "week_streak",
-        title: "Неделя триумфа",
-        desc: "7 дней непрерывного обучения",
+        title: t.track.milestones.week_streak.title,
+        desc: t.track.milestones.week_streak.desc,
         icon: Trophy,
         unlocked: currentStreak >= 7 || longestStreak >= 7,
-        progress: `${Math.min(currentStreak, 7)} / 7 дней`,
+        progress: `${Math.min(currentStreak, 7)} / 7 ${t.track.days}`,
       },
       {
         id: "words_25",
-        title: "Словарный запас",
-        desc: "Добавить 25 японских карточек",
+        title: t.track.milestones.words_25.title,
+        desc: t.track.milestones.words_25.desc,
         icon: Award,
         unlocked: cards.length >= 25,
         progress: `${cards.length} / 25`,
       },
       {
         id: "collector",
-        title: "Хранитель знаний",
-        desc: "Собрать 15 полезных материалов",
+        title: t.track.milestones.collector.title,
+        desc: t.track.milestones.collector.desc,
         icon: Zap,
         unlocked: resources.length >= 15,
         progress: `${resources.length} / 15`,
       },
     ];
-  }, [totalContributions, currentStreak, longestStreak, cards.length, resources.length]);
+  }, [totalContributions, currentStreak, longestStreak, cards.length, resources.length, t]);
 
   return (
     <div
@@ -334,7 +332,7 @@ export function LearningTracker() {
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <Badge variant="accent">
             <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <Zap size={14} /> {totalContributions} действий всего
+              <Zap size={14} /> {totalContributions} {t.track.totalActionsSuffix}
             </span>
           </Badge>
         </div>
@@ -359,13 +357,13 @@ export function LearningTracker() {
               marginBottom: "var(--space-2)",
             }}
           >
-            <Flame size={16} color="#f59e0b" /> Текущий стрик
+            <Flame size={16} color="#f59e0b" /> {t.track.streak}
           </div>
           <div style={{ fontSize: "32px", fontWeight: 700, color: "var(--text-primary)" }}>
-            {currentStreak} <span style={{ fontSize: "16px", fontWeight: 400 }}>дней</span>
+            {currentStreak} <span style={{ fontSize: "16px", fontWeight: 400 }}>{t.track.days}</span>
           </div>
           <div style={{ fontSize: "12px", color: "#f59e0b", marginTop: "4px" }}>
-            {todayCount > 0 ? "Сегодня активность записана! 🔥" : "Не забудьте повторить слова сегодня"}
+            {todayCount > 0 ? t.track.todayLogged : t.track.todayReminder}
           </div>
         </Card>
 
@@ -380,13 +378,13 @@ export function LearningTracker() {
               marginBottom: "var(--space-2)",
             }}
           >
-            <Trophy size={16} color="var(--accent)" /> Лучший рекорд
+            <Trophy size={16} color="var(--accent)" /> {t.track.bestRecord}
           </div>
           <div style={{ fontSize: "32px", fontWeight: 700, color: "var(--text-primary)" }}>
-            {longestStreak} <span style={{ fontSize: "16px", fontWeight: 400 }}>дней</span>
+            {longestStreak} <span style={{ fontSize: "16px", fontWeight: 400 }}>{t.track.days}</span>
           </div>
           <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
-            Максимальная серия подряд
+            {t.track.bestRecordDesc}
           </div>
         </Card>
 
@@ -401,13 +399,13 @@ export function LearningTracker() {
               marginBottom: "var(--space-2)",
             }}
           >
-            <Calendar size={16} color="var(--success)" /> Действий на этой неделе
+            <Calendar size={16} color="var(--success)" /> {t.track.thisWeekActions}
           </div>
           <div style={{ fontSize: "32px", fontWeight: 700, color: "var(--text-primary)" }}>
             {weeklyStats.resources + weeklyStats.cards}
           </div>
           <div style={{ fontSize: "12px", color: "var(--success)", marginTop: "4px" }}>
-            +{weeklyStats.resources} материалов, +{weeklyStats.cards} повторений
+            +{weeklyStats.resources} {t.track.materialsLabel}, +{weeklyStats.cards} {t.track.reviewsLabel}
           </div>
         </Card>
       </div>
@@ -429,16 +427,16 @@ export function LearningTracker() {
               {t.track.heatmap}
             </h3>
             <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-              ({totalContributions} за всё время)
+              ({totalContributions} {t.track.allTimeSuffix})
             </span>
           </div>
 
           {/* Переключатель диапазона: 3 мес, 6 мес, год */}
           <div style={{ display: "flex", gap: "4px" }}>
             {[
-              { id: "3m", label: "3 мес." },
-              { id: "6m", label: "6 мес." },
-              { id: "1y", label: "Весь год" },
+              { id: "3m", label: t.track.range3m },
+              { id: "6m", label: t.track.range6m },
+              { id: "1y", label: t.track.range1y },
             ].map((r) => (
               <button
                 key={r.id}
@@ -483,7 +481,7 @@ export function LearningTracker() {
                 textAlign: "right",
               }}
             >
-              {WEEK_DAYS.map((day, i) => (
+              {t.track.weekDays.map((day, i) => (
                 <div key={i} style={{ lineHeight: "13px" }}>
                   {day}
                 </div>
@@ -545,7 +543,7 @@ export function LearningTracker() {
                       transition: "transform 0.15s ease",
                       border:
                         cell.count > 0
-                          ? "1px solid rgba(255, 255, 255, 0.08)"
+                          ? "1px solid var(--border)"
                           : "1px solid transparent",
                     }}
                     onMouseOver={(e) => {
@@ -584,7 +582,7 @@ export function LearningTracker() {
                 height: "12px",
                 backgroundColor: getCellBg(lvl),
                 borderRadius: "2px",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
+                border: "1px solid var(--border)",
               }}
             />
           ))}
@@ -599,11 +597,11 @@ export function LearningTracker() {
               left: hoveredCell.x,
               top: hoveredCell.y - 8,
               transform: "translate(-50%, -100%)",
-              backgroundColor: "rgba(24, 24, 27, 0.95)",
+              backgroundColor: "var(--tooltip-bg)",
               border: "1px solid var(--border)",
               borderRadius: "var(--radius-md)",
               padding: "8px 12px",
-              boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.35)",
               pointerEvents: "none",
               zIndex: 1000,
               fontSize: "12px",
@@ -612,7 +610,7 @@ export function LearningTracker() {
             }}
           >
             <div style={{ fontWeight: 600, color: "var(--text-primary)", marginBottom: "2px" }}>
-              {hoveredCell.date.toLocaleDateString(undefined, {
+              {hoveredCell.date.toLocaleDateString(locale, {
                 weekday: "short",
                 year: "numeric",
                 month: "short",
@@ -621,8 +619,8 @@ export function LearningTracker() {
             </div>
             <div style={{ color: hoveredCell.count > 0 ? "var(--accent)" : "var(--text-muted)" }}>
               {hoveredCell.count === 0
-                ? "Нет активности"
-                : `${hoveredCell.count} действий (${hoveredCell.resCount} материалов, ${hoveredCell.cardCount} повторений)`}
+                ? t.track.noActivity
+                : `${hoveredCell.count} ${t.track.actionsLabel} (${hoveredCell.resCount} ${t.track.materialsLabel}, ${hoveredCell.cardCount} ${t.track.reviewsLabel})`}
             </div>
           </div>
         )}
@@ -669,7 +667,7 @@ export function LearningTracker() {
                 padding: 0,
               }}
             >
-              Изменить цели →
+              {t.track.editGoals} →
             </button>
           </div>
 
@@ -774,7 +772,7 @@ export function LearningTracker() {
               fontWeight: 600,
             }}
           >
-            <Trophy size={18} color="var(--accent)" /> Достижения (Milestones)
+            <Trophy size={18} color="var(--accent)" /> {t.track.milestonesTitle}
           </h3>
 
           <div
@@ -839,7 +837,7 @@ export function LearningTracker() {
                   </div>
 
                   <div style={{ fontSize: "12px", fontWeight: 500, color: item.unlocked ? "var(--success)" : "var(--text-muted)" }}>
-                    {item.unlocked ? "Открыто ✓" : item.progress}
+                    {item.unlocked ? t.track.unlockedBadge : item.progress}
                   </div>
                 </div>
               );

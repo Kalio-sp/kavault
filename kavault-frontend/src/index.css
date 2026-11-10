@@ -22,6 +22,11 @@
   --accent-soft: rgba(59, 130, 246, 0.15);
   --success: #10b981;
   --error: #ef4444;
+  --tabbar-bg: rgba(24, 24, 27, 0.94);
+  --tabbar-border: #3f3f46;
+  --tabbar-shadow: 0 -6px 24px rgba(0, 0, 0, 0.45);
+  --overlay-bg: rgba(9, 9, 11, 0.8);
+  --tooltip-bg: rgba(24, 24, 27, 0.95);
 
   /* Отступы и радиусы для UI-кита */
   --space-2: 8px;
@@ -40,17 +45,22 @@
 
 /* 2. СВЕТЛАЯ ТЕМА (Активируется кнопкой из Settings.tsx) */
 [data-theme="light"] {
-  --bg: #fafafa;
+  --bg: #f8fafc;
   --surface: #ffffff;
-  --surface-raised: #f4f4f5;
-  --border: #e4e4e7;
+  --surface-raised: #f1f5f9;
+  --border: #cbd5e1;
   --text-primary: #09090b;
-  --text-secondary: #52525b;
-  --text-muted: #71717a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
   --accent: #2563eb;
-  --accent-soft: rgba(37, 99, 235, 0.1);
+  --accent-soft: rgba(37, 99, 235, 0.12);
   --success: #059669;
   --error: #dc2626;
+  --tabbar-bg: rgba(235, 240, 248, 0.96);
+  --tabbar-border: #cbd5e1;
+  --tabbar-shadow: 0 -6px 24px rgba(15, 23, 42, 0.14);
+  --overlay-bg: rgba(15, 23, 42, 0.45);
+  --tooltip-bg: rgba(255, 255, 255, 0.97);
 }
 
 /* 3. НАСТРОЙКИ BODY И КОРНЯ */

@@ -54,17 +54,17 @@ interface ToastMessage {
 }
 
 const ACCENT_COLORS = [
-  { name: "Electric Blue", value: "#3b82f6" },
-  { name: "Neon Purple", value: "#8b5cf6" },
-  { name: "Emerald Green", value: "#10b981" },
-  { name: "Amber Gold", value: "#f59e0b" },
-  { name: "Rose Pink", value: "#ec4899" },
-  { name: "Cyan Teal", value: "#06b6d4" },
+  { key: "blue" as const, value: "#3b82f6" },
+  { key: "purple" as const, value: "#8b5cf6" },
+  { key: "emerald" as const, value: "#10b981" },
+  { key: "amber" as const, value: "#f59e0b" },
+  { key: "rose" as const, value: "#ec4899" },
+  { key: "cyan" as const, value: "#06b6d4" },
 ];
 
 export function Settings() {
   const navigate = useNavigate();
-  const { theme, setTheme, language, setLanguage, isCreator, activateCreatorMode } = useApp();
+  const { theme, setTheme, language, setLanguage, t, isCreator, activateCreatorMode } = useApp();
   const { evaluateAchievements } = useAchievements();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("appearance");
@@ -134,11 +134,11 @@ export function Settings() {
     if (!trimmed) {
       localStorage.removeItem("kavault_api_url");
       setServerUrl("http://localhost:4000");
-      showToast("Сброшено на дефолтный адрес http://localhost:4000");
+      showToast(`${t.settings.toasts.serverResetDefault} http://localhost:4000`);
       return;
     }
     localStorage.setItem("kavault_api_url", trimmed);
-    showToast(`Сервер сохранён: ${trimmed}`);
+    showToast(`${t.settings.toasts.serverSaved} ${trimmed}`);
   };
 
   const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
@@ -190,7 +190,7 @@ export function Settings() {
     setAccentColor(color);
     document.documentElement.style.setProperty("--accent", color);
     localStorage.setItem("kavault_accent", color);
-    showToast(`Акцентный цвет обновлен на ${color}`);
+    showToast(`${t.settings.toasts.accentUpdated} ${color}`);
   };
 
   /* Сохранение общих настроек */
@@ -208,20 +208,20 @@ export function Settings() {
       userEmail,
     });
 
-    showToast("Настройки успешно сохранены!");
+    showToast(t.settings.toasts.savedGeneral);
   };
 
   /* Активация режима Создателя */
   const handleActivateCreator = () => {
     if (!creatorPass.trim()) {
-      showToast("Введите мастер-пароль Создателя", "error");
+      showToast(t.settings.toasts.creatorPassRequired, "error");
       return;
     }
     if (activateCreatorMode(creatorPass)) {
-      showToast("👑 Режим Создателя успешно активирован! Панель Создателя открыта в меню.");
+      showToast(t.settings.toasts.creatorActivated);
       setCreatorPass("");
     } else {
-      showToast("Неверный мастер-пароль Создателя", "error");
+      showToast(t.settings.toasts.creatorInvalid, "error");
     }
   };
 
@@ -229,15 +229,15 @@ export function Settings() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword) {
-      showToast("Введите текущий пароль", "error");
+      showToast(t.settings.toasts.passCurrentRequired, "error");
       return;
     }
     if (newPassword.length < 6) {
-      showToast("Новый пароль должен быть не менее 6 символов", "error");
+      showToast(t.settings.toasts.passTooShort, "error");
       return;
     }
     if (newPassword !== confirmPassword) {
-      showToast("Новые пароли не совпадают", "error");
+      showToast(t.settings.toasts.passMismatch, "error");
       return;
     }
 
@@ -247,12 +247,12 @@ export function Settings() {
         currentPass: currentPassword,
         newPass: newPassword,
       });
-      showToast("Пароль успешно изменен!");
+      showToast(t.settings.toasts.passUpdated);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: any) {
-      showToast(err.response?.data?.message || "Ошибка смены пароля", "error");
+      showToast(err.response?.data?.message || t.settings.toasts.passError, "error");
     } finally {
       setPasswordLoading(false);
     }
@@ -261,7 +261,7 @@ export function Settings() {
   /* Экспорт данных в JSON */
   const handleExportData = async () => {
     try {
-      showToast("Формирование резервной копии...", "info");
+      showToast(t.settings.toasts.exportStarted, "info");
       const [resResp, japResp] = await Promise.all([
         api.get("/resources"),
         api.get("/japanese"),
@@ -297,10 +297,10 @@ export function Settings() {
       downloadAnchor.click();
       downloadAnchor.remove();
 
-      showToast("Резервная копия успешно скачана!");
+      showToast(t.settings.toasts.exportDone);
     } catch (e) {
       console.error(e);
-      showToast("Не удалось экспортировать данные", "error");
+      showToast(t.settings.toasts.exportError, "error");
     }
   };
 
@@ -310,7 +310,7 @@ export function Settings() {
     if (!file) return;
 
     try {
-      showToast("Чтение файла бэкапа...", "info");
+      showToast(t.settings.toasts.importStarted, "info");
       const text = await file.text();
       const parsed = JSON.parse(text);
 
@@ -353,11 +353,11 @@ export function Settings() {
       }
 
       showToast(
-        `Импорт завершен! Добавлено: ${importedResources} материалов, ${importedCards} карточек.`,
+        `${t.settings.toasts.importDonePrefix} ${importedResources} ${t.settings.toasts.importDoneMid} ${importedCards} ${t.settings.toasts.importDoneSuffix}`,
       );
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch {
-      showToast("Ошибка при чтении или обработке JSON файла", "error");
+      showToast(t.settings.toasts.importError, "error");
     }
   };
 
@@ -370,20 +370,19 @@ export function Settings() {
         await api.post(`/japanese/${card.id}/review`, { isCorrect: false });
       }
       setIsResetSRSModalOpen(false);
-      showToast("Прогресс повторения всех карточек сброшен на уровень 0");
+      showToast(t.settings.toasts.srsResetDone);
     } catch {
-      showToast("Не удалось сбросить прогресс SRS", "error");
+      showToast(t.settings.toasts.srsResetError, "error");
     }
   };
 
   /* Очистка всех учебных материалов без удаления аккаунта */
   const handleClearAllData = async () => {
     const confirmed = await confirmModal({
-      title: "Очистить все материалы аккаунта?",
-      message:
-        "Все статьи, видео и документация Developer Hub, репозитории GitHub и японские карточки будут безвозвратно удалены. Сам ваш аккаунт останется активным. Вы уверены?",
-      confirmText: "Да, очистить всё",
-      cancelText: "Отмена",
+      title: t.settings.clearAllConfirmTitle,
+      message: t.settings.clearAllConfirmMsg,
+      confirmText: t.settings.clearAllConfirmBtn,
+      cancelText: t.common.cancel,
       variant: "danger",
     });
 
@@ -400,16 +399,16 @@ export function Settings() {
         cardsCount: 0,
         totalNotes: 0,
       });
-      showToast("Все материалы и карточки успешно очищены! Стартовые наборы снова доступны.");
+      showToast(t.settings.toasts.clearAllDone);
     } catch {
-      showToast("Не удалось очистить материалы", "error");
+      showToast(t.settings.toasts.clearAllError, "error");
     }
   };
 
   /* Безвозвратное удаление аккаунта */
   const handleDeleteAccount = async () => {
     if (deleteConfirmationInput !== "DELETE") {
-      showToast("Введите DELETE для подтверждения", "error");
+      showToast(t.settings.toasts.deleteTypeError, "error");
       return;
     }
 
@@ -419,7 +418,7 @@ export function Settings() {
       localStorage.clear();
       navigate("/login");
     } catch (e: any) {
-      showToast(e.response?.data?.message || "Ошибка удаления аккаунта", "error");
+      showToast(e.response?.data?.message || t.settings.toasts.deleteError, "error");
     } finally {
       setIsDeleting(false);
     }
@@ -441,7 +440,7 @@ export function Settings() {
         await api.post("/resources/bulk", { items: STARTER_GITHUB_REPOSITORIES });
       }
       markPackClaimed(packType);
-      showToast("Стартовый набор успешно загружен в базу!");
+      showToast(t.settings.toasts.starterLoaded);
       const [resResp, japResp] = await Promise.all([
         api.get("/resources").catch(() => ({ data: [] })),
         api.get("/japanese").catch(() => ({ data: [] })),
@@ -458,7 +457,7 @@ export function Settings() {
       });
       evaluateAchievements();
     } catch (e: any) {
-      showToast(e.response?.data?.message || "Ошибка загрузки набора", "error");
+      showToast(e.response?.data?.message || t.settings.toasts.starterError, "error");
     } finally {
       setImportingStarter(null);
     }
@@ -491,16 +490,16 @@ export function Settings() {
           zIndex: 1000,
         }}
       >
-        {toasts.map((t) => (
+        {toasts.map((toast) => (
           <div
-            key={t.id}
+            key={toast.id}
             style={{
               padding: "10px 16px",
-              backgroundColor: "rgba(24, 24, 27, 0.95)",
+              backgroundColor: "var(--tooltip-bg)",
               border: `1px solid ${
-                t.type === "error"
+                toast.type === "error"
                   ? "var(--error)"
-                  : t.type === "info"
+                  : toast.type === "info"
                     ? "var(--accent)"
                     : "var(--success)"
               }`,
@@ -510,19 +509,19 @@ export function Settings() {
               display: "flex",
               alignItems: "center",
               gap: "10px",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
               backdropFilter: "blur(8px)",
               animation: "fadeIn 0.2s ease",
             }}
           >
-            {t.type === "error" ? (
+            {toast.type === "error" ? (
               <TriangleAlert size={16} color="var(--error)" />
-            ) : t.type === "info" ? (
+            ) : toast.type === "info" ? (
               <Sparkles size={16} color="var(--accent)" />
             ) : (
               <CheckCircle2 size={16} color="var(--success)" />
             )}
-            <span>{t.text}</span>
+            <span>{toast.text}</span>
           </div>
         ))}
       </div>
@@ -546,15 +545,15 @@ export function Settings() {
               color: "var(--text-primary)",
             }}
           >
-            Настройки
+            {t.settings.pageTitle}
           </h2>
           <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "14px" }}>
-            Управление внешним видом, аккаунтом, целями и резервным копированием
+            {t.settings.pageSubtitle}
           </p>
         </div>
 
         <Button onClick={handleSaveGeneral} style={{ gap: "8px" }}>
-          <Save size={16} /> Сохранить изменения
+          <Save size={16} /> {t.settings.saveChanges}
         </Button>
       </div>
 
@@ -569,10 +568,10 @@ export function Settings() {
         }}
       >
         {[
-          { id: "appearance", label: "Внешний вид", icon: Palette },
-          { id: "account", label: "Профиль и Защита", icon: User },
-          { id: "learning", label: "Цели и Обучение", icon: Target },
-          { id: "vault", label: "Данные и Хранилище", icon: Database },
+          { id: "appearance", label: t.settings.tabs.appearance, icon: Palette },
+          { id: "account", label: t.settings.tabs.account, icon: User },
+          { id: "learning", label: t.settings.tabs.learning, icon: Target },
+          { id: "vault", label: t.settings.tabs.vault, icon: Database },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -615,10 +614,10 @@ export function Settings() {
                 fontWeight: 600,
               }}
             >
-              Тема оформления
+              {t.settings.themeCardTitle}
             </h3>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 16px 0" }}>
-              Выберите комфортный стиль для глаз. Переключение происходит мгновенно.
+              {t.settings.themeCardDesc}
             </p>
 
             <div
@@ -646,12 +645,12 @@ export function Settings() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <Moon size={18} color="#60a5fa" />
-                    <span style={{ fontWeight: 600, color: "#f3f5f8" }}>Тёмная (Dark)</span>
+                    <span style={{ fontWeight: 600, color: "#f3f5f8" }}>{t.settings.darkTitle}</span>
                   </div>
                   {theme === "dark" && <CheckCircle2 size={18} color="var(--accent)" />}
                 </div>
                 <div style={{ fontSize: "12px", color: "#a0a7b4" }}>
-                  Минималистичная ночная тема KAVAULT по умолчанию.
+                  {t.settings.darkDesc}
                 </div>
               </div>
 
@@ -673,12 +672,12 @@ export function Settings() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <Sun size={18} color="#f59e0b" />
-                    <span style={{ fontWeight: 600, color: "#09090b" }}>Светлая (Light)</span>
+                    <span style={{ fontWeight: 600, color: "#09090b" }}>{t.settings.lightTitle}</span>
                   </div>
                   {theme === "light" && <CheckCircle2 size={18} color="var(--accent)" />}
                 </div>
                 <div style={{ fontSize: "12px", color: "#52525b" }}>
-                  Высокая контрастность для чтения при ярком свете.
+                  {t.settings.lightDesc}
                 </div>
               </div>
             </div>
@@ -693,10 +692,10 @@ export function Settings() {
                 fontWeight: 600,
               }}
             >
-              Акцентный цвет интерфейса
+              {t.settings.accentCardTitle}
             </h3>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 16px 0" }}>
-              Задает оттенок кнопок, свечения графа, бейджей и прогресс-баров.
+              {t.settings.accentCardDesc}
             </p>
 
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
@@ -733,7 +732,7 @@ export function Settings() {
                         boxShadow: isSelected ? `0 0 8px ${col.value}` : "none",
                       }}
                     />
-                    {col.name}
+                    {t.settings.accentNames[col.key]}
                   </button>
                 );
               })}
@@ -749,10 +748,10 @@ export function Settings() {
                 fontWeight: 600,
               }}
             >
-              Язык системы (Language)
+              {t.settings.langCardTitle}
             </h3>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 16px 0" }}>
-              Интерфейс мгновенно адаптируется на выбранный язык.
+              {t.settings.langCardDesc}
             </p>
 
             <div
@@ -815,7 +814,7 @@ export function Settings() {
                 gap: "8px",
               }}
             >
-              <ShieldCheck size={18} color="var(--accent)" /> Информация об учетной записи
+              <ShieldCheck size={18} color="var(--accent)" /> {t.settings.accountCardTitle}
             </h3>
 
             <div
@@ -847,10 +846,10 @@ export function Settings() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)" }}>
-                  {username || "Пользователь"}
+                  {username || t.settings.userDefault}
                 </div>
                 <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                  {userEmail || "Авторизованная сессия"}
+                  {userEmail || t.settings.authorizedSession}
                 </div>
               </div>
               {isCreator ? (
@@ -871,7 +870,7 @@ export function Settings() {
                   👑 CREATOR
                 </span>
               ) : (
-                <Badge variant="accent">Активен</Badge>
+                <Badge variant="accent">{t.settings.activeBadge}</Badge>
               )}
             </div>
 
@@ -885,12 +884,12 @@ export function Settings() {
                     marginBottom: "6px",
                   }}
                 >
-                  Отображаемое имя (Display Name)
+                  {t.settings.displayNameLabel}
                 </label>
                 <Input
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Ваше имя"
+                  placeholder={t.settings.displayNamePlaceholder}
                 />
               </div>
 
@@ -903,7 +902,7 @@ export function Settings() {
                     marginBottom: "6px",
                   }}
                 >
-                  Email
+                  {t.settings.emailLabel}
                 </label>
                 <Input value={userEmail} disabled style={{ opacity: 0.6 }} />
               </div>
@@ -929,10 +928,10 @@ export function Settings() {
                 color: isCreator ? "#f59e0b" : "var(--text-primary)",
               }}
             >
-              <Crown size={18} color="#f59e0b" /> Режим Создателя (Root Access)
+              <Crown size={18} color="#f59e0b" /> {t.settings.creatorCardTitle}
             </h3>
             <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "0 0 16px 0" }}>
-              Предоставляет полный доступ к глобальной статистике KAVAULT, управлению пользователями и метрикам сервера.
+              {t.settings.creatorCardDesc}
             </p>
 
             {isCreator ? (
@@ -955,10 +954,10 @@ export function Settings() {
                     fontWeight: 600,
                   }}
                 >
-                  <CheckCircle2 size={16} /> Права Создателя активны на этом устройстве
+                  <CheckCircle2 size={16} /> {t.settings.creatorActiveMsg}
                 </div>
                 <Button variant="primary" onClick={() => navigate("/admin")}>
-                  Открыть Панель Создателя →
+                  {t.settings.openCreatorPanelBtn}
                 </Button>
               </div>
             ) : (
@@ -966,13 +965,13 @@ export function Settings() {
                 <div style={{ flex: 1, minWidth: "220px", maxWidth: "340px" }}>
                   <Input
                     type="password"
-                    placeholder="Мастер-пароль Создателя"
+                    placeholder={t.settings.creatorPassPlaceholder}
                     value={creatorPass}
                     onChange={(e) => setCreatorPass(e.target.value)}
                   />
                 </div>
                 <Button variant="secondary" onClick={handleActivateCreator}>
-                  Активировать права
+                  {t.settings.activateRightsBtn}
                 </Button>
               </div>
             )}
@@ -990,7 +989,7 @@ export function Settings() {
                 gap: "8px",
               }}
             >
-              <Lock size={18} color="var(--accent)" /> Изменение пароля
+              <Lock size={18} color="var(--accent)" /> {t.settings.passwordCardTitle}
             </h3>
 
             <form
@@ -1006,7 +1005,7 @@ export function Settings() {
                     marginBottom: "6px",
                   }}
                 >
-                  Текущий пароль
+                  {t.settings.currentPassLabel}
                 </label>
                 <Input
                   type={showPassword ? "text" : "password"}
@@ -1033,11 +1032,11 @@ export function Settings() {
                       marginBottom: "6px",
                     }}
                   >
-                    Новый пароль
+                    {t.settings.newPassLabel}
                   </label>
                   <Input
                     type={showPassword ? "text" : "password"}
-                    placeholder="Минимум 6 символов"
+                    placeholder={t.settings.newPassPlaceholder}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
@@ -1052,7 +1051,7 @@ export function Settings() {
                       marginBottom: "6px",
                     }}
                   >
-                    Подтвердите новый пароль
+                    {t.settings.confirmPassLabel}
                   </label>
                   <Input
                     type={showPassword ? "text" : "password"}
@@ -1087,11 +1086,11 @@ export function Settings() {
                   }}
                 >
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                  {showPassword ? "Скрыть пароли" : "Показать пароли"}
+                  {showPassword ? t.settings.hidePasswords : t.settings.showPasswords}
                 </button>
 
                 <Button type="submit" disabled={passwordLoading}>
-                  {passwordLoading ? "Обновление..." : "Обновить пароль"}
+                  {passwordLoading ? t.settings.updatingPassBtn : t.settings.updatePassBtn}
                 </Button>
               </div>
             </form>
@@ -1108,14 +1107,14 @@ export function Settings() {
           >
             <div>
               <div style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-                Выйти из текущего аккаунта
+                {t.settings.logoutCardTitle}
               </div>
               <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                Токен авторизации будет удален из этого браузера.
+                {t.settings.logoutCardDesc}
               </div>
             </div>
             <Button variant="secondary" onClick={handleLogout} style={{ gap: "6px" }}>
-              <LogOut size={16} /> Выйти
+              <LogOut size={16} /> {t.settings.logoutBtn}
             </Button>
           </Card>
         </div>
@@ -1132,10 +1131,10 @@ export function Settings() {
                 fontWeight: 600,
               }}
             >
-              Недельные цели (Weekly Goals)
+              {t.settings.goalsCardTitle}
             </h3>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 20px 0" }}>
-              Цели отображаются на главной панели и мотивируют держать постоянный темп.
+              {t.settings.goalsCardDesc}
             </p>
 
             <div
@@ -1155,7 +1154,7 @@ export function Settings() {
                     marginBottom: "8px",
                   }}
                 >
-                  Статей / Ресурсов в неделю
+                  {t.settings.weeklyResLabel}
                 </label>
                 <Input
                   type="number"
@@ -1176,7 +1175,7 @@ export function Settings() {
                     marginBottom: "8px",
                   }}
                 >
-                  Японских слов в неделю
+                  {t.settings.weeklyCardsLabel}
                 </label>
                 <Input
                   type="number"
@@ -1197,7 +1196,7 @@ export function Settings() {
                     marginBottom: "8px",
                   }}
                 >
-                  Лимит новых слов в день
+                  {t.settings.dailyLimitLabel}
                 </label>
                 <Input
                   type="number"
@@ -1219,7 +1218,7 @@ export function Settings() {
                 fontWeight: 600,
               }}
             >
-              Параметры сессии
+              {t.settings.sessionCardTitle}
             </h3>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -1244,10 +1243,10 @@ export function Settings() {
                   </div>
                   <div>
                     <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      Звуковые эффекты карточек
+                      {t.settings.soundFxLabel}
                     </div>
                     <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                      Аудио-клик при перевороте и звуки верного ответа.
+                      {t.settings.soundFxDesc}
                     </div>
                   </div>
                 </div>
@@ -1280,10 +1279,10 @@ export function Settings() {
                   </div>
                   <div>
                     <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      Напоминания о повторении (SRS)
+                      {t.settings.notifLabel}
                     </div>
                     <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                      Подсвечивать готовые к повторению слова в навигации.
+                      {t.settings.notifDesc}
                     </div>
                   </div>
                 </div>
@@ -1314,7 +1313,7 @@ export function Settings() {
                 gap: "8px",
               }}
             >
-              <Database size={18} color="var(--accent)" /> Статистика хранилища (Vault Health)
+              <Database size={18} color="var(--accent)" /> {t.settings.vaultStatsTitle}
             </h3>
 
             <div
@@ -1332,7 +1331,7 @@ export function Settings() {
                 }}
               >
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  Материалов в базе
+                  {t.settings.statsResources}
                 </div>
                 <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
                   {vaultStats.resourcesCount}
@@ -1347,7 +1346,7 @@ export function Settings() {
                 }}
               >
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  Японских слов
+                  {t.settings.statsCards}
                 </div>
                 <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
                   {vaultStats.cardsCount}
@@ -1362,7 +1361,7 @@ export function Settings() {
                 }}
               >
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  Заметок и конспектов
+                  {t.settings.statsNotes}
                 </div>
                 <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
                   {vaultStats.totalNotes}
@@ -1380,10 +1379,10 @@ export function Settings() {
                 fontWeight: 600,
               }}
             >
-              Резервное копирование и перенос
+              {t.settings.backupTitle}
             </h3>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 16px 0" }}>
-              Вы полностью владеете своими знаниями. Скачивайте JSON или импортируйте обратно.
+              {t.settings.backupDesc}
             </p>
 
             <div
@@ -1395,7 +1394,7 @@ export function Settings() {
             >
               {/* Экспорт */}
               <Button onClick={handleExportData} style={{ gap: "8px" }}>
-                <Download size={16} /> Экспортировать базу (JSON)
+                <Download size={16} /> {t.settings.exportJsonBtn}
               </Button>
 
               {/* Импорт */}
@@ -1404,7 +1403,7 @@ export function Settings() {
                 onClick={() => fileInputRef.current?.click()}
                 style={{ gap: "8px" }}
               >
-                <Upload size={16} /> Импортировать из JSON
+                <Upload size={16} /> {t.settings.importJsonBtn}
               </Button>
               <input
                 ref={fileInputRef}
@@ -1428,10 +1427,10 @@ export function Settings() {
                 gap: "8px",
               }}
             >
-              <Sparkles size={18} color="var(--accent)" /> Стартовые наборы данных (Starter Packs)
+              <Sparkles size={18} color="var(--accent)" /> {t.settings.starterPacksTitle}
             </h3>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 16px 0" }}>
-              Каждый стартовый набор можно активировать только 1 раз на аккаунт. После получения кнопка набора скрывается.
+              {t.settings.starterPacksDesc}
             </p>
 
             {(() => {
@@ -1457,7 +1456,7 @@ export function Settings() {
                     }}
                   >
                     <CheckCircle2 size={18} />
-                    <span>Все доступные стартовые наборы уже успешно активированы на вашем аккаунте.</span>
+                    <span>{t.settings.starterAllActivated}</span>
                   </div>
                 );
               }
@@ -1478,7 +1477,7 @@ export function Settings() {
                       style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
                     >
                       <span>🌸</span>
-                      <span>{importingStarter === "japanese" ? "Импорт..." : "Японский N5 (36 слов)"}</span>
+                      <span>{importingStarter === "japanese" ? t.settings.loadingText : t.settings.starterJapBtn}</span>
                     </Button>
                   )}
 
@@ -1490,7 +1489,7 @@ export function Settings() {
                       style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
                     >
                       <span>💻</span>
-                      <span>{importingStarter === "developer" ? "Импорт..." : "Dev Hub сниппеты (6 шт)"}</span>
+                      <span>{importingStarter === "developer" ? t.settings.loadingText : t.settings.starterDevBtn}</span>
                     </Button>
                   )}
 
@@ -1502,7 +1501,7 @@ export function Settings() {
                       style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
                     >
                       <span>🐙</span>
-                      <span>{importingStarter === "github" ? "Импорт..." : "GitHub проекты (4 шт)"}</span>
+                      <span>{importingStarter === "github" ? t.settings.loadingText : t.settings.starterGitBtn}</span>
                     </Button>
                   )}
 
@@ -1513,7 +1512,7 @@ export function Settings() {
                       style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
                     >
                       <span>🚀</span>
-                      <span>{importingStarter === "all" ? "Загрузка..." : "Загрузить всё сразу"}</span>
+                      <span>{importingStarter === "all" ? t.settings.loadingText : t.settings.starterAllBtn}</span>
                     </Button>
                   )}
                 </div>
@@ -1533,7 +1532,7 @@ export function Settings() {
                 gap: "8px",
               }}
             >
-              <Smartphone size={18} color="var(--accent)" /> Сервер API (для iOS и ПК)
+              <Smartphone size={18} color="var(--accent)" /> {t.settings.apiServerTitle}
             </h3>
             <p
               style={{
@@ -1543,7 +1542,9 @@ export function Settings() {
                 lineHeight: 1.5,
               }}
             >
-              Для подключения приложения с iPhone укажите локальный IP-адрес вашего компьютера в домашней Wi-Fi сети (например, <code>http://192.168.1.50:4000</code>) или адрес внешнего сервера.
+              {t.settings.apiServerDescPrefix}{" "}
+              <code>http://192.168.1.50:4000</code>
+              {t.settings.apiServerDescSuffix}
             </p>
 
             <div
@@ -1563,7 +1564,7 @@ export function Settings() {
                 />
               </div>
               <Button onClick={handleSaveServerUrl} style={{ gap: "6px" }}>
-                <Save size={16} /> Сохранить адрес
+                <Save size={16} /> {t.settings.saveAddressBtn}
               </Button>
             </div>
           </Card>
@@ -1589,7 +1590,7 @@ export function Settings() {
                 gap: "8px",
               }}
             >
-              <TriangleAlert size={18} /> Опасная зона (Danger Zone)
+              <TriangleAlert size={18} /> {t.settings.dangerZoneTitle}
             </h3>
 
             {/* Сброс прогресса SRS */}
@@ -1604,10 +1605,10 @@ export function Settings() {
             >
               <div>
                 <div style={{ fontWeight: 500, color: "var(--text-primary)" }}>
-                  Сбросить прогресс интервального повторения
+                  {t.settings.resetSrsTitle}
                 </div>
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  Возвращает все японские слова на уровень 0 (слова не удаляются).
+                  {t.settings.resetSrsDesc}
                 </div>
               </div>
               <Button
@@ -1615,7 +1616,7 @@ export function Settings() {
                 onClick={() => setIsResetSRSModalOpen(true)}
                 style={{ gap: "6px" }}
               >
-                <RotateCcw size={14} /> Сбросить прогресс
+                <RotateCcw size={14} /> {t.settings.resetSrsBtn}
               </Button>
             </div>
 
@@ -1631,10 +1632,10 @@ export function Settings() {
             >
               <div>
                 <div style={{ fontWeight: 500, color: "var(--text-primary)" }}>
-                  Очистить все учебные материалы
+                  {t.settings.clearAllTitle}
                 </div>
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  Удаляет все статьи Developer Hub, репозитории GitHub и японские карточки (аккаунт остаётся активным).
+                  {t.settings.clearAllDesc}
                 </div>
               </div>
               <Button
@@ -1648,7 +1649,7 @@ export function Settings() {
                 onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
               >
-                <Trash2 size={14} /> Очистить всё
+                <Trash2 size={14} /> {t.settings.clearAllBtn}
               </Button>
             </div>
 
@@ -1663,10 +1664,10 @@ export function Settings() {
             >
               <div>
                 <div style={{ fontWeight: 500, color: "var(--error)" }}>
-                  Удалить аккаунт и базу знаний навсегда
+                  {t.settings.deleteAccTitle}
                 </div>
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  Безвозвратно удаляет аккаунт, все материалы, карточки и заметки.
+                  {t.settings.deleteAccDesc}
                 </div>
               </div>
               {isCreator ? (
@@ -1681,7 +1682,7 @@ export function Settings() {
                     border: "1px solid rgba(245, 158, 11, 0.2)",
                   }}
                 >
-                  🛡️ Аккаунт Создателя защищён
+                  {t.settings.creatorProtectedBadge}
                 </span>
               ) : (
                 <Button
@@ -1692,7 +1693,7 @@ export function Settings() {
                     border: "none",
                   }}
                 >
-                  Удалить аккаунт
+                  {t.settings.deleteAccBtn}
                 </Button>
               )}
             </div>
@@ -1704,18 +1705,17 @@ export function Settings() {
       <Modal
         isOpen={isResetSRSModalOpen}
         onClose={() => setIsResetSRSModalOpen(false)}
-        title="Сброс прогресса повторения"
+        title={t.settings.resetModalTitle}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: 0 }}>
-            Вы уверены, что хотите сбросить уровни всех японских карточек на 0? Карточки
-            останутся в колоде, но система интервального повторения начнется заново.
+            {t.settings.resetModalDesc}
           </p>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
             <Button variant="secondary" onClick={() => setIsResetSRSModalOpen(false)}>
-              Отмена
+              {t.common.cancel}
             </Button>
-            <Button onClick={handleResetSRS}>Подтвердить сброс</Button>
+            <Button onClick={handleResetSRS}>{t.settings.resetModalConfirm}</Button>
           </div>
         </div>
       </Modal>
@@ -1724,15 +1724,14 @@ export function Settings() {
       <Modal
         isOpen={isDeleteAccountModalOpen}
         onClose={() => setIsDeleteAccountModalOpen(false)}
-        title="Удаление аккаунта KAVAULT"
+        title={t.settings.deleteModalTitle}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <p style={{ color: "var(--error)", fontSize: "14px", margin: 0, fontWeight: 500 }}>
-            ⚠️ Внимание! Это действие необратимо. Вся ваша база знаний, японские карточки и
-            заметки будут стёрты навсегда.
+            {t.settings.deleteModalWarn}
           </p>
           <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: 0 }}>
-            Для подтверждения введите слово <strong>DELETE</strong> ниже:
+            {t.settings.deleteModalPromptPrefix} <strong>DELETE</strong> {t.settings.deleteModalPromptSuffix}
           </p>
           <Input
             value={deleteConfirmationInput}
@@ -1747,7 +1746,7 @@ export function Settings() {
                 setDeleteConfirmationInput("");
               }}
             >
-              Отмена
+              {t.common.cancel}
             </Button>
             <Button
               onClick={handleDeleteAccount}
@@ -1758,7 +1757,7 @@ export function Settings() {
                 border: "none",
               }}
             >
-              {isDeleting ? "Удаление..." : "Удалить навсегда"}
+              {isDeleting ? t.settings.deletingBtn : t.settings.deleteModalBtn}
             </Button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { api } from "../api/axios";
+import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
 import {
   CheckCircle2,
@@ -98,6 +99,7 @@ const playSound = (type: "flip" | "correct" | "wrong" | "victory") => {
 export function ReviewSession() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t } = useApp();
   const { incrementReviewCount, evaluateAchievements } = useAchievements();
 
   // Режим повторения: по умолчанию KANA (для начинающих), либо из URL query (?mode=kanji / ?mode=kana)
@@ -383,7 +385,7 @@ export function ReviewSession() {
   if (loading) {
     return (
       <div style={{ color: "var(--text-secondary)", padding: "var(--space-8)", textAlign: "center" }}>
-        Загрузка сессии повторения...
+        {t.review.loading}
       </div>
     );
   }
@@ -433,15 +435,15 @@ export function ReviewSession() {
 
           <div>
             <h2 style={{ fontSize: "24px", fontWeight: 700, margin: "0 0 6px 0", color: "var(--text-primary)" }}>
-              Сессия завершена!
+              {t.review.sessionDoneTitle}
             </h2>
             <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "14px" }}>
-              Повторение колоды:{" "}
+              {t.review.sessionDeckLabel}{" "}
               {sessionFilter === "KANA"
-                ? "Хирагана и Катакана (для начинающих)"
+                ? t.review.deckKana
                 : sessionFilter === "KANJI"
-                  ? "Слова с Кандзи"
-                  : "Все слова"}
+                  ? t.review.deckKanji
+                  : t.review.deckAll}
             </p>
           </div>
 
@@ -460,7 +462,7 @@ export function ReviewSession() {
                 borderRadius: "var(--radius-md)",
               }}
             >
-              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>Повторено слов</div>
+              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{t.review.reviewedCount}</div>
               <div style={{ fontSize: "28px", fontWeight: 700, color: "var(--text-primary)" }}>
                 {total}
               </div>
@@ -473,7 +475,7 @@ export function ReviewSession() {
                 borderRadius: "var(--radius-md)",
               }}
             >
-              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>Точность</div>
+              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{t.review.accuracy}</div>
               <div
                 style={{
                   fontSize: "28px",
@@ -492,10 +494,10 @@ export function ReviewSession() {
               onClick={() => navigate("/dashboard")}
               style={{ flex: 1, gap: "8px" }}
             >
-              <LayoutDashboard size={16} /> На главную
+              <LayoutDashboard size={16} /> {t.review.backToDash}
             </Button>
             <Button onClick={startPracticeMode} style={{ flex: 1, gap: "8px" }}>
-              <RotateCcw size={16} /> Повторить ещё
+              <RotateCcw size={16} /> {t.review.practiceMore}
             </Button>
           </div>
         </Card>
@@ -534,14 +536,14 @@ export function ReviewSession() {
           <CheckCircle2 size={30} />
         </div>
         <h2 style={{ color: "var(--text-primary)", margin: 0, fontSize: "24px" }}>
-          Все карточки повторены!
+          {t.review.allReviewedTitle}
         </h2>
         <p style={{ color: "var(--text-secondary)", margin: 0 }}>
           {sessionFilter === "KANA"
-            ? "В разделе «Хирагана & Катакана» на сегодня нет обязательных повторений."
+            ? t.review.allReviewedKana
             : sessionFilter === "KANJI"
-              ? "В разделе «Кандзи» на сегодня всё повторено."
-              : "Все слова в колоде повторены."}
+              ? t.review.allReviewedKanji
+              : t.review.allReviewedAll}
         </p>
 
         {/* Переключатель разделов прямо отсюда */}
@@ -561,7 +563,7 @@ export function ReviewSession() {
               gap: "6px",
             }}
           >
-            <Scroll size={14} /> 1. Кандзи
+            <Scroll size={14} /> {t.review.kanjiTab}
           </button>
           <button
             onClick={() => switchFilter("KANA")}
@@ -578,7 +580,7 @@ export function ReviewSession() {
               gap: "6px",
             }}
           >
-            <BookA size={14} /> 2. Хирагана & Катакана
+            <BookA size={14} /> {t.review.kanaTab}
           </button>
           <button
             onClick={() => switchFilter("ALL")}
@@ -592,16 +594,16 @@ export function ReviewSession() {
               fontSize: "13px",
             }}
           >
-            Все слова
+            {t.review.allTab}
           </button>
         </div>
 
         <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-3)" }}>
           <Button variant="secondary" onClick={() => navigate("/dashboard")}>
-            На главную
+            {t.review.backToDash}
           </Button>
           <Button onClick={startPracticeMode} style={{ gap: "6px" }}>
-            <Sparkles size={16} /> Свободная практика
+            <Sparkles size={16} /> {t.review.freePractice}
           </Button>
         </div>
       </div>
@@ -639,7 +641,7 @@ export function ReviewSession() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 600, color: "var(--text-primary)" }}>
-              {isPracticeMode ? "Режим практики" : "Интервальное повторение"}
+              {isPracticeMode ? t.review.modeTitlePractice : t.review.modeTitleSrs}
             </h2>
             <span
               style={{
@@ -653,11 +655,11 @@ export function ReviewSession() {
                 color: isCurrentCardKanji ? "#c084fc" : "#60a5fa",
               }}
             >
-              {isCurrentCardKanji ? "Кандзи" : "Кана (Азбука)"}
+              {isCurrentCardKanji ? t.review.badgeKanji : t.review.badgeKana}
             </span>
           </div>
           <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
-            Уровень: {currentCard.level}
+            {t.review.levelLabel} {currentCard.level}
           </div>
         </div>
 
@@ -666,7 +668,7 @@ export function ReviewSession() {
           <div style={{ display: "flex", gap: "4px" }}>
             <button
               onClick={() => switchFilter("KANJI")}
-              title="Повторять слова 1 раздела (Кандзи)"
+              title={t.review.deckKanji}
               style={{
                 padding: "4px 8px",
                 fontSize: "12px",
@@ -680,11 +682,11 @@ export function ReviewSession() {
                 gap: "4px",
               }}
             >
-              <Scroll size={13} /> 1. Кандзи
+              <Scroll size={13} /> {t.review.kanjiTab}
             </button>
             <button
               onClick={() => switchFilter("KANA")}
-              title="Повторять слова 2 раздела (Кана)"
+              title={t.review.deckKana}
               style={{
                 padding: "4px 8px",
                 fontSize: "12px",
@@ -698,7 +700,7 @@ export function ReviewSession() {
                 gap: "4px",
               }}
             >
-              <BookA size={13} /> 2. Кана
+              <BookA size={13} /> {t.review.kanaTab}
             </button>
           </div>
 
@@ -712,7 +714,7 @@ export function ReviewSession() {
               cursor: "pointer",
               padding: "4px",
             }}
-            title={soundEnabled ? "Звук включен" : "Звук выключен"}
+            title={soundEnabled ? t.review.soundOn : t.review.soundOff}
           >
             {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
           </button>
@@ -814,7 +816,7 @@ export function ReviewSession() {
               transition: isDragging ? "none" : "opacity 0.2s ease",
             }}
           >
-            ✓ ПОМНЮ
+            {t.review.swipeRightStamp}
           </div>
 
           {/* Визуальный штамп свайпа ВЛЕВО (НЕ ПОМНЮ) */}
@@ -840,7 +842,7 @@ export function ReviewSession() {
               transition: isDragging ? "none" : "opacity 0.2s ease",
             }}
           >
-            ✕ НЕ ПОМНЮ
+            {t.review.swipeLeftStamp}
           </div>
 
           {/* Контент карточки */}
@@ -898,7 +900,7 @@ export function ReviewSession() {
                   transition: "all 0.15s ease",
                   flexShrink: 0,
                 }}
-                title="Озвучить на японском"
+                title={t.review.speakTitle}
                 onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
                 onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
               >
@@ -917,7 +919,9 @@ export function ReviewSession() {
                 fontSize: "14px",
               }}
             >
-              Нажмите или <kbd style={{ padding: "2px 6px", background: "var(--surface-raised)", borderRadius: "4px", border: "1px solid var(--border)" }}>Space</kbd> чтобы открыть перевод
+              {t.review.tapHintPrefix}{" "}
+              <kbd style={{ padding: "2px 6px", background: "var(--surface-raised)", borderRadius: "4px", border: "1px solid var(--border)" }}>Space</kbd>{" "}
+              {t.review.tapHintSuffix}
             </div>
           ) : (
             <div
@@ -959,11 +963,11 @@ export function ReviewSession() {
           flexWrap: "wrap",
         }}
       >
-        <span>👈 Свайп влево: Не помню</span>
+        <span>{t.review.gestureHintLeft}</span>
         <span>•</span>
-        <span>Тап: Перевернуть</span>
+        <span>{t.review.gestureHintTap}</span>
         <span>•</span>
-        <span>👉 Свайп вправо: Помню</span>
+        <span>{t.review.gestureHintRight}</span>
       </div>
 
       {/* Кнопки ответа */}
@@ -980,7 +984,7 @@ export function ReviewSession() {
             }}
             onClick={() => handleAnswer(false)}
           >
-            <span>✕ Не помню (1 / ←)</span>
+            <span>{t.review.forgotBtn}</span>
           </Button>
 
           <Button
@@ -993,7 +997,7 @@ export function ReviewSession() {
             }}
             onClick={() => handleAnswer(true)}
           >
-            <span>✓ Помню (2 / →)</span>
+            <span>{t.review.rememberBtn}</span>
           </Button>
         </div>
       )}

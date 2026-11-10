@@ -75,10 +75,10 @@ export function GitHubCollection() {
     const repoToDelete = repos.find((r) => r.id === id);
     const nameLabel = repoToDelete ? ` «${repoToDelete.title}»` : "";
     const confirmed = await confirmModal({
-      title: "Удалить репозиторий?",
-      message: `Вы действительно хотите удалить репозиторий${nameLabel} из вашей коллекции?`,
-      confirmText: "Удалить",
-      cancelText: "Отмена",
+      title: t.git.deleteConfirmTitle,
+      message: `${t.git.deleteConfirmMsgPrefix}${nameLabel} ${t.git.deleteConfirmMsgSuffix}`,
+      confirmText: t.common.delete,
+      cancelText: t.common.cancel,
       variant: "danger",
     });
 
@@ -88,17 +88,17 @@ export function GitHubCollection() {
       await api.delete(`/resources/${id}`);
       fetchRepos();
     } catch (error) {
-      console.error("Ошибка удаления", error);
+      console.error("Error deleting repository", error);
     }
   };
 
   const handleClearAll = async () => {
     if (repos.length === 0) return;
     const confirmed = await confirmModal({
-      title: "Очистить все репозитории?",
-      message: `Вы действительно хотите удалить все сохранённые репозитории (${repos.length} шт.) из вашей коллекции? Это действие нельзя отменить.`,
-      confirmText: "Да, удалить всё",
-      cancelText: "Отмена",
+      title: t.git.clearConfirmTitle,
+      message: `${t.git.clearConfirmMsgPrefix} (${repos.length}) ${t.git.clearConfirmMsgSuffix}`,
+      confirmText: t.common.yesDeleteAll,
+      cancelText: t.common.cancel,
       variant: "danger",
     });
 
@@ -108,7 +108,7 @@ export function GitHubCollection() {
       await api.delete("/resources/clear/all?type=REPOSITORY");
       fetchRepos();
     } catch (error) {
-      console.error("Ошибка очистки репозиториев", error);
+      console.error("Error clearing repositories", error);
     }
   };
 
@@ -224,9 +224,9 @@ export function GitHubCollection() {
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
-                title="Очистить все репозитории"
+                title={t.git.clearAllBtn}
               >
-                <Trash2 size={13} /> Очистить все репозитории
+                <Trash2 size={13} /> {t.git.clearAllBtn}
               </Button>
             )}
           </div>
@@ -302,7 +302,7 @@ export function GitHubCollection() {
                   }}
                 >
                   <Badge variant="default">
-                    {item.status.replace("_", " ")}
+                    {t.dash.statusLabels[item.status as keyof typeof t.dash.statusLabels] || item.status.replace("_", " ")}
                   </Badge>
                   <div
                     style={{ marginLeft: "auto", display: "flex", gap: "8px" }}
@@ -314,7 +314,7 @@ export function GitHubCollection() {
                         padding: "6px",
                         color: item.note ? "var(--accent)" : "inherit",
                       }}
-                      title="Notes"
+                      title={t.git.notesBtnTitle}
                     >
                       <FileText size={14} />
                     </Button>
@@ -322,7 +322,7 @@ export function GitHubCollection() {
                       variant="secondary"
                       onClick={() => window.open(item.url, "_blank")}
                       style={{ padding: "6px" }}
-                      title="Open Repo"
+                      title={t.git.openRepoTitle}
                     >
                       <ExternalLink size={14} />
                     </Button>
@@ -330,7 +330,7 @@ export function GitHubCollection() {
                       variant="secondary"
                       onClick={() => handleDelete(item.id)}
                       style={{ padding: "6px", color: "#ef4444" }}
-                      title="Delete"
+                      title={t.git.deleteBtnTitle}
                     >
                       <Trash2 size={14} />
                     </Button>

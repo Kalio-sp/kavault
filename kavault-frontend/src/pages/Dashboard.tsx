@@ -53,7 +53,7 @@ interface JapaneseCard {
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const { t } = useApp();
+  const { t, locale } = useApp();
   const {
     achievements,
     unlockedCount,
@@ -190,7 +190,10 @@ export function Dashboard() {
       day: "numeric",
       year: "numeric",
     };
-    setDateStr(new Date().toLocaleDateString(undefined, options));
+    setDateStr(new Date().toLocaleDateString(locale, options));
+  }, [locale]);
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -296,7 +299,7 @@ export function Dashboard() {
               gap: "10px",
             }}
           >
-            {t.dash.goodMorning}, {username || "Друг"}!
+            {t.dash.goodMorning}, {username || t.dash.friend}!
             <Sparkles size={24} color="var(--accent)" />
           </h2>
           <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "15px" }}>
@@ -383,7 +386,7 @@ export function Dashboard() {
               fontSize: "13px",
             }}
           >
-            <TrendingUp size={14} /> +{metrics.recentResources} за неделю
+            <TrendingUp size={14} /> +{metrics.recentResources} {t.dash.addedWeekSuffix}
           </div>
         </Card>
 
@@ -442,7 +445,7 @@ export function Dashboard() {
               fontSize: "13px",
             }}
           >
-            <TrendingUp size={14} /> {metrics.masteredWords} освоено (Lvl 2+)
+            <TrendingUp size={14} /> {metrics.masteredWords} {t.dash.masteredSuffix}
           </div>
         </Card>
 
@@ -475,10 +478,10 @@ export function Dashboard() {
                 fontSize: "14px",
               }}
             >
-              <RotateCw size={16} color="var(--accent)" /> Повторение сегодня
+              <RotateCw size={16} color="var(--accent)" /> {t.dash.dueTodayTitle}
             </div>
             <Badge variant={metrics.dueCardsCount > 0 ? "accent" : "default"}>
-              {metrics.dueCardsCount > 0 ? "К повторению" : "Чисто"}
+              {metrics.dueCardsCount > 0 ? t.dash.dueBadge : t.dash.clearBadge}
             </Badge>
           </div>
           <div
@@ -503,8 +506,8 @@ export function Dashboard() {
             }}
           >
             {metrics.dueCardsCount > 0
-              ? "Нажмите, чтобы начать повторение →"
-              : "Все слова повторены!"}
+              ? t.dash.tapToStartReview
+              : t.dash.allWordsReviewed}
           </div>
         </Card>
 
@@ -552,7 +555,7 @@ export function Dashboard() {
               marginBottom: "6px",
             }}
           >
-            {streak} <span style={{ fontSize: "16px", fontWeight: 400 }}>дней</span>
+            {streak} <span style={{ fontSize: "16px", fontWeight: 400 }}>{t.dash.daysUnit}</span>
           </div>
           <div
             style={{
@@ -563,7 +566,7 @@ export function Dashboard() {
               fontSize: "13px",
             }}
           >
-            {streak > 0 ? "Огонь не угасает! 🔥" : "Начните обучение сегодня!"}
+            {streak > 0 ? t.dash.streakActiveHint : t.dash.streakZeroHint}
           </div>
         </Card>
       </div>
@@ -618,7 +621,7 @@ export function Dashboard() {
                   gap: "8px",
                 }}
               >
-                Достижения и Ранг
+                {t.dash.achievementsRankTitle}
                 <span
                   style={{
                     fontSize: "11px",
@@ -634,7 +637,7 @@ export function Dashboard() {
                 </span>
               </div>
               <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "2px" }}>
-                Накоплено <span style={{ color: "#eab308", fontWeight: 700 }}>{earnedPoints} XP</span> из {totalPoints} XP
+                {t.dash.earnedPrefix} <span style={{ color: "#eab308", fontWeight: 700 }}>{earnedPoints} XP</span> {t.dash.ofText} {totalPoints} XP
               </div>
             </div>
           </div>
@@ -652,7 +655,7 @@ export function Dashboard() {
               padding: "8px 16px",
             }}
           >
-            <Trophy size={15} /> Открыть Зал Достижений ({unlockedCount}/{totalCount})
+            <Trophy size={15} /> {t.dash.openHall} ({unlockedCount}/{totalCount})
           </Button>
         </div>
 
@@ -669,7 +672,7 @@ export function Dashboard() {
                 fontWeight: 600,
               }}
             >
-              <span>Прогресс разблокировки ({unlockedCount} из {totalCount})</span>
+              <span>{t.dash.unlockProgress} ({unlockedCount} / {totalCount})</span>
               <span>{Math.round((unlockedCount / totalCount) * 100) || 0}%</span>
             </div>
             <div
@@ -719,7 +722,7 @@ export function Dashboard() {
                     border: ach.isSecret ? "1px solid #eab308" : "1px solid var(--border)",
                     fontSize: "12px",
                     fontWeight: 600,
-                    color: ach.isSecret ? "#fbbf24" : "var(--text-primary)",
+                    color: ach.isSecret ? "#d97706" : "var(--text-primary)",
                     cursor: "pointer",
                   }}
                   title={ach.description}
@@ -730,7 +733,7 @@ export function Dashboard() {
               ))}
             {unlockedCount === 0 && (
               <div style={{ fontSize: "12px", color: "var(--text-muted)", fontStyle: "italic" }}>
-                Добавляйте слова, сниппеты или настраивайте профиль, чтобы открывать награды!
+                {t.dash.emptyAchHint}
               </div>
             )}
           </div>
@@ -767,14 +770,14 @@ export function Dashboard() {
               </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: "17px", fontWeight: 600, color: "var(--text-primary)" }}>
-                  Стартовые наборы данных (1-клик)
+                  {t.dash.starterTitle}
                 </h3>
                 <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)" }}>
-                  Каждый набор можно получить только 1 раз. После добавления кнопка набора скрывается.
+                  {t.dash.starterDesc}
                 </p>
               </div>
             </div>
-            <Badge variant="accent">Доступен 1 раз</Badge>
+            <Badge variant="accent">{t.dash.starterOnceBadge}</Badge>
           </div>
 
           <div
@@ -802,10 +805,10 @@ export function Dashboard() {
                 }}
               >
                 <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
-                  🌸 Японский N5 (36 слов)
+                  {t.dash.starterJapTitle}
                 </div>
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {importingPack === "japanese" ? "Импорт..." : "Азбука Кана + базовые Кандзи"}
+                  {importingPack === "japanese" ? t.common.importing : t.dash.starterJapDesc}
                 </div>
               </Button>
             )}
@@ -828,10 +831,10 @@ export function Dashboard() {
                 }}
               >
                 <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
-                  💻 Сниппеты Dev Hub (6 шт)
+                  {t.dash.starterDevTitle}
                 </div>
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {importingPack === "developer" ? "Импорт..." : "React 19, TypeScript, Docker, Git"}
+                  {importingPack === "developer" ? t.common.importing : t.dash.starterDevDesc}
                 </div>
               </Button>
             )}
@@ -854,10 +857,10 @@ export function Dashboard() {
                 }}
               >
                 <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
-                  🐙 GitHub проекты (4 шт)
+                  {t.dash.starterGitTitle}
                 </div>
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {importingPack === "github" ? "Импорт..." : "React, NestJS, Roadmaps, Awesome"}
+                  {importingPack === "github" ? t.common.importing : t.dash.starterGitDesc}
                 </div>
               </Button>
             )}
@@ -880,10 +883,10 @@ export function Dashboard() {
                 }}
               >
                 <div style={{ fontWeight: 700, fontSize: "14px" }}>
-                  🚀 Загрузить всё сразу
+                  {t.dash.starterAllTitle}
                 </div>
                 <div style={{ fontSize: "12px", opacity: 0.9 }}>
-                  {importingPack === "all" ? "Загрузка всей базы..." : "Полный комплект (46 элементов)"}
+                  {importingPack === "all" ? t.dash.loadingAll : t.dash.starterAllDesc}
                 </div>
               </Button>
             )}
@@ -919,7 +922,7 @@ export function Dashboard() {
               {t.dash.progress}
             </h3>
             <Badge variant="default">
-              {metrics.totalResources + metrics.totalCards} элементов в базе
+              {metrics.totalResources + metrics.totalCards} {t.dash.vaultItemsSuffix}
             </Badge>
           </div>
 
@@ -985,10 +988,10 @@ export function Dashboard() {
                 }}
               >
                 {metrics.progressPercent >= 70
-                  ? "Отличная динамика!"
+                  ? t.dash.greatDynamic
                   : metrics.progressPercent > 0
                     ? t.dash.keepGoing
-                    : "Добро пожаловать в KAVAULT!"}
+                    : t.dash.welcomeTitle}
               </h4>
               <p
                 style={{
@@ -999,8 +1002,8 @@ export function Dashboard() {
                 }}
               >
                 {metrics.totalResources === 0 && metrics.totalCards === 0
-                  ? "Ваше хранилище пока пусто. Выберите один из стартовых наборов выше или добавьте свои первые материалы."
-                  : `Вы освоили ${metrics.masteredWords} слов и изучили часть материалов. Продолжайте в том же духе!`}
+                  ? t.dash.emptyVaultDesc
+                  : `${t.dash.progressSummaryPrefix} ${metrics.masteredWords} ${t.dash.progressSummaryMid}`}
               </p>
 
               <div
@@ -1015,13 +1018,13 @@ export function Dashboard() {
                   onClick={() => navigate("/graph")}
                   style={{ fontSize: "13px", padding: "6px 12px" }}
                 >
-                  Открыть граф знаний →
+                  {t.dash.openGraph}
                 </Button>
                 <Button
                   onClick={() => navigate("/developer")}
                   style={{ fontSize: "13px", padding: "6px 12px" }}
                 >
-                  + Добавить материал
+                  {t.dash.addMaterial}
                 </Button>
               </div>
             </div>
@@ -1056,7 +1059,7 @@ export function Dashboard() {
             >
               {metrics.dueCardsCount === 0 && metrics.pendingResources.length === 0
                 ? t.dash.allDone
-                : "В процессе"}
+                : t.dash.inProgress}
             </Badge>
           </div>
 
@@ -1096,10 +1099,10 @@ export function Dashboard() {
                         metrics.dueCardsCount === 0 ? "line-through" : "none",
                     }}
                   >
-                    Повторить японские слова ({metrics.dueCardsCount})
+                    {t.dash.repeatWordsLabel} ({metrics.dueCardsCount})
                   </div>
                   <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                    Интервальное повторение SRS
+                    {t.dash.srsLabel}
                   </div>
                 </div>
               </div>
@@ -1109,7 +1112,7 @@ export function Dashboard() {
                   style={{ padding: "4px 10px", fontSize: "12px" }}
                   onClick={() => navigate("/review")}
                 >
-                  <Play size={12} /> Начать
+                  <Play size={12} /> {t.dash.startBtn}
                 </Button>
               )}
             </div>
@@ -1170,7 +1173,7 @@ export function Dashboard() {
                     cursor: "pointer",
                     padding: "4px",
                   }}
-                  title="Открыть"
+                  title={t.common.open}
                 >
                   <ExternalLink size={15} />
                 </button>
@@ -1186,7 +1189,7 @@ export function Dashboard() {
                   fontSize: "14px",
                 }}
               >
-                🎉 Все актуальные задачи на сегодня выполнены!
+                {t.dash.todayAllDoneMsg}
               </div>
             )}
           </div>
@@ -1197,7 +1200,7 @@ export function Dashboard() {
               metrics.dueCardsCount > 0 ? navigate("/review") : navigate("/developer")
             }
           >
-            {metrics.dueCardsCount > 0 ? "Начать повторение слов →" : t.dash.continue}
+            {metrics.dueCardsCount > 0 ? t.dash.startReviewCta : t.dash.continue}
           </Button>
         </Card>
       </div>
@@ -1220,14 +1223,14 @@ export function Dashboard() {
               color: "var(--text-primary)",
             }}
           >
-            Недавние материалы
+            {t.dash.recentMaterials}
           </h3>
           <Button
             variant="ghost"
             onClick={() => navigate("/developer")}
             style={{ fontSize: "13px" }}
           >
-            Все материалы ({resources.length}) →
+            {t.dash.allMaterials} ({resources.length}) →
           </Button>
         </div>
 
@@ -1241,10 +1244,10 @@ export function Dashboard() {
           >
             <BookOpen size={32} style={{ marginBottom: "12px", opacity: 0.5 }} />
             <p style={{ margin: "0 0 12px 0", fontSize: "15px" }}>
-              Вы пока не добавили ни одного материала в Базу знаний.
+              {t.dash.noMaterialsYet}
             </p>
             <Button onClick={() => navigate("/developer")}>
-              <Plus size={16} /> Добавить первый материал
+              <Plus size={16} /> {t.dash.addFirstMaterial}
             </Button>
           </Card>
         ) : (
@@ -1281,7 +1284,7 @@ export function Dashboard() {
                       color: "var(--text-muted)",
                       cursor: "pointer",
                     }}
-                    title="Открыть"
+                    title={t.common.open}
                   >
                     <ExternalLink size={14} />
                   </button>
@@ -1313,7 +1316,7 @@ export function Dashboard() {
                   }}
                 >
                   <span>
-                    {new Date(item.createdAt).toLocaleDateString(undefined, {
+                    {new Date(item.createdAt).toLocaleDateString(locale, {
                       month: "short",
                       day: "numeric",
                     })}
@@ -1326,7 +1329,7 @@ export function Dashboard() {
                           : "var(--text-secondary)",
                     }}
                   >
-                    {item.status.replace("_", " ")}
+                    {t.dash.statusLabels[item.status] || item.status.replace("_", " ")}
                   </span>
                 </div>
               </Card>
