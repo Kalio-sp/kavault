@@ -605,18 +605,6 @@ export function Login() {
               {mode === "login" ? "Зарегистрироваться" : "Войти"}
             </button>
           </div>
-
-          {/* Футер */}
-          <div
-            style={{
-              textAlign: "center",
-              marginTop: "var(--space-8)",
-              fontSize: "12px",
-              color: "var(--text-muted)",
-            }}
-          >
-            KAVAULT © 2024
-          </div>
         </div>
       </div>
     </div>
