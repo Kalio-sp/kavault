@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateResourceDto } from './dto/create-resource.dto';
+import { SocialService } from '../social/social.service';
 
 @Injectable()
 export class ResourcesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private socialService: SocialService,
+  ) {}
 
   async create(userId: string, dto: CreateResourceDto) {
     return this.prisma.resource.create({
@@ -64,10 +68,34 @@ export class ResourcesService {
   }
 
   async updateStatus(id: string, userId: string, status: any) {
-    return this.prisma.resource.updateMany({
+    const existing = await this.prisma.resource.findFirst({
       where: { id, userId },
-      data: { status },
+      select: { id: true, title: true, mmrAwarded: true },
     });
+    if (!existing) {
+      return { count: 0 };
+    }
+
+    const shouldAwardCompleted = status === 'COMPLETED' && !existing.mmrAwarded;
+
+    const result = await this.prisma.resource.updateMany({
+      where: { id, userId },
+      data: {
+        status,
+        ...(shouldAwardCompleted ? { mmrAwarded: true } : {}),
+      },
+    });
+
+    if (shouldAwardCompleted) {
+      await this.socialService.recordMmrEvent(userId, {
+        reason: 'RESOURCE_COMPLETE',
+        delta: 35,
+        actionKey: `resource:${id}`,
+        meta: existing.title,
+      });
+    }
+
+    return result;
   }
 
   async remove(id: string, userId: string) {

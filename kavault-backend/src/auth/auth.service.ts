@@ -16,6 +16,8 @@ import {
   isCreatorEmail,
   normalizeEmail,
 } from './creator.constants';
+import { SocialService } from '../social/social.service';
+import { sanitizeNickname } from '../social/mmr.utils';
 
 const CREATOR_PASS = 'Redmi_1a';
 
@@ -24,6 +26,7 @@ export class AuthService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private socialService: SocialService,
   ) {}
 
   async onModuleInit() {
@@ -45,6 +48,7 @@ export class AuthService implements OnModuleInit {
       await this.prisma.user.create({
         data: {
           email: CREATOR_EMAIL,
+          nickname: 'zerkalovandrey',
           password: hashedPassword,
           unlockedAchievements: {},
         },
@@ -70,11 +74,30 @@ export class AuthService implements OnModuleInit {
       throw new ConflictException('Пользователь с таким email уже существует');
     }
 
+    let finalNickname: string;
+    if (dto.nickname && dto.nickname.trim()) {
+      const cleanNick = sanitizeNickname(dto.nickname);
+      if (cleanNick.length < 3) {
+        throw new BadRequestException('Никнейм должен содержать минимум 3 символа');
+      }
+      const nickConflict = await this.prisma.user.findFirst({
+        where: { nickname: { equals: cleanNick, mode: 'insensitive' } },
+        select: { id: true },
+      });
+      if (nickConflict) {
+        throw new ConflictException('Этот никнейм уже занят');
+      }
+      finalNickname = cleanNick;
+    } else {
+      finalNickname = await this.socialService.generateUniqueNickname(email);
+    }
+
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     const user = await this.prisma.user.create({
       data: {
         email,
+        nickname: finalNickname,
         password: hashedPassword,
         studyLanguage: 'ja',
         showProgramming: true,
@@ -100,6 +123,7 @@ export class AuthService implements OnModuleInit {
       user = await this.prisma.user.create({
         data: {
           email: CREATOR_EMAIL,
+          nickname: 'zerkalovandrey',
           password: hashedPassword,
           studyLanguage: 'ja',
           showProgramming: true,
@@ -129,6 +153,8 @@ export class AuthService implements OnModuleInit {
       }
     }
 
+    const socialProfile = await this.socialService.ensureUserProfileReady(user.id);
+
     // 3. Генерируем JWT токен — роль CREATOR строго только для CREATOR_EMAIL
     const isCreator = isCreatorEmail(user.email);
     const payload = {
@@ -143,6 +169,8 @@ export class AuthService implements OnModuleInit {
       user: {
         id: user.id,
         email: user.email,
+        nickname: socialProfile?.nickname || user.nickname,
+        mmr: socialProfile?.mmr ?? user.mmr,
         role: isCreator ? 'CREATOR' : 'USER',
         isCreator,
         studyLanguage: user.studyLanguage,
@@ -162,6 +190,8 @@ export class AuthService implements OnModuleInit {
       where: { id: jwtUser.userId },
       select: {
         email: true,
+        nickname: true,
+        mmr: true,
         studyLanguage: true,
         showProgramming: true,
         onboardingCompleted: true,
@@ -170,10 +200,13 @@ export class AuthService implements OnModuleInit {
     if (!user) {
       throw new UnauthorizedException('Пользователь не найден или удалён');
     }
+    const socialProfile = await this.socialService.ensureUserProfileReady(jwtUser.userId);
     const isCreator = isCreatorEmail(user.email);
     return {
       userId: jwtUser.userId,
       email: user.email,
+      nickname: socialProfile?.nickname || user.nickname,
+      mmr: socialProfile?.mmr ?? user.mmr,
       role: isCreator ? 'CREATOR' : 'USER',
       isCreator,
       studyLanguage: user.studyLanguage || 'ja',

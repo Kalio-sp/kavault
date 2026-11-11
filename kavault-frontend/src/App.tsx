@@ -22,6 +22,9 @@ const LearningTracker = lazyNamed(() => import("./pages/LearningTracker"), "Lear
 const KnowledgeGraph = lazyNamed(() => import("./pages/KnowledgeGraph"), "KnowledgeGraph");
 const Settings = lazyNamed(() => import("./pages/Settings"), "Settings");
 const AdminPanel = lazyNamed(() => import("./pages/AdminPanel"), "AdminPanel");
+const SocialHub = lazyNamed(() => import("./pages/SocialHub"), "SocialHub");
+const ThoughtsHub = lazyNamed(() => import("./pages/ThoughtsHub"), "ThoughtsHub");
+const SharedDeckView = lazyNamed(() => import("./pages/SharedDeckView"), "SharedDeckView");
 const AchievementsModal = lazyNamed(
   () => import("./components/AchievementsModal"),
   "AchievementsModal",
@@ -78,6 +81,8 @@ export default function App() {
           <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/leaderboard" element={<SocialHub publicOnly />} />
+          <Route path="/share/:slug" element={<SharedDeckView />} />
           <Route
             path="/dashboard"
             element={
@@ -158,6 +163,26 @@ export default function App() {
               <ProtectedRoute>
                 <Layout>
                   <KnowledgeGraph />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/thoughts"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <ThoughtsHub />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/social"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SocialHub />
                 </Layout>
               </ProtectedRoute>
             }

@@ -19,6 +19,8 @@ import {
   GraduationCap,
   Headphones,
   Layers,
+  Upload,
+  Share2,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
@@ -51,6 +53,8 @@ import {
   ListeningStudio,
   type StudyPassageRecord,
 } from "../components/StudySkillsModules";
+import { DeckImportModal } from "../components/DeckImportModal";
+import { DeckShareModal } from "../components/DeckShareModal";
 import { speakText } from "../utils/audioPlayer";
 
 type HubSlot = "S1" | "S2";
@@ -447,6 +451,8 @@ export function JapaneseHub() {
   const [meaning, setMeaning] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isImporting, setIsImporting] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   const activeLangPack = studyLanguageToPackType(studyLanguage);
 
@@ -759,6 +765,27 @@ export function JapaneseHub() {
               }}
             >
               {ambientEnabled ? `✨ ${studioText.atmosphereOn}` : studioText.atmosphereOff}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShareModalOpen(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                padding: "4px 10px",
+                borderRadius: "999px",
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--surface)",
+                color: "var(--text-secondary)",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              <Share2 size={11} />
+              {language === "ru" ? "Поделиться" : language === "ja" ? "共有" : "Share Deck"}
             </button>
           </div>
 
@@ -1316,6 +1343,46 @@ export function JapaneseHub() {
               </Button>
             )}
 
+            <Button
+              variant="secondary"
+              onClick={() => setImportModalOpen(true)}
+              style={{
+                padding: "4px 10px",
+                fontSize: "12px",
+                color: "var(--text-primary)",
+                borderColor: "var(--border)",
+                gap: "6px",
+              }}
+            >
+              <Upload size={13} />
+              {language === "ru"
+                ? "Импорт .csv / .txt"
+                : language === "ja"
+                  ? "CSV / Anki 取込"
+                  : "Import .csv / .txt"}
+            </Button>
+
+            {cards.length > 0 && (
+              <Button
+                variant="secondary"
+                onClick={() => setShareModalOpen(true)}
+                style={{
+                  padding: "4px 10px",
+                  fontSize: "12px",
+                  color: studyPalette.accentHex,
+                  borderColor: "var(--border)",
+                  gap: "6px",
+                }}
+              >
+                <Share2 size={13} />
+                {language === "ru"
+                  ? "Поделиться набором"
+                  : language === "ja"
+                    ? "デッキを共有"
+                    : "Share Deck"}
+              </Button>
+            )}
+
             {currentSectionCards.length > 0 && (
               <Button
                 variant="secondary"
@@ -1571,6 +1638,29 @@ export function JapaneseHub() {
           />
         </div>
       )}
+
+      <DeckImportModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        studyLanguage={studyLanguage}
+        uiLang={language}
+        existingWords={existingWords}
+        defaultLevel={selectedLevel !== "ALL" ? selectedLevel : defaultLevel}
+        defaultCardType={currentSecText.id}
+        accentColor={studyPalette.accentHex}
+        onImported={() => fetchCards(true)}
+      />
+
+      <DeckShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        studyLanguage={studyLanguage}
+        uiLang={language}
+        totalCards={cards.length}
+        totalPassages={passages.length}
+        selectedLevel={selectedLevel}
+        accentColor={studyPalette.accentHex}
+      />
     </div>
   );
 }

@@ -63,6 +63,10 @@ interface AppContextType {
   t: TranslationSchema;
   isCreator: boolean;
   userEmail: string;
+  nickname: string;
+  mmr: number;
+  setLocalNickname: (nick: string) => void;
+  setLocalMmr: (mmr: number) => void;
   studyLanguage: StudyLanguage;
   showProgramming: boolean;
   onboardingCompleted: boolean;
@@ -84,6 +88,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>(detectInitialLanguage);
   const [isCreator, setIsCreator] = useState<boolean>(false);
   const [userEmail, setUserEmail] = useState("");
+  const [nickname, setNickname] = useState<string>(
+    () => localStorage.getItem("kavault_username") || "",
+  );
+  const [mmr, setMmr] = useState<number>(0);
 
   const [studyLanguage, setStudyLanguage] = useState<StudyLanguage>(() => {
     const uKey = getUserCacheId();
@@ -121,12 +129,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const setLocalNickname = useCallback((nick: string) => {
+    setNickname(nick);
+    if (nick.trim()) {
+      localStorage.setItem("kavault_username", nick.trim());
+    }
+  }, []);
+
+  const setLocalMmr = useCallback((nextMmr: number) => {
+    setMmr(nextMmr);
+  }, []);
+
   const checkUserRole = useCallback(async () => {
     localStorage.removeItem("kavault_is_creator");
     const token = localStorage.getItem("access_token");
     if (!token) {
       setIsCreator(false);
       setUserEmail("");
+      setNickname("");
+      setMmr(0);
       setStudyLanguage("ja");
       setShowProgramming(true);
       setOnboardingCompleted(true);
@@ -138,6 +159,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const resp = await api.get<{
         email?: string;
+        nickname?: string;
+        mmr?: number;
         isCreator?: boolean;
         role?: string;
         studyLanguage?: string;
@@ -152,6 +175,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setIsCreator(isAdm);
       } else {
         setIsCreator(false);
+      }
+
+      if (typeof resp.data?.nickname === "string" && resp.data.nickname.trim()) {
+        setNickname(resp.data.nickname.trim());
+        localStorage.setItem("kavault_username", resp.data.nickname.trim());
+      }
+      if (typeof resp.data?.mmr === "number") {
+        setMmr(resp.data.mmr);
       }
 
       const sl = resp.data?.studyLanguage;
@@ -244,6 +275,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         t: translations[language],
         isCreator,
         userEmail,
+        nickname,
+        mmr,
+        setLocalNickname,
+        setLocalMmr,
         studyLanguage,
         showProgramming,
         onboardingCompleted,

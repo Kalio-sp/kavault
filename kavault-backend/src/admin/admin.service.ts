@@ -105,6 +105,8 @@ export class AdminService {
       select: {
         id: true,
         email: true,
+        nickname: true,
+        mmr: true,
         studyLanguage: true,
         showProgramming: true,
         onboardingCompleted: true,

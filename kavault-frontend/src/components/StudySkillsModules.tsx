@@ -21,6 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 import { api } from "../api/axios";
+import { useApp } from "../context/AppContext";
 import type { Language } from "../i18n/translations";
 import type { StudyLanguage } from "../data/studyVibes";
 import {
@@ -31,6 +32,35 @@ import {
   SKILL_STUDIO_TEXTS,
 } from "../data/languageCurriculum";
 import { speakText, stopSpeaking } from "../utils/audioPlayer";
+
+const awardedTaskCache = new Set<string>();
+
+async function triggerTaskMmr(
+  kind:
+    | "grammar_quiz"
+    | "reading_quiz"
+    | "listening_quiz"
+    | "listening_dictation"
+    | "dialogue_practice",
+  itemId: string,
+  onEarned?: (delta: number, totalMmr?: number) => void,
+) {
+  const key = `${kind}:${itemId}`;
+  if (awardedTaskCache.has(key)) return;
+  awardedTaskCache.add(key);
+  try {
+    const resp = await api.post<{
+      awarded?: boolean;
+      delta?: number;
+      totalMmr?: number;
+    }>("/social/complete-task", { kind, itemId });
+    if (resp.data?.awarded && (resp.data.delta || 0) > 0) {
+      onEarned?.(resp.data.delta!, resp.data.totalMmr);
+    }
+  } catch {
+    awardedTaskCache.delete(key);
+  }
+}
 
 export interface StudyPassageRecord {
   id: string;
@@ -103,6 +133,7 @@ export function GrammarStudio({
   customPassages: StudyPassageRecord[];
   onRefreshPassages: () => Promise<void>;
 }) {
+  const { setLocalMmr } = useApp();
   const labels = SKILL_STUDIO_TEXTS[uiLang].grammar;
   const allLessons = GRAMMAR_LESSONS[studyLanguage];
   const lessons = useMemo(() => {
@@ -114,6 +145,7 @@ export function GrammarStudio({
   const [selectedId, setSelectedId] = useState(lessons[0].id);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [addingPattern, setAddingPattern] = useState<string | null>(null);
+  const [mmrEarnedBanner, setMmrEarnedBanner] = useState<number | null>(null);
 
   // Custom grammar form
   const [noteTitle, setNoteTitle] = useState("");
@@ -462,9 +494,20 @@ export function GrammarStudio({
                   <button
                     key={opt}
                     type="button"
-                    onClick={() =>
-                      setQuizAnswers((prev) => ({ ...prev, [activeLesson.id]: idx }))
-                    }
+                    onClick={() => {
+                      setQuizAnswers((prev) => ({ ...prev, [activeLesson.id]: idx }));
+                      if (idx === activeLesson.quiz.correctIdx) {
+                        triggerTaskMmr(
+                          "grammar_quiz",
+                          `${studyLanguage}:${activeLesson.id}`,
+                          (delta, totalMmr) => {
+                            setMmrEarnedBanner(delta);
+                            if (typeof totalMmr === "number") setLocalMmr(totalMmr);
+                            setTimeout(() => setMmrEarnedBanner(null), 3200);
+                          },
+                        );
+                      }
+                    }}
                     style={{
                       padding: "8px 16px",
                       borderRadius: "var(--radius-md)",
@@ -501,6 +544,9 @@ export function GrammarStudio({
                     <span style={{ color: "var(--text-muted)" }}>
                       ({activeLesson.quiz.hint[uiLang]})
                     </span>
+                    {mmrEarnedBanner && (
+                      <Badge variant="success">+{mmrEarnedBanner} Task-System MMR</Badge>
+                    )}
                   </>
                 ) : (
                   <>
@@ -649,6 +695,7 @@ export function ReadingStudio({
   customPassages: StudyPassageRecord[];
   onRefreshPassages: () => Promise<void>;
 }) {
+  const { setLocalMmr } = useApp();
   const labels = SKILL_STUDIO_TEXTS[uiLang].reading;
   const allPassages = READING_PASSAGES[studyLanguage];
   const passages = useMemo(() => {
@@ -664,6 +711,7 @@ export function ReadingStudio({
   const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
   const [quizChoice, setQuizChoice] = useState<Record<string, number>>({});
   const [addingWord, setAddingWord] = useState<string | null>(null);
+  const [mmrEarnedBanner, setMmrEarnedBanner] = useState<number | null>(null);
 
   // Custom reading passage form
   const [customTitle, setCustomTitle] = useState("");
@@ -1049,8 +1097,11 @@ export function ReadingStudio({
               gap: "12px",
             }}
           >
-            <div style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", color: secondaryColor }}>
-              {labels.quizTitle}
+            <div style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", color: secondaryColor, display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <span>{labels.quizTitle}</span>
+              {mmrEarnedBanner && (
+                <Badge variant="success">+{mmrEarnedBanner} Task-System MMR</Badge>
+              )}
             </div>
             {activePassage.questions.map((q, qIdx) => {
               const qKey = `${activePassage.id}-${qIdx}`;
@@ -1079,7 +1130,20 @@ export function ReadingStudio({
                         <button
                           key={opt}
                           type="button"
-                          onClick={() => setQuizChoice((prev) => ({ ...prev, [qKey]: oIdx }))}
+                          onClick={() => {
+                            setQuizChoice((prev) => ({ ...prev, [qKey]: oIdx }));
+                            if (oIdx === q.correctIdx) {
+                              triggerTaskMmr(
+                                "reading_quiz",
+                                `${studyLanguage}:${qKey}`,
+                                (delta, totalMmr) => {
+                                  setMmrEarnedBanner(delta);
+                                  if (typeof totalMmr === "number") setLocalMmr(totalMmr);
+                                  setTimeout(() => setMmrEarnedBanner(null), 3200);
+                                },
+                              );
+                            }
+                          }}
                           style={{
                             padding: "6px 12px",
                             borderRadius: "var(--radius-md)",
@@ -1255,6 +1319,7 @@ export function ListeningStudio({
   secondaryColor: string;
   userCards: SimpleStudyCard[];
 }) {
+  const { setLocalMmr } = useApp();
   const labels = SKILL_STUDIO_TEXTS[uiLang].listening;
   const allDialogues = LISTENING_DIALOGUES[studyLanguage];
   const dialogues = useMemo(() => {
@@ -1268,6 +1333,7 @@ export function ListeningStudio({
   const [slowMode, setSlowMode] = useState(false);
   const [showTranscript, setShowTranscript] = useState(true);
   const [playingLineIdx, setPlayingLineIdx] = useState<number | null>(null);
+  const [mmrEarnedBanner, setMmrEarnedBanner] = useState<number | null>(null);
 
   // Audio quiz & dictation state
   const [useDeckSource, setUseDeckSource] = useState(false);
@@ -1363,8 +1429,21 @@ export function ListeningStudio({
   const playFullDialogue = useCallback(
     (idx = 0) => {
       if (idx === 0) dlgAbortRef.current = false;
-      if (dlgAbortRef.current || idx >= activeDialogue.lines.length) {
+      if (dlgAbortRef.current) {
         setPlayingLineIdx(null);
+        return;
+      }
+      if (idx >= activeDialogue.lines.length) {
+        setPlayingLineIdx(null);
+        triggerTaskMmr(
+          "dialogue_practice",
+          `${studyLanguage}:${activeDialogue.id}`,
+          (delta, totalMmr) => {
+            setMmrEarnedBanner(delta);
+            if (typeof totalMmr === "number") setLocalMmr(totalMmr);
+            setTimeout(() => setMmrEarnedBanner(null), 3200);
+          },
+        );
         return;
       }
       setPlayingLineIdx(idx);
@@ -1374,7 +1453,7 @@ export function ListeningStudio({
         }
       });
     },
-    [activeDialogue, ttsLang, speechRate],
+    [activeDialogue, ttsLang, speechRate, studyLanguage, setLocalMmr],
   );
 
   const nextTrack = () => {
@@ -1396,6 +1475,15 @@ export function ListeningStudio({
       setDictChecked("exact");
       setScore((s) => s + 1);
       setStreak((st) => st + 1);
+      triggerTaskMmr(
+        "listening_dictation",
+        `${studyLanguage}:${currentPrompt.text.slice(0, 30)}`,
+        (delta, totalMmr) => {
+          setMmrEarnedBanner(delta);
+          if (typeof totalMmr === "number") setLocalMmr(totalMmr);
+          setTimeout(() => setMmrEarnedBanner(null), 3200);
+        },
+      );
     } else {
       setDictChecked("wrong");
       setStreak(0);
@@ -1686,13 +1774,16 @@ export function ListeningStudio({
               </button>
             </div>
 
-            <div style={{ display: "flex", gap: "10px" }}>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
               <Badge variant="accent">
                 {labels.scoreLabel}: {score}
               </Badge>
               <Badge variant="success">
                 🔥 {labels.streakLabel}: {streak}
               </Badge>
+              {mmrEarnedBanner && (
+                <Badge variant="success">+{mmrEarnedBanner} Task-System MMR</Badge>
+              )}
             </div>
           </div>
 
@@ -1762,6 +1853,15 @@ export function ListeningStudio({
                         if (opt.isTarget) {
                           setScore((s) => s + 1);
                           setStreak((st) => st + 1);
+                          triggerTaskMmr(
+                            "listening_quiz",
+                            `${studyLanguage}:${currentPrompt.text.slice(0, 30)}`,
+                            (delta, totalMmr) => {
+                              setMmrEarnedBanner(delta);
+                              if (typeof totalMmr === "number") setLocalMmr(totalMmr);
+                              setTimeout(() => setMmrEarnedBanner(null), 3200);
+                            },
+                          );
                         } else {
                           setStreak(0);
                         }

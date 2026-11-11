@@ -108,8 +108,12 @@ export class JapaneseController {
   }
 
   @Post(':id/review')
-  review(@Param('id') id: string, @Body('isCorrect') isCorrect: boolean) {
-    return this.japaneseService.processReview(id, isCorrect);
+  review(
+    @Request() req,
+    @Param('id') id: string,
+    @Body('isCorrect') isCorrect: boolean,
+  ) {
+    return this.japaneseService.processReview(id, isCorrect, req.user.userId);
   }
 
   @Delete('clear/all')

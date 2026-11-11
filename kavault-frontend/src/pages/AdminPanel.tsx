@@ -57,6 +57,8 @@ interface GlobalStats {
 interface UserRow {
   id: string;
   email: string;
+  nickname?: string | null;
+  mmr?: number;
   studyLanguage?: string;
   showProgramming?: boolean;
   onboardingCompleted?: boolean;
@@ -986,6 +988,11 @@ export function AdminPanel() {
                         <span style={{ textDecoration: "underline", textDecorationColor: "var(--border)" }}>
                           {u.email}
                         </span>
+                        {u.nickname && (
+                          <span style={{ fontSize: "11.5px", color: "var(--text-muted)", fontWeight: 500 }}>
+                            @{u.nickname}{typeof u.mmr === "number" ? ` • ${u.mmr} MMR` : ""}
+                          </span>
+                        )}
                       </button>
                     </td>
                     <td style={{ padding: "12px 12px" }}>

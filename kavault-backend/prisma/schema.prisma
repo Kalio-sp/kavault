@@ -32,6 +32,11 @@ enum CardType {
   KANA
 }
 
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+}
+
 // =======================
 // MODELS (Таблицы)
 // =======================
@@ -39,18 +44,27 @@ enum CardType {
 model User {
   id                   String         @id @default(uuid())
   email                String         @unique
+  nickname             String?        @unique
   password             String
   studyLanguage        String         @default("ja")
   showProgramming      Boolean        @default(true)
   onboardingCompleted  Boolean        @default(true)
+  mmr                  Int            @default(0)
+  mmrInitialized       Boolean        @default(false)
+  thoughtPreferences   Json?
   unlockedAchievements Json?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
-  
+
   // Связи с другими таблицами
   resources            Resource[]
   japaneseCards        JapaneseCard[]
   studyPassages        StudyPassage[]
+  sentFriendships      Friendship[]   @relation("SentFriendships")
+  receivedFriendships  Friendship[]   @relation("ReceivedFriendships")
+  mmrLogs              MmrLog[]
+  sharedDecks          SharedDeck[]
+  thoughts             ThoughtNote[]
 }
 
 model Resource {
@@ -62,6 +76,7 @@ model Resource {
   status      LearningStatus @default(TO_LEARN)
   tags        String[]       // Массив тегов
   note        String?        @db.Text // Личные заметки
+  mmrAwarded  Boolean        @default(false)
 
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -72,12 +87,12 @@ model Resource {
 
 model JapaneseCard {
   id          String   @id @default(uuid())
-  
+
   word        String   // Слово, кандзи или грамматика
   reading     String?  // Чтение (хирагана/катакана)
-  meaning     String   // Перевод на русский
+  meaning     String   // Перевод
   example     String?  // Пример использования
-  
+
   type        CardType @default(VOCABULARY)
   language    String   @default("ja")
   studyLevel  String?
@@ -85,7 +100,7 @@ model JapaneseCard {
   // Система интервального повторения (SRS)
   level       Int      @default(0) // 0 - новое, 1+ - в процессе повторения
   nextReview  DateTime @default(now()) // Когда повторить в следующий раз
-  
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -108,4 +123,70 @@ model StudyPassage {
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
+}
+
+model Friendship {
+  id          String           @id @default(uuid())
+  requesterId String
+  addresseeId String
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  requester   User             @relation("SentFriendships", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee   User             @relation("ReceivedFriendships", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+}
+
+model MmrLog {
+  id        String   @id @default(uuid())
+  userId    String
+  actionKey String?
+  reason    String
+  delta     Int
+  meta      String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, actionKey])
+}
+
+model SharedDeck {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  title       String
+  description String?
+  language    String   @default("ja")
+  levelFilter String   @default("ALL")
+  cards       Json
+  passages    Json?
+  importCount Int      @default(0)
+  authorId    String
+  createdAt   DateTime @default(now())
+
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, createdAt])
+}
+
+model ThoughtNote {
+  id         String   @id @default(uuid())
+  title      String?
+  content    String   @db.Text
+  mood       String?
+  colorTag   String   @default("default")
+  tags       String[]
+  isPinned   Boolean  @default(false)
+  isArchived Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isArchived, isPinned, updatedAt])
 }

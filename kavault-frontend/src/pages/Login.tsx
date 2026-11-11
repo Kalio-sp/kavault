@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { api } from "../api/axios";
 import { useApp } from "../context/AppContext";
-import { Mail, Lock, ArrowRight, Eye, EyeOff, User } from "lucide-react";
+import { Mail, Lock, ArrowRight, Eye, EyeOff, User, Trophy } from "lucide-react";
 
 type AuthMode = "login" | "register";
 
 export function Login() {
-  const { t } = useApp();
+  const { t, language } = useApp();
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [nickname, setNickname] = useState("");
@@ -51,17 +51,30 @@ export function Login() {
 
     try {
       if (mode === "register") {
-        await api.post("/auth/register", { email, password });
-        if (nickname.trim()) {
-          localStorage.setItem("kavault_username", nickname.trim());
+        const nick = nickname.trim();
+        await api.post("/auth/register", {
+          email,
+          password,
+          ...(nick ? { nickname: nick } : {}),
+        });
+        if (nick) {
+          localStorage.setItem("kavault_username", nick);
         }
         // После успешной регистрации — сразу логиним
         const response = await api.post("/auth/login", { email, password });
         localStorage.setItem("access_token", response.data.access_token);
+        const loggedNick = response.data?.user?.nickname || response.data?.nickname;
+        if (loggedNick) {
+          localStorage.setItem("kavault_username", loggedNick);
+        }
         window.dispatchEvent(new Event("kavault-auth-changed"));
       } else {
         const response = await api.post("/auth/login", { email, password });
         localStorage.setItem("access_token", response.data.access_token);
+        const loggedNick = response.data?.user?.nickname || response.data?.nickname;
+        if (loggedNick) {
+          localStorage.setItem("kavault_username", loggedNick);
+        }
         window.dispatchEvent(new Event("kavault-auth-changed"));
       }
 
@@ -603,6 +616,43 @@ export function Login() {
             >
               {mode === "login" ? t.auth.switchToRegister : t.auth.switchToLogin}
             </button>
+          </div>
+
+          <div
+            style={{
+              marginTop: "var(--space-5)",
+              paddingTop: "var(--space-4)",
+              borderTop: "1px solid var(--border-subtle)",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <Link
+              to="/leaderboard"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 14px",
+                borderRadius: "var(--radius-md)",
+                background: "var(--bg-surface)",
+                border: "1px solid var(--border-subtle)",
+                color: "var(--text-secondary)",
+                fontSize: "12.5px",
+                fontWeight: 500,
+                textDecoration: "none",
+              }}
+            >
+              <Trophy size={14} style={{ color: "#f59e0b" }} />
+              <span>
+                {language === "ru"
+                  ? "Открытый рейтинг Task-System"
+                  : language === "ja"
+                    ? "公開ランキング Task-System"
+                    : "Public Task-System Leaderboard"}
+              </span>
+              <ArrowRight size={13} />
+            </Link>
           </div>
         </div>
       </div>

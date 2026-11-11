@@ -1,15 +1,20 @@
 import {
   Injectable,
   BadRequestException,
+  ForbiddenException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SocialService } from '../social/social.service';
 
 @Injectable()
 export class JapaneseService {
   private readonly ttsCache = new Map<string, Buffer>();
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private socialService: SocialService,
+  ) {}
 
   async create(
     userId: string,
@@ -96,10 +101,13 @@ export class JapaneseService {
     });
   }
 
-  // Метод обработки интервального повторения
-  async processReview(id: string, isCorrect: boolean) {
+  // Метод обработки интервального повторения (+ начисление MMR в Task-System)
+  async processReview(id: string, isCorrect: boolean, userId?: string) {
     const card = await this.prisma.japaneseCard.findUnique({ where: { id } });
     if (!card) throw new Error('Card not found');
+    if (userId && card.userId !== userId) {
+      throw new ForbiddenException('Нет доступа к карточке');
+    }
 
     let newLevel = card.level;
     if (isCorrect) {
@@ -112,13 +120,24 @@ export class JapaneseService {
     const hoursToAdd = Math.pow(2, newLevel) * 12;
     nextReview.setHours(nextReview.getHours() + hoursToAdd);
 
-    return this.prisma.japaneseCard.update({
+    const updated = await this.prisma.japaneseCard.update({
       where: { id },
       data: {
         level: newLevel,
         nextReview,
       },
     });
+
+    const today = new Date().toISOString().split('T')[0];
+    const delta = isCorrect ? (newLevel >= 2 ? 15 : 8) : 2;
+    await this.socialService.recordMmrEvent(card.userId, {
+      reason: 'SRS_REVIEW',
+      delta,
+      actionKey: `srs:${card.id}:${today}`,
+      meta: card.word,
+    });
+
+    return updated;
   }
 
   async remove(id: string, userId: string) {
@@ -196,7 +215,7 @@ export class JapaneseService {
       notes?: string;
     },
   ) {
-    return this.prisma.studyPassage.create({
+    const created = await this.prisma.studyPassage.create({
       data: {
         userId,
         language: data.language || 'ja',
@@ -208,6 +227,15 @@ export class JapaneseService {
         notes: data.notes,
       },
     });
+
+    await this.socialService.recordMmrEvent(userId, {
+      reason: 'PASSAGE_ADD',
+      delta: 20,
+      actionKey: `passage:${created.id}`,
+      meta: created.title,
+    });
+
+    return created;
   }
 
   async removePassage(id: string, userId: string) {

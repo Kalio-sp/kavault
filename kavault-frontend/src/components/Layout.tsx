@@ -12,6 +12,8 @@ import {
   Menu,
   Trophy,
   Sparkles,
+  PenLine,
+  Users,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
@@ -58,6 +60,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         ]
       : []),
     { path: "/japanese", label: studyText.navLabel, icon: Languages },
+    { path: "/thoughts", label: t.nav.thoughts, icon: PenLine },
+    { path: "/social", label: t.nav.social, icon: Users },
     { path: "/tracker", label: t.nav.tracker, icon: BarChart2 },
     { path: "/graph", label: t.nav.graph, icon: Network },
   ];
@@ -523,6 +527,52 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <GitBranch size={18} /> {t.nav.github}
               </Link>
             )}
+
+            <Link
+              to="/thoughts"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "12px",
+                borderRadius: "var(--radius-md)",
+                color:
+                  location.pathname === "/thoughts"
+                    ? "var(--text-primary)"
+                    : "var(--text-secondary)",
+                backgroundColor:
+                  location.pathname === "/thoughts"
+                    ? "var(--surface-raised)"
+                    : "transparent",
+                textDecoration: "none",
+                fontSize: "15px",
+              }}
+            >
+              <PenLine size={18} /> {t.nav.thoughts}
+            </Link>
+
+            <Link
+              to="/social"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "12px",
+                borderRadius: "var(--radius-md)",
+                color:
+                  location.pathname === "/social"
+                    ? "var(--text-primary)"
+                    : "var(--text-secondary)",
+                backgroundColor:
+                  location.pathname === "/social"
+                    ? "var(--surface-raised)"
+                    : "transparent",
+                textDecoration: "none",
+                fontSize: "15px",
+              }}
+            >
+              <Users size={18} /> {t.nav.social}
+            </Link>
 
             <Link
               to="/graph"
