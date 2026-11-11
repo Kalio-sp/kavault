@@ -64,6 +64,9 @@ export class AuthService implements OnModuleInit {
       data: {
         email: dto.email,
         password: hashedPassword,
+        studyLanguage: 'ja',
+        showProgramming: true,
+        onboardingCompleted: false,
         unlockedAchievements: {},
       },
     });
@@ -85,6 +88,9 @@ export class AuthService implements OnModuleInit {
         data: {
           email: CREATOR_EMAIL,
           password: hashedPassword,
+          studyLanguage: 'ja',
+          showProgramming: true,
+          onboardingCompleted: true,
           unlockedAchievements: {},
         },
       });
@@ -130,8 +136,70 @@ export class AuthService implements OnModuleInit {
         email: user.email,
         role: isCreator ? 'CREATOR' : 'USER',
         isCreator,
+        studyLanguage: user.studyLanguage,
+        showProgramming: user.showProgramming,
+        onboardingCompleted: user.onboardingCompleted,
       },
     };
+  }
+
+  async getProfile(jwtUser: {
+    userId: string;
+    email: string;
+    role: string;
+    isCreator: boolean;
+  }) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: jwtUser.userId },
+      select: {
+        email: true,
+        studyLanguage: true,
+        showProgramming: true,
+        onboardingCompleted: true,
+      },
+    });
+    if (!user) return jwtUser;
+    return {
+      ...jwtUser,
+      email: user.email,
+      studyLanguage: user.studyLanguage || 'ja',
+      showProgramming: user.showProgramming ?? true,
+      onboardingCompleted: user.onboardingCompleted ?? true,
+    };
+  }
+
+  async updatePreferences(
+    userId: string,
+    body: {
+      studyLanguage?: string;
+      showProgramming?: boolean;
+      onboardingCompleted?: boolean;
+    },
+  ) {
+    const allowedLangs = new Set(['ja', 'en', 'de']);
+    const data: Record<string, any> = {};
+
+    if (typeof body.studyLanguage === 'string' && allowedLangs.has(body.studyLanguage)) {
+      data.studyLanguage = body.studyLanguage;
+    }
+    if (typeof body.showProgramming === 'boolean') {
+      data.showProgramming = body.showProgramming;
+    }
+    if (typeof body.onboardingCompleted === 'boolean') {
+      data.onboardingCompleted = body.onboardingCompleted;
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+      select: {
+        studyLanguage: true,
+        showProgramming: true,
+        onboardingCompleted: true,
+      },
+    });
+
+    return updated;
   }
 
   async changePassword(userId: string, currentPass: string, newPass: string) {

@@ -40,6 +40,9 @@ model User {
   id                   String         @id @default(uuid())
   email                String         @unique
   password             String
+  studyLanguage        String         @default("ja")
+  showProgramming      Boolean        @default(true)
+  onboardingCompleted  Boolean        @default(true)
   unlockedAchievements Json?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
@@ -75,7 +78,8 @@ model JapaneseCard {
   example     String?  // Пример использования
   
   type        CardType @default(VOCABULARY)
-  
+  language    String   @default("ja")
+
   // Система интервального повторения (SRS)
   level       Int      @default(0) // 0 - новое, 1+ - в процессе повторения
   nextReview  DateTime @default(now()) // Когда повторить в следующий раз

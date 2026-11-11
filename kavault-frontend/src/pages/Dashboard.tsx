@@ -22,12 +22,14 @@ import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
 import { api } from "../api/axios";
 import {
-  STARTER_JAPANESE_CARDS,
   STARTER_DEVELOPER_RESOURCES,
   STARTER_GITHUB_REPOSITORIES,
+  getStarterCardsForStudy,
+  studyLanguageToPackType,
   isPackClaimed,
   markPackClaimed,
 } from "../data/starterPacks";
+import { getGermanArticleStyle } from "../data/studyVibes";
 
 interface Resource {
   id: string;
@@ -45,6 +47,7 @@ interface JapaneseCard {
   reading?: string;
   meaning: string;
   type: string;
+  language?: string;
   level: number;
   nextReview: string;
   createdAt: string;
@@ -53,7 +56,15 @@ interface JapaneseCard {
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const { t, locale } = useApp();
+  const {
+    t,
+    locale,
+    language,
+    studyLanguage,
+    showProgramming,
+    studyText,
+    studyPalette,
+  } = useApp();
   const {
     achievements,
     unlockedCount,
@@ -74,10 +85,12 @@ export function Dashboard() {
   const [dateStr, setDateStr] = useState("");
   const [importingPack, setImportingPack] = useState<string | null>(null);
 
+  const activeLangPack = studyLanguageToPackType(studyLanguage);
+
   // Проверка: использованы ли стартовые наборы на аккаунте
-  const isJapaneseClaimed = useMemo(
-    () => isPackClaimed("japanese", cards, resources),
-    [cards, resources],
+  const isLangPackClaimed = useMemo(
+    () => isPackClaimed(activeLangPack, cards, resources),
+    [activeLangPack, cards, resources],
   );
   const isDeveloperClaimed = useMemo(
     () => isPackClaimed("developer", cards, resources),
@@ -88,23 +101,29 @@ export function Dashboard() {
     [cards, resources],
   );
 
-  const hasAnyUnclaimedPack =
-    !isJapaneseClaimed || !isDeveloperClaimed || !isGithubClaimed;
+  const hasAnyUnclaimedPack = showProgramming
+    ? !isLangPackClaimed || !isDeveloperClaimed || !isGithubClaimed
+    : !isLangPackClaimed;
 
   /* Загрузка стартовых наборов данных */
-  const handleLoadStarterPack = async (packType: "japanese" | "developer" | "github" | "all") => {
+  const handleLoadStarterPack = async (
+    packType: "language" | "developer" | "github" | "all",
+  ) => {
     try {
       setImportingPack(packType);
-      if (packType === "japanese" || packType === "all") {
-        await api.post("/japanese/bulk", { items: STARTER_JAPANESE_CARDS });
+      if (packType === "language" || packType === "all") {
+        const items = getStarterCardsForStudy(studyLanguage, language);
+        await api.post("/japanese/bulk", { items, language: studyLanguage });
+        markPackClaimed(activeLangPack);
       }
-      if (packType === "developer" || packType === "all") {
+      if (showProgramming && (packType === "developer" || packType === "all")) {
         await api.post("/resources/bulk", { items: STARTER_DEVELOPER_RESOURCES });
+        markPackClaimed("developer");
       }
-      if (packType === "github" || packType === "all") {
+      if (showProgramming && (packType === "github" || packType === "all")) {
         await api.post("/resources/bulk", { items: STARTER_GITHUB_REPOSITORIES });
+        markPackClaimed("github");
       }
-      markPackClaimed(packType);
       await fetchData();
     } catch (err) {
       console.error("Ошибка загрузки стартового набора", err);
@@ -117,8 +136,12 @@ export function Dashboard() {
   const fetchData = async () => {
     try {
       const [resResp, japResp, profileResp, statsResp] = await Promise.all([
-        api.get<Resource[]>("/resources").catch(() => ({ data: [] as Resource[] })),
-        api.get<JapaneseCard[]>("/japanese").catch(() => ({ data: [] as JapaneseCard[] })),
+        showProgramming
+          ? api.get<Resource[]>("/resources").catch(() => ({ data: [] as Resource[] }))
+          : Promise.resolve({ data: [] as Resource[] }),
+        api
+          .get<JapaneseCard[]>(`/japanese?language=${studyLanguage}`)
+          .catch(() => ({ data: [] as JapaneseCard[] })),
         api.get<{ email?: string }>("/auth/profile").catch(() => ({ data: {} as { email?: string } })),
         api.get("/stats/tracker").catch(() => ({ data: null })),
       ]);
@@ -195,7 +218,7 @@ export function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [studyLanguage, showProgramming]);
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
@@ -214,7 +237,9 @@ export function Dashboard() {
     const weekAgo = new Date();
     weekAgo.setDate(now.getDate() - 7);
 
-    const recentResources = resources.filter(
+    const visibleResources = showProgramming ? resources : [];
+
+    const recentResources = visibleResources.filter(
       (r) => new Date(r.createdAt) >= weekAgo,
     ).length;
 
@@ -226,23 +251,23 @@ export function Dashboard() {
     const masteredWords = cards.filter((c) => c.level >= 2).length;
 
     // Прогресс по материалам
-    const completedResources = resources.filter(
+    const completedResources = visibleResources.filter(
       (r) => r.status === "COMPLETED",
     ).length;
 
     // Общий процент освоения (Materials completed + Cards mastered)
-    const totalItems = resources.length + cards.length;
+    const totalItems = visibleResources.length + cards.length;
     const completedItems = completedResources + masteredWords;
     const progressPercent =
       totalItems > 0 ? Math.min(100, Math.round((completedItems / totalItems) * 100)) : 0;
 
     // Задачи на сегодня
-    const pendingResources = resources
+    const pendingResources = visibleResources
       .filter((r) => r.status !== "COMPLETED")
       .slice(0, 3);
 
     return {
-      totalResources: resources.length,
+      totalResources: visibleResources.length,
       recentResources,
       totalCards: cards.length,
       recentCards,
@@ -251,7 +276,7 @@ export function Dashboard() {
       progressPercent,
       pendingResources,
     };
-  }, [resources, cards]);
+  }, [resources, cards, showProgramming]);
 
   // Быстрое переключение статуса ресурса
   const handleToggleResourceStatus = async (resource: Resource) => {
@@ -278,17 +303,58 @@ export function Dashboard() {
         gap: "var(--space-8)",
       }}
     >
-      {/* Верхний Header */}
+      {/* Верхний Header с культурным вайбом */}
       <div
         style={{
+          position: "relative",
+          overflow: "hidden",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "var(--space-4)",
+          padding: "var(--space-6)",
+          borderRadius: "var(--radius-lg)",
+          background: "var(--vibe-banner-bg)",
+          border: "1px solid var(--vibe-banner-border)",
         }}
       >
-        <div>
+        <div
+          style={{
+            position: "absolute",
+            right: "18px",
+            top: "-6px",
+            fontSize: "78px",
+            fontWeight: 800,
+            opacity: 0.06,
+            pointerEvents: "none",
+            userSelect: "none",
+            color: studyPalette.accentHex,
+            lineHeight: 1,
+          }}
+        >
+          {studyPalette.watermark}
+        </div>
+
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px 10px",
+              borderRadius: "999px",
+              backgroundColor: "var(--vibe-soft)",
+              border: "1px solid var(--vibe-banner-border)",
+              color: "var(--vibe-accent)",
+              fontSize: "12px",
+              fontWeight: 600,
+              marginBottom: "10px",
+            }}
+          >
+            <span>{studyPalette.flag}</span>
+            <span>{studyText.vibeBadge}</span>
+          </div>
           <h2
             style={{
               fontSize: "30px",
@@ -301,15 +367,20 @@ export function Dashboard() {
             }}
           >
             {t.dash.goodMorning}, {username || t.dash.friend}!
-            <Sparkles size={24} color="var(--accent)" />
+            <Sparkles size={24} color={studyPalette.accentHex} />
           </h2>
-          <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "15px" }}>
+          <p style={{ color: "var(--text-secondary)", margin: "0 0 4px 0", fontSize: "15px" }}>
+            {studyText.vibeQuote}
+          </p>
+          <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "13px" }}>
             {t.dash.subtitle}
           </p>
         </div>
 
         <div
           style={{
+            position: "relative",
+            zIndex: 1,
             display: "flex",
             gap: "var(--space-4)",
             alignItems: "center",
@@ -332,66 +403,126 @@ export function Dashboard() {
           gap: "var(--space-4)",
         }}
       >
-        {/* Карточка 1: Ресурсы в базе */}
-        <Card
-          style={{
-            padding: "var(--space-5)",
-            cursor: "pointer",
-            transition: "transform 0.2s ease, border-color 0.2s ease",
-          }}
-          onClick={() => navigate("/developer")}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "var(--accent)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "var(--border)";
-          }}
-        >
-          <div
+        {/* Карточка 1: Ресурсы (если вкл. программирование) ИЛИ Освоение языка */}
+        {showProgramming ? (
+          <Card
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "var(--space-3)",
+              padding: "var(--space-5)",
+              cursor: "pointer",
+              transition: "transform 0.2s ease, border-color 0.2s ease",
+            }}
+            onClick={() => navigate("/developer")}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "var(--accent)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--border)";
             }}
           >
             <div
               style={{
                 display: "flex",
+                justifyContent: "space-between",
                 alignItems: "center",
-                gap: "8px",
-                color: "var(--text-secondary)",
-                fontSize: "14px",
+                marginBottom: "var(--space-3)",
               }}
             >
-              <BookOpen size={16} color="var(--accent)" /> {t.dash.resources}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: "var(--text-secondary)",
+                  fontSize: "14px",
+                }}
+              >
+                <BookOpen size={16} color="var(--accent)" /> {t.dash.resources}
+              </div>
+              <ArrowUpRight size={16} color="var(--text-muted)" />
             </div>
-            <ArrowUpRight size={16} color="var(--text-muted)" />
-          </div>
-          <div
+            <div
+              style={{
+                fontSize: "34px",
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                marginBottom: "6px",
+              }}
+            >
+              {metrics.totalResources}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                color: "var(--success)",
+                fontSize: "13px",
+              }}
+            >
+              <TrendingUp size={14} /> +{metrics.recentResources} {t.dash.addedWeekSuffix}
+            </div>
+          </Card>
+        ) : (
+          <Card
             style={{
-              fontSize: "34px",
-              fontWeight: 700,
-              color: "var(--text-primary)",
-              marginBottom: "6px",
+              padding: "var(--space-5)",
+              cursor: "pointer",
+              transition: "transform 0.2s ease, border-color 0.2s ease",
+            }}
+            onClick={() => navigate("/tracker")}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = studyPalette.secondaryHex;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--border)";
             }}
           >
-            {metrics.totalResources}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              color: "var(--success)",
-              fontSize: "13px",
-            }}
-          >
-            <TrendingUp size={14} /> +{metrics.recentResources} {t.dash.addedWeekSuffix}
-          </div>
-        </Card>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "var(--space-3)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: "var(--text-secondary)",
+                  fontSize: "14px",
+                }}
+              >
+                <TrendingUp size={16} color={studyPalette.secondaryHex} /> {t.dash.progress}
+              </div>
+              <ArrowUpRight size={16} color="var(--text-muted)" />
+            </div>
+            <div
+              style={{
+                fontSize: "34px",
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                marginBottom: "6px",
+              }}
+            >
+              {metrics.progressPercent}%
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                color: "var(--success)",
+                fontSize: "13px",
+              }}
+            >
+              <TrendingUp size={14} /> +{metrics.recentCards} {t.dash.addedWeekSuffix}
+            </div>
+          </Card>
+        )}
 
-        {/* Карточка 2: Японские слова */}
+        {/* Карточка 2: Слова выбранного языка */}
         <Card
           style={{
             padding: "var(--space-5)",
@@ -400,7 +531,7 @@ export function Dashboard() {
           }}
           onClick={() => navigate("/japanese")}
           onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "#a855f7";
+            e.currentTarget.style.borderColor = studyPalette.accentHex;
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = "var(--border)";
@@ -423,7 +554,7 @@ export function Dashboard() {
                 fontSize: "14px",
               }}
             >
-              <LangIcon size={16} color="#a855f7" /> {t.dash.words}
+              <LangIcon size={16} color={studyPalette.accentHex} /> {studyText.dashWordsCardTitle}
             </div>
             <ArrowUpRight size={16} color="var(--text-muted)" />
           </div>
@@ -456,9 +587,9 @@ export function Dashboard() {
             padding: "var(--space-5)",
             cursor: "pointer",
             transition: "transform 0.2s ease, border-color 0.2s ease",
-            borderColor: metrics.dueCardsCount > 0 ? "var(--accent)" : "var(--border)",
+            borderColor: metrics.dueCardsCount > 0 ? "var(--vibe-banner-border)" : "var(--border)",
             backgroundColor:
-              metrics.dueCardsCount > 0 ? "var(--accent-soft)" : "var(--surface)",
+              metrics.dueCardsCount > 0 ? "var(--vibe-soft)" : "var(--surface)",
           }}
           onClick={() => navigate("/review")}
         >
@@ -479,7 +610,7 @@ export function Dashboard() {
                 fontSize: "14px",
               }}
             >
-              <RotateCw size={16} color="var(--accent)" /> {t.dash.dueTodayTitle}
+              <RotateCw size={16} color={studyPalette.accentHex} /> {t.dash.dueTodayTitle}
             </div>
             <Badge variant={metrics.dueCardsCount > 0 ? "accent" : "default"}>
               {metrics.dueCardsCount > 0 ? t.dash.dueBadge : t.dash.clearBadge}
@@ -746,8 +877,8 @@ export function Dashboard() {
         <Card
           style={{
             padding: "var(--space-6)",
-            background: "linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%)",
-            border: "1px solid rgba(59, 130, 246, 0.25)",
+            background: "var(--vibe-banner-bg)",
+            border: "1px solid var(--vibe-banner-border)",
             display: "flex",
             flexDirection: "column",
             gap: "var(--space-4)",
@@ -760,8 +891,8 @@ export function Dashboard() {
                   width: "40px",
                   height: "40px",
                   borderRadius: "10px",
-                  backgroundColor: "rgba(59, 130, 246, 0.15)",
-                  color: "var(--accent)",
+                  backgroundColor: "var(--vibe-soft)",
+                  color: studyPalette.accentHex,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -778,7 +909,7 @@ export function Dashboard() {
                 </p>
               </div>
             </div>
-            <Badge variant="accent">{t.dash.starterOnceBadge}</Badge>
+            <Badge variant="accent">{studyPalette.flag} {studyText.name}</Badge>
           </div>
 
           <div
@@ -788,11 +919,11 @@ export function Dashboard() {
               gap: "12px",
             }}
           >
-            {/* Японский N5 */}
-            {!isJapaneseClaimed && (
+            {/* Стартовый набор выбранного языка */}
+            {!isLangPackClaimed && (
               <Button
                 variant="secondary"
-                onClick={() => handleLoadStarterPack("japanese")}
+                onClick={() => handleLoadStarterPack("language")}
                 disabled={importingPack !== null}
                 style={{
                   display: "flex",
@@ -802,20 +933,20 @@ export function Dashboard() {
                   height: "auto",
                   textAlign: "left",
                   gap: "4px",
-                  borderColor: "rgba(59, 130, 246, 0.3)",
+                  borderColor: "var(--vibe-banner-border)",
                 }}
               >
                 <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
-                  {t.dash.starterJapTitle}
+                  {studyPalette.flag} {studyText.starterTitle}
                 </div>
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {importingPack === "japanese" ? t.common.importing : t.dash.starterJapDesc}
+                  {importingPack === "language" ? t.common.importing : studyText.starterDesc}
                 </div>
               </Button>
             )}
 
             {/* База разработчика */}
-            {!isDeveloperClaimed && (
+            {showProgramming && !isDeveloperClaimed && (
               <Button
                 variant="secondary"
                 onClick={() => handleLoadStarterPack("developer")}
@@ -841,7 +972,7 @@ export function Dashboard() {
             )}
 
             {/* GitHub закладки */}
-            {!isGithubClaimed && (
+            {showProgramming && !isGithubClaimed && (
               <Button
                 variant="secondary"
                 onClick={() => handleLoadStarterPack("github")}
@@ -867,7 +998,7 @@ export function Dashboard() {
             )}
 
             {/* Всё сразу */}
-            {!isJapaneseClaimed && !isDeveloperClaimed && !isGithubClaimed && (
+            {showProgramming && !isLangPackClaimed && !isDeveloperClaimed && !isGithubClaimed && (
               <Button
                 onClick={() => handleLoadStarterPack("all")}
                 disabled={importingPack !== null}
@@ -879,7 +1010,7 @@ export function Dashboard() {
                   height: "auto",
                   textAlign: "left",
                   gap: "4px",
-                  background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                  background: `linear-gradient(135deg, ${studyPalette.accentHex} 0%, ${studyPalette.secondaryHex} 100%)`,
                   color: "#fff",
                 }}
               >
@@ -923,7 +1054,8 @@ export function Dashboard() {
               {t.dash.progress}
             </h3>
             <Badge variant="default">
-              {metrics.totalResources + metrics.totalCards} {t.dash.vaultItemsSuffix}
+              {showProgramming ? metrics.totalResources + metrics.totalCards : metrics.totalCards}{" "}
+              {t.dash.vaultItemsSuffix}
             </Badge>
           </div>
 
@@ -951,7 +1083,7 @@ export function Dashboard() {
                   cx="50"
                   cy="50"
                   r="40"
-                  stroke="var(--accent)"
+                  stroke={studyPalette.accentHex}
                   strokeWidth="12"
                   strokeDasharray="251.2"
                   strokeDashoffset={
@@ -1002,9 +1134,13 @@ export function Dashboard() {
                   fontSize: "14px",
                 }}
               >
-                {metrics.totalResources === 0 && metrics.totalCards === 0
-                  ? t.dash.emptyVaultDesc
-                  : `${t.dash.progressSummaryPrefix} ${metrics.masteredWords} ${t.dash.progressSummaryMid}`}
+                {showProgramming
+                  ? metrics.totalResources === 0 && metrics.totalCards === 0
+                    ? t.dash.emptyVaultDesc
+                    : `${t.dash.progressSummaryPrefix} ${metrics.masteredWords} ${t.dash.progressSummaryMid}`
+                  : metrics.totalCards === 0
+                    ? studyText.section1.emptyText
+                    : `${metrics.masteredWords} / ${metrics.totalCards} ${studyText.wordsUnit} (${t.dash.masteredSuffix})`}
               </p>
 
               <div
@@ -1022,10 +1158,10 @@ export function Dashboard() {
                   {t.dash.openGraph}
                 </Button>
                 <Button
-                  onClick={() => navigate("/developer")}
+                  onClick={() => navigate(showProgramming ? "/developer" : "/japanese")}
                   style={{ fontSize: "13px", padding: "6px 12px" }}
                 >
-                  {t.dash.addMaterial}
+                  {showProgramming ? t.dash.addMaterial : studyText.hubTitle}
                 </Button>
               </div>
             </div>
@@ -1100,7 +1236,7 @@ export function Dashboard() {
                         metrics.dueCardsCount === 0 ? "line-through" : "none",
                     }}
                   >
-                    {t.dash.repeatWordsLabel} ({metrics.dueCardsCount})
+                    {studyText.dashReviewTaskTitle} ({metrics.dueCardsCount})
                   </div>
                   <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                     {t.dash.srsLabel}
@@ -1119,67 +1255,68 @@ export function Dashboard() {
             </div>
 
             {/* Задачи из реальных ресурсов */}
-            {metrics.pendingResources.map((res) => (
-              <div
-                key={res.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "10px 12px",
-                  backgroundColor: "var(--surface-raised)",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--border)",
-                }}
-              >
+            {showProgramming &&
+              metrics.pendingResources.map((res) => (
                 <div
+                  key={res.id}
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
-                    overflow: "hidden",
+                    justifyContent: "space-between",
+                    padding: "10px 12px",
+                    backgroundColor: "var(--surface-raised)",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border)",
                   }}
                 >
-                  <Circle
-                    size={18}
-                    color="var(--text-muted)"
-                    style={{ flexShrink: 0, cursor: "pointer" }}
-                    onClick={() => handleToggleResourceStatus(res)}
-                  />
-                  <div style={{ overflow: "hidden" }}>
-                    <div
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "var(--text-primary)",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {res.title}
-                    </div>
-                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                      {res.type}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <Circle
+                      size={18}
+                      color="var(--text-muted)"
+                      style={{ flexShrink: 0, cursor: "pointer" }}
+                      onClick={() => handleToggleResourceStatus(res)}
+                    />
+                    <div style={{ overflow: "hidden" }}>
+                      <div
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "var(--text-primary)",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {res.title}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                        {res.type}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <button
-                  onClick={() => window.open(res.url, "_blank")}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--text-secondary)",
-                    cursor: "pointer",
-                    padding: "4px",
-                  }}
-                  title={t.common.open}
-                >
-                  <ExternalLink size={15} />
-                </button>
-              </div>
-            ))}
+                  <button
+                    onClick={() => window.open(res.url, "_blank")}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "var(--text-secondary)",
+                      cursor: "pointer",
+                      padding: "4px",
+                    }}
+                    title={t.common.open}
+                  >
+                    <ExternalLink size={15} />
+                  </button>
+                </div>
+              ))}
 
             {metrics.pendingResources.length === 0 && metrics.dueCardsCount === 0 && (
               <div
@@ -1198,146 +1335,296 @@ export function Dashboard() {
           <Button
             style={{ width: "100%", marginTop: "var(--space-4)" }}
             onClick={() =>
-              metrics.dueCardsCount > 0 ? navigate("/review") : navigate("/developer")
+              metrics.dueCardsCount > 0
+                ? navigate("/review")
+                : navigate(showProgramming ? "/developer" : "/japanese")
             }
           >
-            {metrics.dueCardsCount > 0 ? t.dash.startReviewCta : t.dash.continue}
+            {metrics.dueCardsCount > 0
+              ? t.dash.startReviewCta
+              : showProgramming
+                ? t.dash.continue
+                : studyText.hubTitle}
           </Button>
         </Card>
       </div>
 
-      {/* Секция: Недавно добавленные материалы (Quick Access) */}
-      <div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "var(--space-4)",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "18px",
-              fontWeight: 600,
-              margin: 0,
-              color: "var(--text-primary)",
-            }}
-          >
-            {t.dash.recentMaterials}
-          </h3>
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/developer")}
-            style={{ fontSize: "13px" }}
-          >
-            {t.dash.allMaterials} ({resources.length}) →
-          </Button>
-        </div>
-
-        {resources.length === 0 ? (
-          <Card
-            style={{
-              padding: "var(--space-8)",
-              textAlign: "center",
-              color: "var(--text-muted)",
-            }}
-          >
-            <BookOpen size={32} style={{ marginBottom: "12px", opacity: 0.5 }} />
-            <p style={{ margin: "0 0 12px 0", fontSize: "15px" }}>
-              {t.dash.noMaterialsYet}
-            </p>
-            <Button onClick={() => navigate("/developer")}>
-              <Plus size={16} /> {t.dash.addFirstMaterial}
-            </Button>
-          </Card>
-        ) : (
+      {/* Секция: Недавно добавленные материалы или карточки языка (Quick Access) */}
+      {showProgramming ? (
+        <div>
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: "var(--space-4)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "var(--space-4)",
             }}
           >
-            {resources.slice(0, 4).map((item) => (
-              <Card
-                key={item.id}
-                style={{
-                  padding: "var(--space-4)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-2)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Badge variant="default">{item.type}</Badge>
-                  <button
-                    onClick={() => window.open(item.url, "_blank")}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "var(--text-muted)",
-                      cursor: "pointer",
-                    }}
-                    title={t.common.open}
-                  >
-                    <ExternalLink size={14} />
-                  </button>
-                </div>
-
-                <h4
-                  style={{
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    margin: "4px 0",
-                    color: "var(--text-primary)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {item.title}
-                </h4>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginTop: "auto",
-                    paddingTop: "6px",
-                    fontSize: "12px",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  <span>
-                    {new Date(item.createdAt).toLocaleDateString(locale, {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </span>
-                  <span
-                    style={{
-                      color:
-                        item.status === "COMPLETED"
-                          ? "var(--success)"
-                          : "var(--text-secondary)",
-                    }}
-                  >
-                    {t.dash.statusLabels[item.status] || item.status.replace("_", " ")}
-                  </span>
-                </div>
-              </Card>
-            ))}
+            <h3
+              style={{
+                fontSize: "18px",
+                fontWeight: 600,
+                margin: 0,
+                color: "var(--text-primary)",
+              }}
+            >
+              {t.dash.recentMaterials}
+            </h3>
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/developer")}
+              style={{ fontSize: "13px" }}
+            >
+              {t.dash.allMaterials} ({resources.length}) →
+            </Button>
           </div>
-        )}
-      </div>
+
+          {resources.length === 0 ? (
+            <Card
+              style={{
+                padding: "var(--space-8)",
+                textAlign: "center",
+                color: "var(--text-muted)",
+              }}
+            >
+              <BookOpen size={32} style={{ marginBottom: "12px", opacity: 0.5 }} />
+              <p style={{ margin: "0 0 12px 0", fontSize: "15px" }}>
+                {t.dash.noMaterialsYet}
+              </p>
+              <Button onClick={() => navigate("/developer")}>
+                <Plus size={16} /> {t.dash.addFirstMaterial}
+              </Button>
+            </Card>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                gap: "var(--space-4)",
+              }}
+            >
+              {resources.slice(0, 4).map((item) => (
+                <Card
+                  key={item.id}
+                  style={{
+                    padding: "var(--space-4)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "var(--space-2)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Badge variant="default">{item.type}</Badge>
+                    <button
+                      onClick={() => window.open(item.url, "_blank")}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--text-muted)",
+                        cursor: "pointer",
+                      }}
+                      title={t.common.open}
+                    >
+                      <ExternalLink size={14} />
+                    </button>
+                  </div>
+
+                  <h4
+                    style={{
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      margin: "4px 0",
+                      color: "var(--text-primary)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {item.title}
+                  </h4>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginTop: "auto",
+                      paddingTop: "6px",
+                      fontSize: "12px",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    <span>
+                      {new Date(item.createdAt).toLocaleDateString(locale, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                    <span
+                      style={{
+                        color:
+                          item.status === "COMPLETED"
+                            ? "var(--success)"
+                            : "var(--text-secondary)",
+                      }}
+                    >
+                      {t.dash.statusLabels[item.status] || item.status.replace("_", " ")}
+                    </span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "var(--space-4)",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "18px",
+                fontWeight: 600,
+                margin: 0,
+                color: "var(--text-primary)",
+              }}
+            >
+              {studyPalette.flag} {studyText.hubTitle}
+            </h3>
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/japanese")}
+              style={{ fontSize: "13px" }}
+            >
+              {studyText.navLabel} ({cards.length}) →
+            </Button>
+          </div>
+
+          {cards.length === 0 ? (
+            <Card
+              style={{
+                padding: "var(--space-8)",
+                textAlign: "center",
+                color: "var(--text-muted)",
+              }}
+            >
+              <LangIcon size={32} style={{ marginBottom: "12px", opacity: 0.5 }} />
+              <p style={{ margin: "0 0 12px 0", fontSize: "15px" }}>
+                {studyText.section1.emptyText}
+              </p>
+              <Button onClick={() => navigate("/japanese")}>
+                <Plus size={16} /> {studyText.section1.addTitle}
+              </Button>
+            </Card>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gap: "var(--space-4)",
+              }}
+            >
+              {cards.slice(0, 4).map((card) => {
+                const deArt = studyLanguage === "de" ? getGermanArticleStyle(card.word) : null;
+                return (
+                  <Card
+                    key={card.id}
+                    onClick={() => navigate("/japanese")}
+                    style={{
+                      padding: "var(--space-4)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "var(--space-2)",
+                      cursor: "pointer",
+                      borderColor: deArt?.article ? `${deArt.color}33` : "var(--border)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Badge variant="default">
+                        {card.type === studyText.section2.id
+                          ? studyText.section2.cardBadge
+                          : studyText.section1.cardBadge}
+                      </Badge>
+                      {deArt?.article && (
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                            padding: "2px 6px",
+                            borderRadius: "4px",
+                            backgroundColor: deArt.bg,
+                            color: deArt.color,
+                          }}
+                        >
+                          {deArt.article}
+                        </span>
+                      )}
+                    </div>
+
+                    <h4
+                      style={{
+                        fontSize: "17px",
+                        fontWeight: 700,
+                        margin: "4px 0 2px",
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {card.word}
+                    </h4>
+
+                    {card.reading && (
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                        {card.reading}
+                      </div>
+                    )}
+
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginTop: "auto",
+                        paddingTop: "6px",
+                        fontSize: "13px",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      <span>{card.meaning}</span>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          color: "var(--vibe-accent)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {studyText.levelPrefix} {card.level}
+                      </span>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -15,25 +15,29 @@ import {
   Sparkles,
   BookA,
   Scroll,
+  Volume2,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
 import { confirmModal } from "../context/DialogContext";
 import {
-  STARTER_JAPANESE_CARDS,
+  getStarterCardsForStudy,
+  studyLanguageToPackType,
   isPackClaimed,
   markPackClaimed,
   unmarkPackClaimed,
 } from "../data/starterPacks";
+import { getGermanArticleStyle } from "../data/studyVibes";
 
-type HubSection = "KANJI" | "KANA";
+type HubSlot = "S1" | "S2";
 
-interface JapaneseCard {
+interface StudyCard {
   id: string;
   word: string;
   reading?: string;
   meaning: string;
   type: string;
+  language?: string;
   level: number;
 }
 
@@ -61,16 +65,29 @@ const playFlipSound = () => {
   }
 };
 
+const speakPhrase = (text: string, lang: string) => {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = lang;
+    utter.rate = lang.startsWith("ja") ? 0.9 : 0.95;
+    window.speechSynthesis.speak(utter);
+  } catch {
+    // синтез речи опционален
+  }
+};
+
 function FlashcardItem({
   item,
-  section,
+  slot,
   onDelete,
 }: {
-  item: JapaneseCard;
-  section: HubSection;
+  item: StudyCard;
+  slot: HubSlot;
   onDelete: (id: string) => void;
 }) {
-  const { t } = useApp();
+  const { t, studyLanguage, studyText, studyPalette } = useApp();
   const [isFlipped, setIsFlipped] = useState(false);
 
   const handleFlip = () => {
@@ -78,7 +95,10 @@ function FlashcardItem({
     setIsFlipped(!isFlipped);
   };
 
-  const isKanjiSection = section === "KANJI";
+  const isS1 = slot === "S1";
+  const accentColor = isS1 ? studyPalette.accentHex : studyPalette.secondaryHex;
+  const deArticle = studyLanguage === "de" ? getGermanArticleStyle(item.word) : null;
+  const isJa = studyLanguage === "ja";
 
   return (
     <Card
@@ -87,65 +107,123 @@ function FlashcardItem({
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        minHeight: "155px",
+        minHeight: "160px",
         cursor: "pointer",
         textAlign: "center",
         padding: "var(--space-4)",
         transition: "all 0.2s ease",
         backgroundColor: isFlipped ? "var(--surface-raised)" : "var(--surface)",
         border: isFlipped
-          ? `1px solid ${isKanjiSection ? "#a855f7" : "var(--accent)"}`
-          : "1px solid var(--border)",
+          ? `1px solid ${accentColor}`
+          : deArticle?.article
+            ? `1px solid ${deArticle.color}40`
+            : "1px solid var(--border)",
         position: "relative",
       }}
       onClick={handleFlip}
     >
-      {/* Кнопка удаления */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(item.id);
-        }}
-        title={t.jap.deleteCardTitle}
+      {/* Озвучка и удаление */}
+      <div
         style={{
           position: "absolute",
           top: "8px",
           right: "8px",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: "var(--text-muted)",
-          padding: "4px",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
-          borderRadius: "4px",
-          transition: "color 0.2s ease",
+          gap: "2px",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
-        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
       >
-        <Trash2 size={14} />
-      </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const cleanText = isJa ? item.reading || item.word : item.word;
+            speakPhrase(cleanText, studyPalette.ttsLang);
+          }}
+          title={studyPalette.ttsLang}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "var(--text-muted)",
+            padding: "4px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "4px",
+            transition: "color 0.2s ease",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = accentColor)}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+        >
+          <Volume2 size={14} />
+        </button>
 
-      {/* Бейдж типа раздела */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(item.id);
+          }}
+          title={t.jap.deleteCardTitle}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "var(--text-muted)",
+            padding: "4px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "4px",
+            transition: "color 0.2s ease",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+
+      {/* Бейдж типа раздела + артикль для немецкого */}
       <div
         style={{
           position: "absolute",
           top: "8px",
           left: "8px",
-          fontSize: "10px",
-          fontWeight: 700,
-          textTransform: "uppercase",
-          padding: "2px 6px",
-          borderRadius: "4px",
-          backgroundColor: isKanjiSection
-            ? "rgba(168, 85, 247, 0.15)"
-            : "rgba(59, 130, 246, 0.15)",
-          color: isKanjiSection ? "#c084fc" : "#60a5fa",
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
         }}
       >
-        {isKanjiSection ? `1. ${t.review.badgeKanji}` : `2. ${t.review.badgeKana}`}
+        <div
+          style={{
+            fontSize: "10px",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            padding: "2px 6px",
+            borderRadius: "4px",
+            backgroundColor: `${accentColor}22`,
+            color: accentColor,
+          }}
+        >
+          {isS1
+            ? `1. ${studyText.section1.cardBadge}`
+            : `2. ${studyText.section2.cardBadge}`}
+        </div>
+        {deArticle?.article && (
+          <div
+            style={{
+              fontSize: "10px",
+              fontWeight: 800,
+              textTransform: "uppercase",
+              padding: "2px 6px",
+              borderRadius: "4px",
+              backgroundColor: deArticle.bg,
+              color: deArticle.color,
+            }}
+          >
+            {deArticle.article}
+          </div>
+        )}
       </div>
 
       {!isFlipped ? (
@@ -155,11 +233,11 @@ function FlashcardItem({
             flexDirection: "column",
             alignItems: "center",
             width: "100%",
-            marginTop: "12px",
+            marginTop: "14px",
           }}
         >
-          {/* Чтение (фуригана) показывается над словом, если есть */}
-          {item.reading && isKanjiSection && (
+          {/* Подпись / чтение / транскрипция */}
+          {item.reading && (isJa ? isS1 : false) && (
             <span
               style={{
                 fontSize: "13px",
@@ -174,19 +252,32 @@ function FlashcardItem({
 
           <span
             style={{
-              fontSize: isKanjiSection ? "34px" : "28px",
+              fontSize: isJa ? (isS1 ? "32px" : "26px") : item.word.length > 22 ? "17px" : "21px",
+              fontWeight: isJa ? 500 : 700,
               color: "var(--text-primary)",
-              fontFamily: "var(--font-jp)",
-              lineHeight: "1.2",
-              letterSpacing: isKanjiSection ? "2px" : "1px",
+              fontFamily: isJa ? "var(--font-jp)" : "inherit",
+              lineHeight: "1.28",
+              letterSpacing: isJa ? (isS1 ? "2px" : "1px") : "normal",
             }}
           >
             {item.word}
           </span>
 
+          {item.reading && !isJa && (
+            <span
+              style={{
+                fontSize: "12px",
+                color: "var(--text-muted)",
+                marginTop: "4px",
+              }}
+            >
+              {item.reading}
+            </span>
+          )}
+
           <div style={{ marginTop: "var(--space-3)" }}>
             <Badge variant={item.level > 0 ? "success" : "default"}>
-              {t.jap.levelPrefix} {item.level}
+              {studyText.levelPrefix} {item.level}
             </Badge>
           </div>
         </div>
@@ -198,15 +289,15 @@ function FlashcardItem({
             gap: "var(--space-2)",
             width: "100%",
             alignItems: "center",
-            marginTop: "12px",
+            marginTop: "14px",
           }}
         >
           {item.reading && (
             <span
               style={{
-                fontSize: "14px",
+                fontSize: "13px",
                 color: "var(--text-secondary)",
-                fontFamily: "var(--font-jp)",
+                fontFamily: isJa ? "var(--font-jp)" : "inherit",
               }}
             >
               {item.reading}
@@ -214,15 +305,15 @@ function FlashcardItem({
           )}
           <span
             style={{
-              fontSize: "18px",
-              color: isKanjiSection ? "#c084fc" : "var(--accent)",
+              fontSize: "17px",
+              color: accentColor,
               fontWeight: 600,
             }}
           >
             {item.meaning}
           </span>
           <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-            {t.jap.clickToHide}
+            {studyText.clickToHide}
           </span>
         </div>
       )}
@@ -232,27 +323,42 @@ function FlashcardItem({
 
 export function JapaneseHub() {
   const navigate = useNavigate();
-  const { t } = useApp();
+  const {
+    t,
+    language,
+    studyLanguage,
+    studyText,
+    studyPalette,
+  } = useApp();
   const { evaluateAchievements } = useAchievements();
 
-  // Раздел: по умолчанию открываем КАНА (Хирагана и Катакана), если не сохранено иное,
-  // так как пользователь начинает с азбуки и пока не знает кандзи
-  const [activeSection, setActiveSection] = useState<HubSection>(() => {
-    const saved = localStorage.getItem("kavault_japanese_section");
-    if (saved === "KANJI" || saved === "KANA") return saved;
-    return "KANA";
-  });
+  const defaultSlotForLang = (lang: string): HubSlot => {
+    const saved = localStorage.getItem(`kavault_lang_slot_${lang}`);
+    if (saved === "S1" || saved === "S2") return saved;
+    return lang === "ja" ? "S2" : "S1";
+  };
 
-  const [cards, setCards] = useState<JapaneseCard[]>([]);
+  const [activeSlot, setActiveSlot] = useState<HubSlot>(() =>
+    defaultSlotForLang(studyLanguage),
+  );
+
+  const [cards, setCards] = useState<StudyCard[]>([]);
   const [word, setWord] = useState("");
   const [reading, setReading] = useState("");
   const [meaning, setMeaning] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isImporting, setIsImporting] = useState(false);
 
+  const activeLangPack = studyLanguageToPackType(studyLanguage);
+
+  useEffect(() => {
+    setActiveSlot(defaultSlotForLang(studyLanguage));
+    setSearchQuery("");
+  }, [studyLanguage]);
+
   const fetchCards = async (evaluate = false) => {
     try {
-      const response = await api.get("/japanese");
+      const response = await api.get(`/japanese?language=${studyLanguage}`);
       const list = response.data || [];
       setCards(list);
       if (evaluate) {
@@ -264,15 +370,16 @@ export function JapaneseHub() {
   };
 
   const isStarterClaimed = useMemo(
-    () => isPackClaimed("japanese", cards),
-    [cards],
+    () => isPackClaimed(activeLangPack, cards),
+    [activeLangPack, cards],
   );
 
   const handleLoadStarterPack = async () => {
     try {
       setIsImporting(true);
-      await api.post("/japanese/bulk", { items: STARTER_JAPANESE_CARDS });
-      markPackClaimed("japanese");
+      const items = getStarterCardsForStudy(studyLanguage, language);
+      await api.post("/japanese/bulk", { items, language: studyLanguage });
+      markPackClaimed(activeLangPack);
       await fetchCards(true);
     } catch (err) {
       console.error("Ошибка загрузки стартового набора", err);
@@ -283,29 +390,36 @@ export function JapaneseHub() {
 
   useEffect(() => {
     fetchCards();
-  }, []);
+  }, [studyLanguage]);
 
-  // Разделение колоды на 2 независимых раздела
-  const { kanaCards, kanjiCards } = useMemo(() => {
-    const kana: JapaneseCard[] = [];
-    const kanji: JapaneseCard[] = [];
+  // Разделение колоды на 2 независимых раздела для активного языка
+  const { section1Cards, section2Cards } = useMemo(() => {
+    const s1: StudyCard[] = [];
+    const s2: StudyCard[] = [];
 
     cards.forEach((c) => {
-      // Если тип KANJI или в слове есть иероглифы кандзи
-      if (c.type === "KANJI" || hasKanji(c.word)) {
-        kanji.push(c);
+      if (studyLanguage === "ja") {
+        if (c.type === "KANJI" || hasKanji(c.word)) {
+          s1.push(c);
+        } else {
+          s2.push(c);
+        }
       } else {
-        // Слова без иероглифов (хирагана, катакана)
-        kana.push(c);
+        if (c.type === "GRAMMAR") {
+          s2.push(c);
+        } else {
+          s1.push(c);
+        }
       }
     });
 
-    return { kanaCards: kana, kanjiCards: kanji };
-  }, [cards]);
+    return { section1Cards: s1, section2Cards: s2 };
+  }, [cards, studyLanguage]);
 
-  // Карточки текущего активного раздела
   const currentSectionCards =
-    activeSection === "KANJI" ? kanjiCards : kanaCards;
+    activeSlot === "S1" ? section1Cards : section2Cards;
+  const currentSecText =
+    activeSlot === "S1" ? studyText.section1 : studyText.section2;
 
   // Фильтрация поиском
   const filteredCards = useMemo(() => {
@@ -319,9 +433,9 @@ export function JapaneseHub() {
     );
   }, [currentSectionCards, searchQuery]);
 
-  const handleSelectSection = (section: HubSection) => {
-    setActiveSection(section);
-    localStorage.setItem("kavault_japanese_section", section);
+  const handleSelectSlot = (slot: HubSlot) => {
+    setActiveSlot(slot);
+    localStorage.setItem(`kavault_lang_slot_${studyLanguage}`, slot);
     setSearchQuery("");
   };
 
@@ -334,7 +448,8 @@ export function JapaneseHub() {
         word: word.trim(),
         reading: reading.trim() || undefined,
         meaning: meaning.trim(),
-        type: activeSection === "KANJI" ? "KANJI" : "KANA",
+        type: currentSecText.id,
+        language: studyLanguage,
       });
       setWord("");
       setReading("");
@@ -368,10 +483,7 @@ export function JapaneseHub() {
 
   const handleClearSection = async () => {
     if (currentSectionCards.length === 0) return;
-    const sectionName =
-      activeSection === "KANJI"
-        ? t.jap.section1Title
-        : t.jap.section2Title;
+    const sectionName = currentSecText.title;
     const confirmed = await confirmModal({
       title: `${t.jap.clearSectionTitlePrefix} «${sectionName}»?`,
       message: `${t.jap.clearSectionMsgPrefix} (${currentSectionCards.length}) ${t.jap.clearSectionMsgSuffix}`,
@@ -383,8 +495,10 @@ export function JapaneseHub() {
     if (!confirmed) return;
 
     try {
-      await api.delete(`/japanese/clear/all?section=${activeSection}`);
-      unmarkPackClaimed("japanese");
+      await api.delete(
+        `/japanese/clear/all?section=${currentSecText.id}&language=${studyLanguage}`,
+      );
+      unmarkPackClaimed(activeLangPack);
       fetchCards();
     } catch (error) {
       console.error("Ошибка очистки раздела", error);
@@ -404,13 +518,16 @@ export function JapaneseHub() {
     if (!confirmed) return;
 
     try {
-      await api.delete("/japanese/clear/all");
-      unmarkPackClaimed("japanese");
+      await api.delete(`/japanese/clear/all?language=${studyLanguage}`);
+      unmarkPackClaimed(activeLangPack);
       fetchCards();
     } catch (error) {
       console.error("Ошибка очистки всей колоды", error);
     }
   };
+
+  const isS1 = activeSlot === "S1";
+  const activeColor = isS1 ? studyPalette.accentHex : studyPalette.secondaryHex;
 
   return (
     <div
@@ -420,49 +537,93 @@ export function JapaneseHub() {
         gap: "var(--space-8)",
       }}
     >
-      {/* Верхний заголовок */}
+      {/* Верхний заголовок с культурным вайбом */}
       <div
         style={{
+          position: "relative",
+          overflow: "hidden",
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "flex-start",
+          alignItems: "center",
           flexWrap: "wrap",
           gap: "var(--space-4)",
+          padding: "var(--space-6)",
+          borderRadius: "var(--radius-lg)",
+          background: "var(--vibe-banner-bg)",
+          border: "1px solid var(--vibe-banner-border)",
         }}
       >
-        <div>
+        <div
+          style={{
+            position: "absolute",
+            right: "18px",
+            top: "-8px",
+            fontSize: "74px",
+            fontWeight: 800,
+            opacity: 0.06,
+            pointerEvents: "none",
+            userSelect: "none",
+            color: studyPalette.accentHex,
+            lineHeight: 1,
+          }}
+        >
+          {studyPalette.watermark}
+        </div>
+
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px 10px",
+              borderRadius: "999px",
+              backgroundColor: "var(--vibe-soft)",
+              border: "1px solid var(--vibe-banner-border)",
+              color: "var(--vibe-accent)",
+              fontSize: "12px",
+              fontWeight: 600,
+              marginBottom: "8px",
+            }}
+          >
+            <span>{studyPalette.flag}</span>
+            <span>{studyText.vibeBadge}</span>
+          </div>
           <h2
             style={{
               fontSize: "28px",
               fontWeight: 600,
-              margin: "0 0 var(--space-2) 0",
+              margin: "0 0 var(--space-1) 0",
               color: "var(--text-primary)",
             }}
           >
-            {t.jap.title}
+            {studyText.hubTitle}
           </h2>
-          <p style={{ color: "var(--text-muted)", margin: 0 }}>
-            {activeSection === "KANJI"
-              ? t.jap.subtitleKanji
-              : t.jap.subtitleKana}
+          <p style={{ color: "var(--text-secondary)", margin: "0 0 4px 0", fontSize: "14px" }}>
+            {isS1 ? studyText.subtitleS1 : studyText.subtitleS2}
+          </p>
+          <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "12px" }}>
+            {studyText.vibeQuote}
           </p>
         </div>
 
         {/* Кнопка запуска сессии повторения с передачей режима */}
         <Button
-          onClick={() => navigate(`/review?mode=${activeSection.toLowerCase()}`)}
+          onClick={() => navigate(`/review?mode=${currentSecText.id.toLowerCase()}`)}
           style={{
+            position: "relative",
+            zIndex: 1,
             gap: "8px",
-            backgroundColor: activeSection === "KANJI" ? "#a855f7" : "var(--accent)",
+            backgroundColor: activeColor,
+            color: "#ffffff",
           }}
         >
-          <Sparkles size={16} />{" "}
-          {activeSection === "KANJI" ? t.jap.repeatKanjiBtn : t.jap.repeatKanaBtn} (
+          <Sparkles size={16} /> {currentSecText.repeatBtn} (
           {currentSectionCards.length}) →
         </Button>
       </div>
 
-      {/* ── 2 ГЛАВНЫХ РАЗДЕЛА: ТАБЫ ВЫБОРА (1. Кандзи | 2. Хирагана и Катакана) ── */}
+      {/* ── 2 ГЛАВНЫХ РАЗДЕЛА ДЛЯ ИЗУЧАЕМОГО ЯЗЫКА ── */}
       <div
         style={{
           display: "grid",
@@ -470,20 +631,18 @@ export function JapaneseHub() {
           gap: "var(--space-4)",
         }}
       >
-        {/* Раздел 1: Кандзи (Иероглифы) */}
+        {/* Раздел 1 */}
         <Card
-          onClick={() => handleSelectSection("KANJI")}
+          onClick={() => handleSelectSlot("S1")}
           style={{
             padding: "var(--space-5)",
             cursor: "pointer",
-            border:
-              activeSection === "KANJI"
-                ? "2px solid #a855f7"
-                : "1px solid var(--border)",
-            backgroundColor:
-              activeSection === "KANJI"
-                ? "var(--surface-raised)"
-                : "var(--surface)",
+            border: isS1
+              ? `2px solid ${studyPalette.accentHex}`
+              : "1px solid var(--border)",
+            backgroundColor: isS1
+              ? "var(--surface-raised)"
+              : "var(--surface)",
             transition: "all 0.2s ease",
             display: "flex",
             alignItems: "center",
@@ -496,11 +655,10 @@ export function JapaneseHub() {
                 width: "42px",
                 height: "42px",
                 borderRadius: "10px",
-                backgroundColor:
-                  activeSection === "KANJI"
-                    ? "#a855f7"
-                    : "var(--surface-raised)",
-                color: activeSection === "KANJI" ? "#fff" : "var(--text-muted)",
+                backgroundColor: isS1
+                  ? studyPalette.accentHex
+                  : "var(--surface-raised)",
+                color: isS1 ? "#fff" : "var(--text-muted)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -519,32 +677,30 @@ export function JapaneseHub() {
                   gap: "6px",
                 }}
               >
-                {t.jap.section1Title}
+                {studyText.section1.title}
               </div>
               <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                {t.jap.section1Desc}
+                {studyText.section1.desc}
               </div>
             </div>
           </div>
-          <Badge variant={activeSection === "KANJI" ? "accent" : "default"}>
-            {kanjiCards.length} {t.jap.wordsUnit}
+          <Badge variant={isS1 ? "accent" : "default"}>
+            {section1Cards.length} {studyText.wordsUnit}
           </Badge>
         </Card>
 
-        {/* Раздел 2: Хирагана и Катакана */}
+        {/* Раздел 2 */}
         <Card
-          onClick={() => handleSelectSection("KANA")}
+          onClick={() => handleSelectSlot("S2")}
           style={{
             padding: "var(--space-5)",
             cursor: "pointer",
-            border:
-              activeSection === "KANA"
-                ? "2px solid var(--accent)"
-                : "1px solid var(--border)",
-            backgroundColor:
-              activeSection === "KANA"
-                ? "var(--surface-raised)"
-                : "var(--surface)",
+            border: !isS1
+              ? `2px solid ${studyPalette.secondaryHex}`
+              : "1px solid var(--border)",
+            backgroundColor: !isS1
+              ? "var(--surface-raised)"
+              : "var(--surface)",
             transition: "all 0.2s ease",
             display: "flex",
             alignItems: "center",
@@ -557,11 +713,10 @@ export function JapaneseHub() {
                 width: "42px",
                 height: "42px",
                 borderRadius: "10px",
-                backgroundColor:
-                  activeSection === "KANA"
-                    ? "var(--accent)"
-                    : "var(--surface-raised)",
-                color: activeSection === "KANA" ? "#fff" : "var(--text-muted)",
+                backgroundColor: !isS1
+                  ? studyPalette.secondaryHex
+                  : "var(--surface-raised)",
+                color: !isS1 ? "#fff" : "var(--text-muted)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -580,20 +735,20 @@ export function JapaneseHub() {
                   gap: "6px",
                 }}
               >
-                {t.jap.section2Title}
+                {studyText.section2.title}
               </div>
               <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                {t.jap.section2Desc}
+                {studyText.section2.desc}
               </div>
             </div>
           </div>
-          <Badge variant={activeSection === "KANA" ? "accent" : "default"}>
-            {kanaCards.length} {t.jap.wordsUnit}
+          <Badge variant={!isS1 ? "accent" : "default"}>
+            {section2Cards.length} {studyText.wordsUnit}
           </Badge>
         </Card>
       </div>
 
-      {/* ── ФОРМА ДОБАВЛЕНИЯ СЛОВА (АДАПТИВНАЯ ПОД РАЗДЕЛ) ── */}
+      {/* ── ФОРМА ДОБАВЛЕНИЯ СЛОВА (АДАПТИВНАЯ ПОД ЯЗЫК И РАЗДЕЛ) ── */}
       <Card style={{ padding: "var(--space-5)" }}>
         <h3
           style={{
@@ -605,13 +760,13 @@ export function JapaneseHub() {
             gap: "8px",
           }}
         >
-          {activeSection === "KANJI" ? (
+          {isS1 ? (
             <>
-              <Scroll size={18} color="#a855f7" /> {t.jap.addKanjiTitle}
+              <Scroll size={18} color={studyPalette.accentHex} /> {currentSecText.addTitle}
             </>
           ) : (
             <>
-              <BookA size={18} color="var(--accent)" /> {t.jap.addKanaTitle}
+              <BookA size={18} color={studyPalette.secondaryHex} /> {currentSecText.addTitle}
             </>
           )}
         </h3>
@@ -629,23 +784,19 @@ export function JapaneseHub() {
           <div style={{ flex: "1 1 240px" }}>
             <Input
               icon={<Type size={16} />}
-              placeholder={
-                activeSection === "KANJI"
-                  ? t.jap.wordKanjiPlaceholder
-                  : t.jap.wordKanaPlaceholder
-              }
+              placeholder={currentSecText.wordPlaceholder}
               value={word}
               onChange={(e) => setWord(e.target.value)}
               required
             />
           </div>
 
-          {/* Поле 2: Чтение фуриганой (только для Кандзи) */}
-          {activeSection === "KANJI" && (
+          {/* Поле 2: Чтение / Транскрипция / Форма */}
+          {currentSecText.showReadingInput && (
             <div style={{ flex: "1 1 200px" }}>
               <Input
                 icon={<Languages size={16} />}
-                placeholder={t.jap.readingPlaceholder}
+                placeholder={currentSecText.readingPlaceholder || studyText.readingLabelPlaceholder}
                 value={reading}
                 onChange={(e) => setReading(e.target.value)}
               />
@@ -656,11 +807,7 @@ export function JapaneseHub() {
           <div style={{ flex: "1 1 220px" }}>
             <Input
               icon={<BookOpen size={16} />}
-              placeholder={
-                activeSection === "KANJI"
-                  ? t.jap.meaningKanjiPlaceholder
-                  : t.jap.meaningKanaPlaceholder
-              }
+              placeholder={currentSecText.meaningPlaceholder}
               value={meaning}
               onChange={(e) => setMeaning(e.target.value)}
               required
@@ -671,8 +818,8 @@ export function JapaneseHub() {
             type="submit"
             style={{
               height: "40px",
-              backgroundColor:
-                activeSection === "KANJI" ? "#a855f7" : "var(--accent)",
+              backgroundColor: activeColor,
+              color: "#ffffff",
             }}
           >
             <Plus size={18} /> {t.jap.addBtn}
@@ -701,9 +848,7 @@ export function JapaneseHub() {
                 fontWeight: 600,
               }}
             >
-              {activeSection === "KANJI"
-                ? `${t.jap.deckKanjiTitle} (${filteredCards.length})`
-                : `${t.jap.deckKanaTitle} (${filteredCards.length})`}
+              {currentSecText.deckTitle} ({filteredCards.length})
             </h3>
 
             {!isStarterClaimed && (
@@ -714,13 +859,13 @@ export function JapaneseHub() {
                 style={{
                   padding: "4px 10px",
                   fontSize: "12px",
-                  color: "var(--accent)",
-                  borderColor: "rgba(59, 130, 246, 0.4)",
+                  color: studyPalette.accentHex,
+                  borderColor: "var(--vibe-banner-border)",
                   gap: "6px",
                 }}
-                title={t.jap.loadStarterFullBtn}
+                title={studyText.starterFullBtn}
               >
-                <Sparkles size={13} /> {isImporting ? t.jap.loadingBtn : t.jap.loadStarterBtn}
+                <Sparkles size={13} /> {isImporting ? t.jap.loadingBtn : studyText.starterBtn}
               </Button>
             )}
 
@@ -737,9 +882,9 @@ export function JapaneseHub() {
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
-                title={activeSection === "KANJI" ? t.jap.clearKanjiBtn : t.jap.clearKanaBtn}
+                title={currentSecText.clearBtn}
               >
-                <Trash2 size={13} /> {activeSection === "KANJI" ? t.jap.clearKanjiBtn : t.jap.clearKanaBtn}
+                <Trash2 size={13} /> {currentSecText.clearBtn}
               </Button>
             )}
 
@@ -756,9 +901,9 @@ export function JapaneseHub() {
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
-                title={t.jap.clearAllDeckBtn}
+                title={studyText.clearAllDeckBtn}
               >
-                <Trash2 size={13} /> {t.jap.clearAllDeckBtn} ({cards.length})
+                <Trash2 size={13} /> {studyText.clearAllDeckBtn} ({cards.length})
               </Button>
             )}
           </div>
@@ -786,19 +931,21 @@ export function JapaneseHub() {
             }}
           >
             <p style={{ margin: 0, fontSize: "15px" }}>
-              {searchQuery
-                ? t.jap.notFound
-                : activeSection === "KANJI"
-                  ? t.jap.emptyKanji
-                  : t.jap.emptyKana}
+              {searchQuery ? studyText.notFound : currentSecText.emptyText}
             </p>
             {!searchQuery && !isStarterClaimed && (
               <Button
                 onClick={handleLoadStarterPack}
                 disabled={isImporting}
-                style={{ gap: "8px", marginTop: "6px" }}
+                style={{
+                  gap: "8px",
+                  marginTop: "6px",
+                  backgroundColor: studyPalette.accentHex,
+                  color: "#ffffff",
+                }}
               >
-                <Sparkles size={16} /> {isImporting ? t.jap.importingCardsBtn : t.jap.loadStarterFullBtn}
+                <Sparkles size={16} />{" "}
+                {isImporting ? t.jap.importingCardsBtn : studyText.starterFullBtn}
               </Button>
             )}
           </Card>
@@ -814,7 +961,7 @@ export function JapaneseHub() {
               <FlashcardItem
                 key={item.id}
                 item={item}
-                section={activeSection}
+                slot={activeSlot}
                 onDelete={handleDeleteCard}
               />
             ))}

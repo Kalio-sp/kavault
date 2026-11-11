@@ -6,6 +6,7 @@ import { Badge } from "../components/ui/Badge";
 import { api } from "../api/axios";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
+import { getGermanArticleStyle } from "../data/studyVibes";
 import {
   CheckCircle2,
   Sparkles,
@@ -18,17 +19,18 @@ import {
   Scroll,
 } from "lucide-react";
 
-interface JapaneseCard {
+interface StudyCard {
   id: string;
   word: string;
   reading?: string;
   meaning: string;
   type?: string;
+  language?: string;
   level: number;
   nextReview: string;
 }
 
-type SessionFilter = "KANA" | "KANJI" | "ALL";
+type SessionFilter = "S1" | "S2" | "ALL";
 
 // Проверка наличия иероглифов кандзи
 const hasKanji = (str: string) => /[\u4e00-\u9faf\u3400-\u4dbf]/.test(str);
@@ -99,20 +101,22 @@ const playSound = (type: "flip" | "correct" | "wrong" | "victory") => {
 export function ReviewSession() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { t } = useApp();
+  const { t, studyLanguage, studyText, studyPalette } = useApp();
   const { incrementReviewCount, evaluateAchievements } = useAchievements();
 
-  // Режим повторения: по умолчанию KANA (для начинающих), либо из URL query (?mode=kanji / ?mode=kana)
-  const initialMode: SessionFilter =
-    searchParams.get("mode") === "kanji"
-      ? "KANJI"
-      : searchParams.get("mode") === "all"
-        ? "ALL"
-        : "KANA";
+  const resolveModeFromParams = (): SessionFilter => {
+    const mode = (searchParams.get("mode") || "").toLowerCase();
+    if (mode === "kanji" || mode === "vocabulary") return "S1";
+    if (mode === "kana" || mode === "grammar") return "S2";
+    if (mode === "all") return "ALL";
+    return studyLanguage === "ja" ? "S2" : "S1";
+  };
 
-  const [sessionFilter, setSessionFilter] = useState<SessionFilter>(initialMode);
+  const [sessionFilter, setSessionFilter] = useState<SessionFilter>(
+    resolveModeFromParams,
+  );
 
-  const [rawCards, setRawCards] = useState<JapaneseCard[]>([]);
+  const [rawCards, setRawCards] = useState<StudyCard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -128,20 +132,23 @@ export function ReviewSession() {
   const [flyDirection, setFlyDirection] = useState<"left" | "right" | null>(null);
   const dragStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
-  // Озвучка слова на японском языке
-  const speakWord = useCallback((text: string) => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      try {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = "ja-JP";
-        u.rate = 0.85;
-        window.speechSynthesis.speak(u);
-      } catch (err) {
-        console.warn("Speech synthesis error", err);
+  // Озвучка слова на изучаемом языке
+  const speakWord = useCallback(
+    (text: string) => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = studyPalette.ttsLang;
+          u.rate = studyLanguage === "ja" ? 0.85 : 0.95;
+          window.speechSynthesis.speak(u);
+        } catch (err) {
+          console.warn("Speech synthesis error", err);
+        }
       }
-    }
-  }, []);
+    },
+    [studyLanguage, studyPalette.ttsLang],
+  );
 
   const [soundEnabled, setSoundEnabled] = useState(() => {
     return localStorage.getItem("kavault_sound_fx") !== "false";
@@ -156,7 +163,7 @@ export function ReviewSession() {
   const fetchCards = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/japanese");
+      const response = await api.get(`/japanese?language=${studyLanguage}`);
       setRawCards(response.data || []);
     } catch (error) {
       console.error("Ошибка загрузки карточек", error);
@@ -167,24 +174,26 @@ export function ReviewSession() {
 
   useEffect(() => {
     fetchCards();
-  }, []);
+  }, [studyLanguage]);
 
-  // Фильтрация колоды по выбранному режиму
+  // Фильтрация колоды по выбранному режиму и изучаемому языку
   const activeDeck = useMemo(() => {
     const now = new Date();
 
-    // 1. Фильтр по категории (Кана vs Кандзи vs Все)
-    const categoryFiltered = rawCards.filter((card) => {
-      if (sessionFilter === "KANA") {
-        return card.type === "KANA" || !hasKanji(card.word);
-      }
-      if (sessionFilter === "KANJI") {
+    const isCardS1 = (card: StudyCard) => {
+      if (studyLanguage === "ja") {
         return card.type === "KANJI" || hasKanji(card.word);
       }
+      return card.type !== "GRAMMAR";
+    };
+
+    const categoryFiltered = rawCards.filter((card) => {
+      if (sessionFilter === "S1") return isCardS1(card);
+      if (sessionFilter === "S2") return !isCardS1(card);
       return true;
     });
 
-    // 2. В режиме SRS — только готовые к повторению
+    // В режиме SRS — только готовые к повторению
     if (isPracticeMode) {
       return [...categoryFiltered].sort(() => Math.random() - 0.5);
     }
@@ -193,7 +202,7 @@ export function ReviewSession() {
       (card) => new Date(card.nextReview) <= now,
     );
     return [...due].sort(() => Math.random() - 0.5);
-  }, [rawCards, sessionFilter, isPracticeMode]);
+  }, [rawCards, sessionFilter, isPracticeMode, studyLanguage]);
 
   const switchFilter = (newFilter: SessionFilter) => {
     setSessionFilter(newFilter);
@@ -439,10 +448,10 @@ export function ReviewSession() {
             </h2>
             <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "14px" }}>
               {t.review.sessionDeckLabel}{" "}
-              {sessionFilter === "KANA"
-                ? t.review.deckKana
-                : sessionFilter === "KANJI"
-                  ? t.review.deckKanji
+              {sessionFilter === "S2"
+                ? studyText.section2.deckTitle
+                : sessionFilter === "S1"
+                  ? studyText.section1.deckTitle
                   : t.review.deckAll}
             </p>
           </div>
@@ -480,7 +489,7 @@ export function ReviewSession() {
                 style={{
                   fontSize: "28px",
                   fontWeight: 700,
-                  color: accuracy >= 70 ? "var(--success)" : "var(--accent)",
+                  color: accuracy >= 70 ? "var(--success)" : studyPalette.accentHex,
                 }}
               >
                 {accuracy}%
@@ -496,7 +505,7 @@ export function ReviewSession() {
             >
               <LayoutDashboard size={16} /> {t.review.backToDash}
             </Button>
-            <Button onClick={startPracticeMode} style={{ flex: 1, gap: "8px" }}>
+            <Button onClick={startPracticeMode} style={{ flex: 1, gap: "8px", backgroundColor: studyPalette.accentHex, color: "#ffffff" }}>
               <RotateCcw size={16} /> {t.review.practiceMore}
             </Button>
           </div>
@@ -536,26 +545,26 @@ export function ReviewSession() {
           <CheckCircle2 size={30} />
         </div>
         <h2 style={{ color: "var(--text-primary)", margin: 0, fontSize: "24px" }}>
-          {t.review.allReviewedTitle}
+          {studyPalette.flag} {t.review.allReviewedTitle}
         </h2>
         <p style={{ color: "var(--text-secondary)", margin: 0 }}>
-          {sessionFilter === "KANA"
-            ? t.review.allReviewedKana
-            : sessionFilter === "KANJI"
-              ? t.review.allReviewedKanji
+          {sessionFilter === "S2"
+            ? studyText.section2.allReviewedText
+            : sessionFilter === "S1"
+              ? studyText.section1.allReviewedText
               : t.review.allReviewedAll}
         </p>
 
         {/* Переключатель разделов прямо отсюда */}
         <div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap", justifyContent: "center" }}>
           <button
-            onClick={() => switchFilter("KANJI")}
+            onClick={() => switchFilter("S1")}
             style={{
               padding: "6px 14px",
               borderRadius: "var(--radius-md)",
-              border: sessionFilter === "KANJI" ? "1px solid #a855f7" : "1px solid var(--border)",
-              backgroundColor: sessionFilter === "KANJI" ? "var(--surface-raised)" : "transparent",
-              color: sessionFilter === "KANJI" ? "#a855f7" : "var(--text-muted)",
+              border: sessionFilter === "S1" ? `1px solid ${studyPalette.accentHex}` : "1px solid var(--border)",
+              backgroundColor: sessionFilter === "S1" ? "var(--surface-raised)" : "transparent",
+              color: sessionFilter === "S1" ? studyPalette.accentHex : "var(--text-muted)",
               cursor: "pointer",
               fontSize: "13px",
               display: "flex",
@@ -563,16 +572,16 @@ export function ReviewSession() {
               gap: "6px",
             }}
           >
-            <Scroll size={14} /> {t.review.kanjiTab}
+            <Scroll size={14} /> {studyText.section1.badge}
           </button>
           <button
-            onClick={() => switchFilter("KANA")}
+            onClick={() => switchFilter("S2")}
             style={{
               padding: "6px 14px",
               borderRadius: "var(--radius-md)",
-              border: sessionFilter === "KANA" ? "1px solid var(--accent)" : "1px solid var(--border)",
-              backgroundColor: sessionFilter === "KANA" ? "var(--surface-raised)" : "transparent",
-              color: sessionFilter === "KANA" ? "var(--accent)" : "var(--text-muted)",
+              border: sessionFilter === "S2" ? `1px solid ${studyPalette.secondaryHex}` : "1px solid var(--border)",
+              backgroundColor: sessionFilter === "S2" ? "var(--surface-raised)" : "transparent",
+              color: sessionFilter === "S2" ? studyPalette.secondaryHex : "var(--text-muted)",
               cursor: "pointer",
               fontSize: "13px",
               display: "flex",
@@ -580,7 +589,7 @@ export function ReviewSession() {
               gap: "6px",
             }}
           >
-            <BookA size={14} /> {t.review.kanaTab}
+            <BookA size={14} /> {studyText.section2.badge}
           </button>
           <button
             onClick={() => switchFilter("ALL")}
@@ -602,7 +611,10 @@ export function ReviewSession() {
           <Button variant="secondary" onClick={() => navigate("/dashboard")}>
             {t.review.backToDash}
           </Button>
-          <Button onClick={startPracticeMode} style={{ gap: "6px" }}>
+          <Button
+            onClick={startPracticeMode}
+            style={{ gap: "6px", backgroundColor: studyPalette.accentHex, color: "#ffffff" }}
+          >
             <Sparkles size={16} /> {t.review.freePractice}
           </Button>
         </div>
@@ -613,7 +625,12 @@ export function ReviewSession() {
   if (activeDeck.length === 0) return null;
 
   const currentCard = activeDeck[currentIndex];
-  const isCurrentCardKanji = currentCard.type === "KANJI" || hasKanji(currentCard.word);
+  const isJa = studyLanguage === "ja";
+  const isCurrentCardS1 = isJa
+    ? currentCard.type === "KANJI" || hasKanji(currentCard.word)
+    : currentCard.type !== "GRAMMAR";
+  const cardAccent = isCurrentCardS1 ? studyPalette.accentHex : studyPalette.secondaryHex;
+  const deArticle = studyLanguage === "de" ? getGermanArticleStyle(currentCard.word) : null;
 
   return (
     <div
@@ -639,7 +656,8 @@ export function ReviewSession() {
         }}
       >
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "18px" }}>{studyPalette.flag}</span>
             <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 600, color: "var(--text-primary)" }}>
               {isPracticeMode ? t.review.modeTitlePractice : t.review.modeTitleSrs}
             </h2>
@@ -649,17 +667,30 @@ export function ReviewSession() {
                 fontWeight: 700,
                 padding: "2px 6px",
                 borderRadius: "4px",
-                backgroundColor: isCurrentCardKanji
-                  ? "rgba(168, 85, 247, 0.15)"
-                  : "rgba(59, 130, 246, 0.15)",
-                color: isCurrentCardKanji ? "#c084fc" : "#60a5fa",
+                backgroundColor: `${cardAccent}22`,
+                color: cardAccent,
               }}
             >
-              {isCurrentCardKanji ? t.review.badgeKanji : t.review.badgeKana}
+              {isCurrentCardS1 ? studyText.section1.cardBadge : studyText.section2.cardBadge}
             </span>
+            {deArticle?.article && (
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  padding: "2px 6px",
+                  borderRadius: "4px",
+                  backgroundColor: deArticle.bg,
+                  color: deArticle.color,
+                }}
+              >
+                {deArticle.article}
+              </span>
+            )}
           </div>
           <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
-            {t.review.levelLabel} {currentCard.level}
+            {studyText.name} · {studyText.levelPrefix} {currentCard.level}
           </div>
         </div>
 
@@ -667,40 +698,40 @@ export function ReviewSession() {
           {/* Переключатель режимов повторения */}
           <div style={{ display: "flex", gap: "4px" }}>
             <button
-              onClick={() => switchFilter("KANJI")}
-              title={t.review.deckKanji}
+              onClick={() => switchFilter("S1")}
+              title={studyText.section1.deckTitle}
               style={{
                 padding: "4px 8px",
                 fontSize: "12px",
                 borderRadius: "var(--radius-md)",
-                border: sessionFilter === "KANJI" ? "1px solid #a855f7" : "1px solid var(--border)",
-                backgroundColor: sessionFilter === "KANJI" ? "var(--surface-raised)" : "transparent",
-                color: sessionFilter === "KANJI" ? "#a855f7" : "var(--text-muted)",
+                border: sessionFilter === "S1" ? `1px solid ${studyPalette.accentHex}` : "1px solid var(--border)",
+                backgroundColor: sessionFilter === "S1" ? "var(--surface-raised)" : "transparent",
+                color: sessionFilter === "S1" ? studyPalette.accentHex : "var(--text-muted)",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 gap: "4px",
               }}
             >
-              <Scroll size={13} /> {t.review.kanjiTab}
+              <Scroll size={13} /> {studyText.section1.badge}
             </button>
             <button
-              onClick={() => switchFilter("KANA")}
-              title={t.review.deckKana}
+              onClick={() => switchFilter("S2")}
+              title={studyText.section2.deckTitle}
               style={{
                 padding: "4px 8px",
                 fontSize: "12px",
                 borderRadius: "var(--radius-md)",
-                border: sessionFilter === "KANA" ? "1px solid var(--accent)" : "1px solid var(--border)",
-                backgroundColor: sessionFilter === "KANA" ? "var(--surface-raised)" : "transparent",
-                color: sessionFilter === "KANA" ? "var(--accent)" : "var(--text-muted)",
+                border: sessionFilter === "S2" ? `1px solid ${studyPalette.secondaryHex}` : "1px solid var(--border)",
+                backgroundColor: sessionFilter === "S2" ? "var(--surface-raised)" : "transparent",
+                color: sessionFilter === "S2" ? studyPalette.secondaryHex : "var(--text-muted)",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 gap: "4px",
               }}
             >
-              <BookA size={13} /> {t.review.kanaTab}
+              <BookA size={13} /> {studyText.section2.badge}
             </button>
           </div>
 
@@ -710,7 +741,7 @@ export function ReviewSession() {
             style={{
               background: "none",
               border: "none",
-              color: soundEnabled ? "var(--accent)" : "var(--text-muted)",
+              color: soundEnabled ? cardAccent : "var(--text-muted)",
               cursor: "pointer",
               padding: "4px",
             }}
@@ -739,7 +770,7 @@ export function ReviewSession() {
           style={{
             width: `${((currentIndex + 1) / activeDeck.length) * 100}%`,
             height: "100%",
-            backgroundColor: isCurrentCardKanji ? "#a855f7" : "var(--accent)",
+            backgroundColor: cardAccent,
             transition: "width 0.3s ease",
           }}
         />
@@ -771,8 +802,10 @@ export function ReviewSession() {
             textAlign: "center",
             backgroundColor: isFlipped ? "var(--surface-raised)" : "var(--surface)",
             border: isFlipped
-              ? `1px solid ${isCurrentCardKanji ? "#a855f7" : "var(--accent)"}`
-              : "1px solid var(--border)",
+              ? `1px solid ${cardAccent}`
+              : deArticle?.article
+                ? `1px solid ${deArticle.color}44`
+                : "1px solid var(--border)",
             padding: "var(--space-6)",
             position: "relative",
             overflow: "hidden",
@@ -855,7 +888,7 @@ export function ReviewSession() {
               marginBottom: "var(--space-4)",
             }}
           >
-            {currentCard.reading && isCurrentCardKanji && (
+            {currentCard.reading && isJa && isCurrentCardS1 && (
               <span
                 style={{
                   fontSize: "18px",
@@ -866,14 +899,21 @@ export function ReviewSession() {
                 {currentCard.reading}
               </span>
             )}
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
               <span
                 style={{
-                  fontSize: isCurrentCardKanji ? "64px" : "50px",
-                  fontFamily: "var(--font-jp)",
+                  fontSize: isJa
+                    ? isCurrentCardS1
+                      ? "60px"
+                      : "48px"
+                    : currentCard.word.length > 20
+                      ? "28px"
+                      : "40px",
+                  fontWeight: isJa ? 500 : 700,
+                  fontFamily: isJa ? "var(--font-jp)" : "inherit",
                   color: "var(--text-primary)",
-                  lineHeight: "1.15",
-                  letterSpacing: isCurrentCardKanji ? "2px" : "1px",
+                  lineHeight: "1.2",
+                  letterSpacing: isJa ? (isCurrentCardS1 ? "2px" : "1px") : "normal",
                 }}
               >
                 {currentCard.word}
@@ -895,18 +935,29 @@ export function ReviewSession() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "var(--accent)",
+                  color: cardAccent,
                   cursor: "pointer",
                   transition: "all 0.15s ease",
                   flexShrink: 0,
                 }}
-                title={t.review.speakTitle}
+                title={`${t.review.speakTitle} (${studyPalette.ttsLang})`}
                 onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
                 onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
               >
                 <Volume2 size={18} />
               </button>
             </div>
+
+            {currentCard.reading && !isJa && (
+              <span
+                style={{
+                  fontSize: "15px",
+                  color: "var(--text-muted)",
+                }}
+              >
+                {currentCard.reading}
+              </span>
+            )}
           </div>
 
           {!isFlipped ? (
@@ -939,7 +990,7 @@ export function ReviewSession() {
               <span
                 style={{
                   fontSize: "24px",
-                  color: isCurrentCardKanji ? "#c084fc" : "var(--accent)",
+                  color: cardAccent,
                   fontWeight: 600,
                 }}
               >

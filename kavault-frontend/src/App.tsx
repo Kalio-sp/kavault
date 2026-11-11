@@ -11,11 +11,19 @@ import { Settings } from "./pages/Settings";
 import { AdminPanel } from "./pages/AdminPanel";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
-import { AppProvider } from "./context/AppContext";
+import { AppProvider, useApp } from "./context/AppContext";
 import { DialogProvider } from "./context/DialogContext";
 import { AchievementProvider } from "./context/AchievementContext";
 import { AchievementToast } from "./components/AchievementToast";
 import { AchievementsModal } from "./components/AchievementsModal";
+
+function ProgrammingGuard({ children }: { children: React.ReactNode }) {
+  const { showProgramming } = useApp();
+  if (!showProgramming) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+}
 
 export default function App() {
   return (
@@ -41,14 +49,26 @@ export default function App() {
             path="/developer"
             element={
               <ProtectedRoute>
-                <Layout>
-                  <DeveloperHub />
-                </Layout>
+                <ProgrammingGuard>
+                  <Layout>
+                    <DeveloperHub />
+                  </Layout>
+                </ProgrammingGuard>
               </ProtectedRoute>
             }
           />
           <Route
             path="/japanese"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <JapaneseHub />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/learn"
             element={
               <ProtectedRoute>
                 <Layout>
@@ -71,9 +91,11 @@ export default function App() {
             path="/github"
             element={
               <ProtectedRoute>
-                <Layout>
-                  <GitHubCollection />
-                </Layout>
+                <ProgrammingGuard>
+                  <Layout>
+                    <GitHubCollection />
+                  </Layout>
+                </ProgrammingGuard>
               </ProtectedRoute>
             }
           />

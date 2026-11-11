@@ -37,22 +37,29 @@ const readGoal = (key: string, fallback: number) => {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 };
 
-// Градация цветов активности в зависимости от выбранного акцента
+// Градация цветов активности в зависимости от культурного вайба изучаемого языка
 const getCellBg = (count: number) => {
   if (count === 0) return "var(--surface-raised)";
   if (count <= 1)
-    return "color-mix(in srgb, var(--accent) 30%, var(--surface-raised))";
+    return "color-mix(in srgb, var(--vibe-accent) 30%, var(--surface-raised))";
   if (count <= 3)
-    return "color-mix(in srgb, var(--accent) 55%, var(--surface-raised))";
+    return "color-mix(in srgb, var(--vibe-accent) 55%, var(--surface-raised))";
   if (count <= 6)
-    return "color-mix(in srgb, var(--accent) 80%, var(--surface-raised))";
-  return "var(--accent)";
+    return "color-mix(in srgb, var(--vibe-accent) 80%, var(--surface-raised))";
+  return "var(--vibe-accent)";
 };
 
 const LEGEND_LEVELS = [0, 1, 3, 5, 8];
 
 export function LearningTracker() {
-  const { t, locale } = useApp();
+  const {
+    t,
+    locale,
+    studyLanguage,
+    showProgramming,
+    studyText,
+    studyPalette,
+  } = useApp();
   const navigate = useNavigate();
 
   const goalResources = useMemo(
@@ -84,8 +91,12 @@ export function LearningTracker() {
     const fetchActivity = async () => {
       try {
         const [resResp, japResp] = await Promise.all([
-          api.get<ActivityItem[]>("/resources").catch(() => ({ data: [] })),
-          api.get<ActivityItem[]>("/japanese").catch(() => ({ data: [] })),
+          showProgramming
+            ? api.get<ActivityItem[]>("/resources").catch(() => ({ data: [] }))
+            : Promise.resolve({ data: [] as ActivityItem[] }),
+          api
+            .get<ActivityItem[]>(`/japanese?language=${studyLanguage}`)
+            .catch(() => ({ data: [] })),
         ]);
         if (cancelled) return;
 
@@ -101,7 +112,7 @@ export function LearningTracker() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [studyLanguage, showProgramming]);
 
   // Автоскролл вправо при первой загрузке
   useEffect(() => {
@@ -251,7 +262,7 @@ export function LearningTracker() {
 
   /* Список достижений (Gamified Milestones) */
   const achievements = useMemo(() => {
-    return [
+    const base = [
       {
         id: "first_step",
         title: t.track.milestones.first_step.title,
@@ -278,22 +289,36 @@ export function LearningTracker() {
       },
       {
         id: "words_25",
-        title: t.track.milestones.words_25.title,
-        desc: t.track.milestones.words_25.desc,
+        title: studyText.trackerMilestoneTitle,
+        desc: studyText.trackerMilestoneDesc,
         icon: Award,
         unlocked: cards.length >= 25,
         progress: `${cards.length} / 25`,
       },
-      {
+    ];
+
+    if (showProgramming) {
+      base.push({
         id: "collector",
         title: t.track.milestones.collector.title,
         desc: t.track.milestones.collector.desc,
         icon: Zap,
         unlocked: resources.length >= 15,
         progress: `${resources.length} / 15`,
-      },
-    ];
-  }, [totalContributions, currentStreak, longestStreak, cards.length, resources.length, t]);
+      });
+    }
+
+    return base;
+  }, [
+    totalContributions,
+    currentStreak,
+    longestStreak,
+    cards.length,
+    resources.length,
+    t,
+    showProgramming,
+    studyText,
+  ]);
 
   return (
     <div
@@ -320,12 +345,16 @@ export function LearningTracker() {
               fontWeight: 600,
               margin: "0 0 var(--space-2) 0",
               color: "var(--text-primary)",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
             }}
           >
-            {t.track.title}
+            <span>{studyPalette.flag}</span>
+            <span>{t.track.title}</span>
           </h2>
           <p style={{ color: "var(--text-muted)", margin: 0 }}>
-            {t.track.subtitle}
+            {t.track.subtitle} · {studyText.name}
           </p>
         </div>
 
@@ -378,7 +407,7 @@ export function LearningTracker() {
               marginBottom: "var(--space-2)",
             }}
           >
-            <Trophy size={16} color="var(--accent)" /> {t.track.bestRecord}
+            <Trophy size={16} color={studyPalette.accentHex} /> {t.track.bestRecord}
           </div>
           <div style={{ fontSize: "32px", fontWeight: 700, color: "var(--text-primary)" }}>
             {longestStreak} <span style={{ fontSize: "16px", fontWeight: 400 }}>{t.track.days}</span>
@@ -405,7 +434,9 @@ export function LearningTracker() {
             {weeklyStats.resources + weeklyStats.cards}
           </div>
           <div style={{ fontSize: "12px", color: "var(--success)", marginTop: "4px" }}>
-            +{weeklyStats.resources} {t.track.materialsLabel}, +{weeklyStats.cards} {t.track.reviewsLabel}
+            {showProgramming
+              ? `+${weeklyStats.resources} ${t.track.materialsLabel}, +${weeklyStats.cards} ${t.track.reviewsLabel}`
+              : `+${weeklyStats.cards} ${t.track.reviewsLabel} (${studyText.name})`}
           </div>
         </Card>
       </div>
@@ -617,10 +648,12 @@ export function LearningTracker() {
                 day: "numeric",
               })}
             </div>
-            <div style={{ color: hoveredCell.count > 0 ? "var(--accent)" : "var(--text-muted)" }}>
+            <div style={{ color: hoveredCell.count > 0 ? studyPalette.accentHex : "var(--text-muted)" }}>
               {hoveredCell.count === 0
                 ? t.track.noActivity
-                : `${hoveredCell.count} ${t.track.actionsLabel} (${hoveredCell.resCount} ${t.track.materialsLabel}, ${hoveredCell.cardCount} ${t.track.reviewsLabel})`}
+                : showProgramming
+                  ? `${hoveredCell.count} ${t.track.actionsLabel} (${hoveredCell.resCount} ${t.track.materialsLabel}, ${hoveredCell.cardCount} ${t.track.reviewsLabel})`
+                  : `${hoveredCell.count} ${t.track.reviewsLabel} (${studyText.name})`}
             </div>
           </div>
         )}
@@ -654,14 +687,14 @@ export function LearningTracker() {
                 fontWeight: 600,
               }}
             >
-              <Target size={18} color="var(--accent)" /> {t.track.goals}
+              <Target size={18} color={studyPalette.accentHex} /> {t.track.goals}
             </h3>
             <button
               onClick={() => navigate("/settings")}
               style={{
                 background: "none",
                 border: "none",
-                color: "var(--accent)",
+                color: studyPalette.accentHex,
                 cursor: "pointer",
                 fontSize: "12px",
                 padding: 0,
@@ -678,47 +711,49 @@ export function LearningTracker() {
               gap: "var(--space-5)",
             }}
           >
-            {/* Статьи */}
-            <div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "8px",
-                  fontSize: "14px",
-                }}
-              >
-                <span style={{ color: "var(--text-secondary)" }}>
-                  {t.track.artGoals}
-                </span>
-                <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-                  {weeklyStats.resources} / {goalResources}
-                </span>
-              </div>
-              <div
-                style={{
-                  height: "8px",
-                  backgroundColor: "var(--surface-raised)",
-                  borderRadius: "4px",
-                  overflow: "hidden",
-                }}
-              >
+            {/* Статьи (только при включённом программировании) */}
+            {showProgramming && (
+              <div>
                 <div
                   style={{
-                    width: `${Math.min(
-                      (weeklyStats.resources / goalResources) * 100,
-                      100,
-                    )}%`,
-                    height: "100%",
-                    backgroundColor: "var(--accent)",
-                    borderRadius: "4px",
-                    transition: "width 0.5s ease",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "8px",
+                    fontSize: "14px",
                   }}
-                />
+                >
+                  <span style={{ color: "var(--text-secondary)" }}>
+                    {t.track.artGoals}
+                  </span>
+                  <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+                    {weeklyStats.resources} / {goalResources}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    height: "8px",
+                    backgroundColor: "var(--surface-raised)",
+                    borderRadius: "4px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${Math.min(
+                        (weeklyStats.resources / goalResources) * 100,
+                        100,
+                      )}%`,
+                      height: "100%",
+                      backgroundColor: "var(--accent)",
+                      borderRadius: "4px",
+                      transition: "width 0.5s ease",
+                    }}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Карточки японского */}
+            {/* Карточки изучаемого языка */}
             <div>
               <div
                 style={{
@@ -729,7 +764,7 @@ export function LearningTracker() {
                 }}
               >
                 <span style={{ color: "var(--text-secondary)" }}>
-                  {t.track.japGoals}
+                  {studyPalette.flag} {studyText.trackerGoalLabel}
                 </span>
                 <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
                   {weeklyStats.cards} / {goalCards}
@@ -750,7 +785,7 @@ export function LearningTracker() {
                       100,
                     )}%`,
                     height: "100%",
-                    backgroundColor: "var(--success)",
+                    backgroundColor: studyPalette.accentHex,
                     borderRadius: "4px",
                     transition: "width 0.5s ease",
                   }}

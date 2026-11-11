@@ -21,7 +21,13 @@ export class JapaneseController {
   create(
     @Request() req,
     @Body()
-    body: { word: string; reading?: string; meaning: string; type?: any },
+    body: {
+      word: string;
+      reading?: string;
+      meaning: string;
+      type?: any;
+      language?: string;
+    },
   ) {
     return this.japaneseService.create(req.user.userId, body);
   }
@@ -30,14 +36,21 @@ export class JapaneseController {
   createBulk(
     @Request() req,
     @Body('items')
-    items: Array<{ word: string; reading?: string; meaning: string; type?: any }>,
+    items: Array<{
+      word: string;
+      reading?: string;
+      meaning: string;
+      type?: any;
+      language?: string;
+    }>,
+    @Body('language') language?: string,
   ) {
-    return this.japaneseService.createBulk(req.user.userId, items || []);
+    return this.japaneseService.createBulk(req.user.userId, items || [], language);
   }
 
   @Get()
-  findAll(@Request() req) {
-    return this.japaneseService.findAll(req.user.userId);
+  findAll(@Request() req, @Query('language') language?: string) {
+    return this.japaneseService.findAll(req.user.userId, language);
   }
 
   @Post(':id/review')
@@ -46,8 +59,12 @@ export class JapaneseController {
   }
 
   @Delete('clear/all')
-  clearAll(@Request() req, @Query('section') section?: string) {
-    return this.japaneseService.removeAll(req.user.userId, section);
+  clearAll(
+    @Request() req,
+    @Query('section') section?: string,
+    @Query('language') language?: string,
+  ) {
+    return this.japaneseService.removeAll(req.user.userId, section, language);
   }
 
   @Delete(':id')

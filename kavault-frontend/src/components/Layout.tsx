@@ -11,13 +11,21 @@ import {
   Crown,
   Menu,
   Trophy,
+  Sparkles,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const { t, isCreator, activateCreatorMode } = useApp();
+  const {
+    t,
+    isCreator,
+    activateCreatorMode,
+    showProgramming,
+    studyText,
+    studyPalette,
+  } = useApp();
   const { trackPageVisit, openModal, unlockedCount, totalCount } = useAchievements();
 
   const [logoClicks, setLogoClicks] = useState(0);
@@ -82,20 +90,31 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { path: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard },
-    { path: "/developer", label: t.nav.developer, icon: Code2 },
-    { path: "/github", label: t.nav.github, icon: GitBranch },
-    { path: "/japanese", label: t.nav.japanese, icon: Languages },
+    ...(showProgramming
+      ? [
+          { path: "/developer", label: t.nav.developer, icon: Code2 },
+          { path: "/github", label: t.nav.github, icon: GitBranch },
+        ]
+      : []),
+    { path: "/japanese", label: studyText.navLabel, icon: Languages },
     { path: "/tracker", label: t.nav.tracker, icon: BarChart2 },
     { path: "/graph", label: t.nav.graph, icon: Network },
   ];
 
   // Главные пункты для мобильного нижнего таб-бара
-  const mobileTabs = [
-    { path: "/dashboard", label: t.nav.mobileDash, icon: LayoutDashboard },
-    { path: "/developer", label: t.nav.mobileDev, icon: Code2 },
-    { path: "/japanese", label: t.nav.mobileJap, icon: Languages },
-    { path: "/tracker", label: t.nav.mobileTrack, icon: BarChart2 },
-  ];
+  const mobileTabs = showProgramming
+    ? [
+        { path: "/dashboard", label: t.nav.mobileDash, icon: LayoutDashboard },
+        { path: "/developer", label: t.nav.mobileDev, icon: Code2 },
+        { path: "/japanese", label: studyText.mobileNavLabel, icon: Languages },
+        { path: "/tracker", label: t.nav.mobileTrack, icon: BarChart2 },
+      ]
+    : [
+        { path: "/dashboard", label: t.nav.mobileDash, icon: LayoutDashboard },
+        { path: "/japanese", label: studyText.mobileNavLabel, icon: Languages },
+        { path: "/graph", label: t.nav.graph, icon: Network },
+        { path: "/tracker", label: t.nav.mobileTrack, icon: BarChart2 },
+      ];
 
   return (
     <div
@@ -104,6 +123,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         flexDirection: isMobile ? "column" : "row",
         height: "100vh",
         backgroundColor: "var(--bg)",
+        backgroundImage: "var(--vibe-page-bg)",
         color: "var(--text-primary)",
         overflow: "hidden",
       }}
@@ -148,8 +168,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   height: "26px",
                   backgroundColor: isCreator
                     ? "#f59e0b"
-                    : "var(--text-primary)",
-                  color: isCreator ? "#000" : "var(--bg)",
+                    : studyPalette.accentHex,
+                  color: isCreator ? "#000" : "#fff",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -163,7 +183,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span>KAVAULT</span>
             </div>
 
-            {isCreator && (
+            {isCreator ? (
               <span
                 style={{
                   fontSize: "10px",
@@ -180,6 +200,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 }}
               >
                 👑 Root
+              </span>
+            ) : (
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  padding: "2px 7px",
+                  borderRadius: "999px",
+                  backgroundColor: studyPalette.softTint,
+                  color: studyPalette.accentHex,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                {studyPalette.flag}
               </span>
             )}
           </div>
@@ -340,8 +376,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 height: "24px",
                 backgroundColor: isCreator
                   ? "#f59e0b"
-                  : "var(--text-primary)",
-                color: isCreator ? "#000" : "var(--bg)",
+                  : studyPalette.accentHex,
+                color: isCreator ? "#000" : "#ffffff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -353,6 +389,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
               K
             </div>
             <span style={{ fontWeight: 700, fontSize: "16px" }}>KAVAULT</span>
+            <span
+              style={{
+                fontSize: "11px",
+                padding: "1px 6px",
+                borderRadius: "999px",
+                backgroundColor: "var(--vibe-soft)",
+                border: "1px solid var(--vibe-banner-border)",
+                color: "var(--vibe-accent)",
+                fontWeight: 600,
+              }}
+              title={studyText.vibeBadge}
+            >
+              {studyPalette.flag}
+            </span>
             {isCreator && (
               <span
                 style={{
@@ -466,7 +516,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             <Link
-              to="/github"
+              to="/review"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -474,19 +524,45 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 padding: "12px",
                 borderRadius: "var(--radius-md)",
                 color:
-                  location.pathname === "/github"
-                    ? "var(--text-primary)"
+                  location.pathname === "/review"
+                    ? "var(--vibe-accent)"
                     : "var(--text-secondary)",
                 backgroundColor:
-                  location.pathname === "/github"
-                    ? "var(--surface-raised)"
+                  location.pathname === "/review"
+                    ? "var(--vibe-soft)"
                     : "transparent",
                 textDecoration: "none",
                 fontSize: "15px",
+                fontWeight: 500,
               }}
             >
-              <GitBranch size={18} /> {t.nav.github}
+              <Sparkles size={18} color={studyPalette.accentHex} /> {studyText.section1.repeatBtn}
             </Link>
+
+            {showProgramming && (
+              <Link
+                to="/github"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "12px",
+                  borderRadius: "var(--radius-md)",
+                  color:
+                    location.pathname === "/github"
+                      ? "var(--text-primary)"
+                      : "var(--text-secondary)",
+                  backgroundColor:
+                    location.pathname === "/github"
+                      ? "var(--surface-raised)"
+                      : "transparent",
+                  textDecoration: "none",
+                  fontSize: "15px",
+                }}
+              >
+                <GitBranch size={18} /> {t.nav.github}
+              </Link>
+            )}
 
             <Link
               to="/graph"

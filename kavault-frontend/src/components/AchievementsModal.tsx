@@ -40,11 +40,9 @@ const RARITY_STYLES: Record<AchievementRarity, { border: string; bg: string; tex
 };
 
 export function AchievementsModal() {
-  const { language, t } = useApp();
+  const { language, t, showProgramming, studyLanguage, studyText } = useApp();
   const {
     achievements,
-    unlockedCount,
-    totalCount,
     earnedPoints,
     totalPoints,
     rankTitle,
@@ -57,20 +55,18 @@ export function AchievementsModal() {
   const [selectedCategory, setSelectedCategory] = useState<AchievementCategory>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const categories: AchievementCategory[] = [
-    "all",
-    "japanese",
-    "dev",
-    "github",
-    "tracker",
-    "graph",
-    "system",
-    "secret",
-  ];
+  const visibleAchievements = useMemo(() => {
+    if (showProgramming) return achievements;
+    return achievements.filter((ach) => ach.category !== "dev" && ach.category !== "github");
+  }, [achievements, showProgramming]);
+
+  const categories: AchievementCategory[] = showProgramming
+    ? ["all", "japanese", "dev", "github", "tracker", "graph", "system", "secret"]
+    : ["all", "japanese", "tracker", "graph", "system", "secret"];
 
   // Фильтрация ачивок
   const filteredAchievements = useMemo(() => {
-    return achievements.filter((ach) => {
+    return visibleAchievements.filter((ach) => {
       const matchesCategory =
         selectedCategory === "all" ? true : ach.category === selectedCategory;
 
@@ -83,9 +79,11 @@ export function AchievementsModal() {
 
       return matchesCategory && matchesSearch;
     });
-  }, [achievements, selectedCategory, searchQuery, t.achievements.secretKeyword]);
+  }, [visibleAchievements, selectedCategory, searchQuery, t.achievements.secretKeyword]);
 
-  const percent = Math.round((unlockedCount / totalCount) * 100) || 0;
+  const visibleUnlockedCount = visibleAchievements.filter((a) => a.unlocked).length;
+  const visibleTotalCount = visibleAchievements.length;
+  const percent = Math.round((visibleUnlockedCount / visibleTotalCount) * 100) || 0;
 
   return (
     <Modal isOpen={isModalOpen} onClose={closeModal} title="" size="xl">
@@ -207,7 +205,7 @@ export function AchievementsModal() {
                   {t.achievements.progressLabel}
                 </div>
                 <div style={{ fontSize: "18px", fontWeight: 800, color: "var(--text-primary)" }}>
-                  {unlockedCount} / {totalCount}
+                  {visibleUnlockedCount} / {visibleTotalCount}
                 </div>
               </div>
             </div>
@@ -301,8 +299,8 @@ export function AchievementsModal() {
               const isActive = selectedCategory === cat;
               const count =
                 cat === "all"
-                  ? achievements.length
-                  : achievements.filter((a) => a.category === cat).length;
+                  ? visibleAchievements.length
+                  : visibleAchievements.filter((a) => a.category === cat).length;
 
               return (
                 <button
@@ -326,7 +324,9 @@ export function AchievementsModal() {
                   }}
                 >
                   {cat === "secret" && <Sparkles size={13} color="#eab308" />}
-                  {categoryLabels[cat]}
+                  {cat === "japanese" && studyLanguage !== "ja"
+                    ? studyText.name
+                    : categoryLabels[cat]}
                   <span
                     style={{
                       fontSize: "11px",

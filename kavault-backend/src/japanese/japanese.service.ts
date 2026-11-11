@@ -7,11 +7,21 @@ export class JapaneseService {
 
   async create(
     userId: string,
-    data: { word: string; reading?: string; meaning: string; type?: any },
+    data: {
+      word: string;
+      reading?: string;
+      meaning: string;
+      type?: any;
+      language?: string;
+    },
   ) {
     return this.prisma.japaneseCard.create({
       data: {
-        ...data,
+        word: data.word,
+        reading: data.reading,
+        meaning: data.meaning,
+        type: data.type,
+        language: data.language || 'ja',
         userId,
       },
     });
@@ -19,14 +29,24 @@ export class JapaneseService {
 
   async createBulk(
     userId: string,
-    items: Array<{ word: string; reading?: string; meaning: string; type?: any }>,
+    items: Array<{
+      word: string;
+      reading?: string;
+      meaning: string;
+      type?: any;
+      language?: string;
+    }>,
+    language?: string,
   ) {
     if (!items || items.length === 0) return { count: 0 };
 
-    // Проверяем слова, которые уже есть у пользователя, чтобы исключить дубликаты
+    const targetLang = language || items[0]?.language || 'ja';
+
+    // Проверяем слова, которые уже есть у пользователя в выбранном языке, чтобы исключить дубликаты
     const existingCards = await this.prisma.japaneseCard.findMany({
       where: {
         userId,
+        language: targetLang,
         word: { in: items.map((i) => i.word) },
       },
       select: { word: true },
@@ -39,7 +59,11 @@ export class JapaneseService {
     }
 
     const dataWithUser = newItems.map((item) => ({
-      ...item,
+      word: item.word,
+      reading: item.reading,
+      meaning: item.meaning,
+      type: item.type,
+      language: item.language || targetLang,
       userId,
     }));
     return this.prisma.japaneseCard.createMany({
@@ -47,9 +71,12 @@ export class JapaneseService {
     });
   }
 
-  async findAll(userId: string) {
+  async findAll(userId: string, language?: string) {
     return this.prisma.japaneseCard.findMany({
-      where: { userId },
+      where: {
+        userId,
+        ...(language ? { language } : {}),
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -85,10 +112,12 @@ export class JapaneseService {
     });
   }
 
-  async removeAll(userId: string, section?: string) {
+  async removeAll(userId: string, section?: string, language?: string) {
+    const baseWhere = { userId, ...(language ? { language } : {}) };
+
     if (section === 'KANA') {
       const cards = await this.prisma.japaneseCard.findMany({
-        where: { userId },
+        where: baseWhere,
       });
       const hasKanji = (str: string) =>
         /[\u4e00-\u9faf\u3400-\u4dbf]/.test(str);
@@ -106,7 +135,7 @@ export class JapaneseService {
 
     if (section === 'KANJI') {
       const cards = await this.prisma.japaneseCard.findMany({
-        where: { userId },
+        where: baseWhere,
       });
       const hasKanji = (str: string) =>
         /[\u4e00-\u9faf\u3400-\u4dbf]/.test(str);
@@ -118,8 +147,14 @@ export class JapaneseService {
       });
     }
 
+    if (section === 'VOCABULARY' || section === 'GRAMMAR') {
+      return this.prisma.japaneseCard.deleteMany({
+        where: { ...baseWhere, type: section as any },
+      });
+    }
+
     return this.prisma.japaneseCard.deleteMany({
-      where: { userId },
+      where: baseWhere,
     });
   }
 }

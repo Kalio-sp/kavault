@@ -10,6 +10,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
+import { getGermanArticleStyle } from "../data/studyVibes";
 
 /* ───────────── Типы и константы ───────────── */
 
@@ -94,9 +95,11 @@ const translateTopic = (raw: string, categories: Record<string, string>): string
 const getLabel = (r: Record<string, any>): string =>
   String(r.title ?? r.name ?? r.url ?? "Untitled");
 
+const hasKanji = (str: string) => /[\u4e00-\u9faf\u3400-\u4dbf]/.test(str);
+
 /* ───────────── Построитель графа ───────────── */
 
-function buildGraph(items: RawItem[], japanese: number): Graph {
+function buildGraph(items: RawItem[], emptyTopicNames: string[]): Graph {
   const groups = new Map<string, RawItem[]>();
   for (const it of items) {
     const g = groups.get(it.topic);
@@ -116,16 +119,9 @@ function buildGraph(items: RawItem[], japanese: number): Graph {
     extra: 0,
   }));
 
-  if (japanese > 0) {
-    const ex = defs.find((d) => d.name === "Japanese");
-    if (ex) ex.extra = japanese;
-    else defs.push({ name: "Japanese", items: [], extra: japanese });
-  }
-
-  // Если вообще пусто — создаем пару начальных подсказочных узлов
+  // Если вообще пусто — создаем начальные узлы для выбранного режима
   if (defs.length === 0) {
-    defs.push({ name: "Resources", items: [], extra: 0 });
-    defs.push({ name: "Japanese", items: [], extra: 0 });
+    emptyTopicNames.forEach((name) => defs.push({ name, items: [], extra: 0 }));
   }
 
   defs.sort((a, b) => b.items.length + b.extra - (a.items.length + a.extra));
@@ -214,7 +210,14 @@ function buildGraph(items: RawItem[], japanese: number): Graph {
 /* ───────────── Компонент Графа Знаний ───────────── */
 
 export function KnowledgeGraph() {
-  const { t } = useApp();
+  const {
+    t,
+    language,
+    studyLanguage,
+    showProgramming,
+    studyText,
+    studyPalette,
+  } = useApp();
   const tRef = useRef(t);
   tRef.current = t;
   const [graph, setGraph] = useState<Graph | null>(null);
@@ -242,23 +245,56 @@ export function KnowledgeGraph() {
     const load = async () => {
       try {
         const [resResp, japResp] = await Promise.all([
-          api.get("/resources").catch(() => ({ data: [] })),
-          api.get("/japanese").catch(() => ({ data: [] })),
+          showProgramming
+            ? api.get("/resources").catch(() => ({ data: [] }))
+            : Promise.resolve({ data: [] }),
+          api.get(`/japanese?language=${studyLanguage}`).catch(() => ({ data: [] })),
         ]);
         if (cancelled) return;
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const items: RawItem[] = (resResp.data ?? []).map((r: any) => ({
+        const resourceItems: RawItem[] = (resResp.data ?? []).map((r: any) => ({
           topic: getTopic(r),
           label: getLabel(r),
           url: typeof r.url === "string" ? r.url : undefined,
           type: r.type,
         }));
 
-        setGraph(buildGraph(items, (japResp.data ?? []).length));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const cardItems: RawItem[] = (japResp.data ?? []).map((c: any) => {
+          const isJaS1 = c.type === "KANJI" || hasKanji(String(c.word || ""));
+          const isS1 = studyLanguage === "ja" ? isJaS1 : c.type !== "GRAMMAR";
+          let topic = `${studyPalette.flag} ${
+            isS1 ? studyText.section1.badge : studyText.section2.badge
+          }`;
+
+          if (studyLanguage === "de" && isS1) {
+            const deArt = getGermanArticleStyle(String(c.word || ""));
+            if (deArt?.article) {
+              topic = `${studyPalette.flag} ${deArt.article.toUpperCase()}`;
+            }
+          }
+
+          return {
+            topic,
+            label: `${c.word}${c.meaning ? ` — ${c.meaning}` : ""}`,
+            type: c.type,
+          };
+        });
+
+        const emptyTopicNames = showProgramming
+          ? ["Resources", `${studyPalette.flag} ${studyText.section1.badge}`]
+          : [
+              `${studyPalette.flag} ${studyText.section1.badge}`,
+              `${studyPalette.flag} ${studyText.section2.badge}`,
+            ];
+
+        setGraph(buildGraph([...resourceItems, ...cardItems], emptyTopicNames));
       } catch (error) {
         console.error("Ошибка загрузки графа", error);
-        if (!cancelled) setGraph(buildGraph([], 0));
+        if (!cancelled) {
+          setGraph(buildGraph([], [`${studyPalette.flag} ${studyText.section1.badge}`]));
+        }
       }
     };
 
@@ -266,7 +302,7 @@ export function KnowledgeGraph() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [studyLanguage, showProgramming, language, studyText, studyPalette]);
 
   /* Симуляция и рендеринг */
   useEffect(() => {
@@ -297,8 +333,8 @@ export function KnowledgeGraph() {
     } = graph;
 
     /* Палитра тем */
-    const accent = "#3b82f6";
-    const accentSoft = "rgba(59, 130, 246, 0.25)";
+    const accent = studyPalette.accentHex;
+    const accentSoft = `${studyPalette.accentHex}40`;
     const textPrimary = "#f4f4f5";
     const textSecondary = "#a1a1aa";
 
@@ -1013,12 +1049,16 @@ export function KnowledgeGraph() {
               fontWeight: 600,
               margin: "0 0 var(--space-2) 0",
               color: "var(--text-primary)",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
             }}
           >
-            {t.graph.title}
+            <span>{studyPalette.flag}</span>
+            <span>{t.graph.title}</span>
           </h2>
           <p style={{ color: "var(--text-muted)", margin: 0 }}>
-            {t.graph.subtitle}
+            {t.graph.subtitle} · {studyText.name}
           </p>
         </div>
 
@@ -1224,8 +1264,8 @@ export function KnowledgeGraph() {
                 width: "10px",
                 height: "10px",
                 borderRadius: "50%",
-                backgroundColor: "var(--accent)",
-                boxShadow: "0 0 8px var(--accent)",
+                backgroundColor: studyPalette.accentHex,
+                boxShadow: `0 0 8px ${studyPalette.accentHex}`,
               }}
             />
             {t.graph.vault}
@@ -1245,7 +1285,7 @@ export function KnowledgeGraph() {
                 width: "10px",
                 height: "10px",
                 borderRadius: "50%",
-                border: "2px solid #a855f7",
+                border: `2px solid ${studyPalette.secondaryHex}`,
               }}
             />
             {t.graph.topics}
@@ -1268,7 +1308,7 @@ export function KnowledgeGraph() {
                 backgroundColor: "#38bdf8",
               }}
             />
-            {t.graph.resources}
+            {showProgramming ? t.graph.resources : studyText.wordsUnit}
           </div>
         </div>
       </Card>

@@ -30,8 +30,21 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   @Get('profile')
   getProfile(@Request() req) {
-    // req.user содержит данные из метода validate() в JwtStrategy
-    return req.user;
+    return this.authService.getProfile(req.user);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Patch('preferences')
+  updatePreferences(
+    @Request() req,
+    @Body()
+    body: {
+      studyLanguage?: string;
+      showProgramming?: boolean;
+      onboardingCompleted?: boolean;
+    },
+  ) {
+    return this.authService.updatePreferences(req.user.userId, body);
   }
 
   @UseGuards(AuthGuard('jwt'))

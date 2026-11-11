@@ -31,19 +31,27 @@ import {
   Smartphone,
   Globe,
   Crown,
+  Code2,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
 import { api } from "../api/axios";
 import { confirmModal } from "../context/DialogContext";
 import {
-  STARTER_JAPANESE_CARDS,
   STARTER_DEVELOPER_RESOURCES,
   STARTER_GITHUB_REPOSITORIES,
+  getStarterCardsForStudy,
+  studyLanguageToPackType,
   isPackClaimed,
   markPackClaimed,
   unmarkPackClaimed,
 } from "../data/starterPacks";
+import {
+  STUDY_VIBE_PALETTES,
+  STUDY_TEXTS,
+  ONBOARDING_TEXTS,
+  type StudyLanguage,
+} from "../data/studyVibes";
 
 type SettingsTab = "appearance" | "account" | "learning" | "vault";
 
@@ -64,8 +72,22 @@ const ACCENT_COLORS = [
 
 export function Settings() {
   const navigate = useNavigate();
-  const { theme, setTheme, language, setLanguage, t, isCreator, activateCreatorMode } = useApp();
+  const {
+    theme,
+    setTheme,
+    language,
+    setLanguage,
+    t,
+    isCreator,
+    activateCreatorMode,
+    studyLanguage,
+    showProgramming,
+    studyText,
+    studyPalette,
+    updateStudyPreferences,
+  } = useApp();
   const { evaluateAchievements } = useAchievements();
+  const [updatingPrefs, setUpdatingPrefs] = useState(false);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("appearance");
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -149,14 +171,44 @@ export function Settings() {
     }, 3500);
   };
 
+  /* Переключение языка изучения / программирования */
+  const handleChangeStudyLanguage = async (nextLang: StudyLanguage) => {
+    if (nextLang === studyLanguage || updatingPrefs) return;
+    try {
+      setUpdatingPrefs(true);
+      await updateStudyPreferences({ studyLanguage: nextLang });
+      showToast(`${STUDY_VIBE_PALETTES[nextLang].flag} ${STUDY_TEXTS[nextLang][language].name}`);
+    } catch {
+      showToast(t.settings.toasts.savedGeneral, "error");
+    } finally {
+      setUpdatingPrefs(false);
+    }
+  };
+
+  const handleToggleProgramming = async (nextProg: boolean) => {
+    if (nextProg === showProgramming || updatingPrefs) return;
+    try {
+      setUpdatingPrefs(true);
+      await updateStudyPreferences({ showProgramming: nextProg });
+      const ob = ONBOARDING_TEXTS[language];
+      showToast(nextProg ? ob.optionProgYesTitle : ob.optionProgNoTitle);
+    } catch {
+      showToast(t.settings.toasts.savedGeneral, "error");
+    } finally {
+      setUpdatingPrefs(false);
+    }
+  };
+
   /* Загрузка профиля и метрик хранилища */
   useEffect(() => {
     const loadProfile = async () => {
       try {
         const [profileResp, resResp, japResp] = await Promise.all([
           api.get("/auth/profile").catch(() => ({ data: {} })),
-          api.get("/resources").catch(() => ({ data: [] })),
-          api.get("/japanese").catch(() => ({ data: [] })),
+          showProgramming
+            ? api.get("/resources").catch(() => ({ data: [] }))
+            : Promise.resolve({ data: [] }),
+          api.get(`/japanese?language=${studyLanguage}`).catch(() => ({ data: [] })),
         ]);
 
         if (profileResp.data?.email) {
@@ -183,7 +235,7 @@ export function Settings() {
       }
     };
     loadProfile();
-  }, []);
+  }, [studyLanguage, showProgramming]);
 
   /* Применение акцентного цвета */
   const handleSelectAccent = (color: string) => {
@@ -265,17 +317,19 @@ export function Settings() {
     try {
       showToast(t.settings.toasts.exportStarted, "info");
       const [resResp, japResp] = await Promise.all([
-        api.get("/resources"),
-        api.get("/japanese"),
+        showProgramming ? api.get("/resources") : Promise.resolve({ data: [] }),
+        api.get(`/japanese?language=${studyLanguage}`),
       ]);
 
       const backupData = {
-        version: "1.0",
+        version: "1.1",
         appName: "KAVAULT",
         exportedAt: new Date().toISOString(),
         user: {
           email: userEmail,
           username,
+          studyLanguage,
+          showProgramming,
         },
         settings: {
           theme,
@@ -346,6 +400,7 @@ export function Settings() {
               reading: card.reading,
               meaning: card.meaning,
               type: card.type || "VOCABULARY",
+              language: card.language || studyLanguage,
             });
             importedCards++;
           } catch {
@@ -366,7 +421,7 @@ export function Settings() {
   /* Сброс прогресса SRS (возврат уровней в 0) */
   const handleResetSRS = async () => {
     try {
-      const resp = await api.get<any[]>("/japanese");
+      const resp = await api.get<any[]>(`/japanese?language=${studyLanguage}`);
       const cards = resp.data || [];
       for (const card of cards) {
         await api.post(`/japanese/${card.id}/review`, { isCorrect: false });
@@ -391,15 +446,18 @@ export function Settings() {
     if (!confirmed) return;
 
     try {
-      await api.delete("/resources/clear/all");
-      await api.delete("/japanese/clear/all");
-      unmarkPackClaimed("all");
-      setUserResources([]);
+      if (showProgramming) {
+        await api.delete("/resources/clear/all");
+      }
+      await api.delete(`/japanese/clear/all?language=${studyLanguage}`);
+      unmarkPackClaimed(studyLanguageToPackType(studyLanguage));
+      if (showProgramming) unmarkPackClaimed("all");
+      setUserResources(showProgramming ? [] : userResources);
       setUserCards([]);
       setVaultStats({
-        resourcesCount: 0,
+        resourcesCount: showProgramming ? 0 : vaultStats.resourcesCount,
         cardsCount: 0,
-        totalNotes: 0,
+        totalNotes: showProgramming ? 0 : vaultStats.totalNotes,
       });
       showToast(t.settings.toasts.clearAllDone);
     } catch {
@@ -430,23 +488,29 @@ export function Settings() {
   const [importingStarter, setImportingStarter] = useState<string | null>(null);
 
   /* Загрузка стартовых наборов данных */
-  const handleLoadStarterPack = async (packType: "japanese" | "developer" | "github" | "all") => {
+  const handleLoadStarterPack = async (
+    packType: "language" | "developer" | "github" | "all",
+  ) => {
+    const activeLangPack = studyLanguageToPackType(studyLanguage);
     try {
       setImportingStarter(packType);
-      if (packType === "japanese" || packType === "all") {
-        await api.post("/japanese/bulk", { items: STARTER_JAPANESE_CARDS });
+      if (packType === "language" || packType === "all") {
+        const items = getStarterCardsForStudy(studyLanguage, language);
+        await api.post("/japanese/bulk", { items, language: studyLanguage });
+        markPackClaimed(activeLangPack);
       }
-      if (packType === "developer" || packType === "all") {
+      if (showProgramming && (packType === "developer" || packType === "all")) {
         await api.post("/resources/bulk", { items: STARTER_DEVELOPER_RESOURCES });
+        markPackClaimed("developer");
       }
-      if (packType === "github" || packType === "all") {
+      if (showProgramming && (packType === "github" || packType === "all")) {
         await api.post("/resources/bulk", { items: STARTER_GITHUB_REPOSITORIES });
+        markPackClaimed("github");
       }
-      markPackClaimed(packType);
       showToast(t.settings.toasts.starterLoaded);
       const [resResp, japResp] = await Promise.all([
-        api.get("/resources").catch(() => ({ data: [] })),
-        api.get("/japanese").catch(() => ({ data: [] })),
+        showProgramming ? api.get("/resources").catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+        api.get(`/japanese?language=${studyLanguage}`).catch(() => ({ data: [] })),
       ]);
       const resourcesList = resResp.data || [];
       const cardsList = japResp.data || [];
@@ -806,6 +870,142 @@ export function Settings() {
               })}
             </div>
           </Card>
+
+          {/* Изучаемый язык, культурный вайб и режим программирования */}
+          <Card
+            style={{
+              padding: "var(--space-6)",
+              background: "var(--vibe-banner-bg)",
+              border: "1px solid var(--vibe-banner-border)",
+            }}
+          >
+            <h3
+              style={{
+                margin: "0 0 var(--space-2) 0",
+                fontSize: "16px",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <span>{studyPalette.flag}</span>
+              <span>{ONBOARDING_TEXTS[language].step1Title}</span>
+            </h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "0 0 16px 0" }}>
+              {ONBOARDING_TEXTS[language].step1Subtitle}
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: "var(--space-3)",
+                marginBottom: "var(--space-5)",
+              }}
+            >
+              {(["en", "de", "ja"] as StudyLanguage[]).map((code) => {
+                const pal = STUDY_VIBE_PALETTES[code];
+                const txt = STUDY_TEXTS[code][language];
+                const isSelected = studyLanguage === code;
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    disabled={updatingPrefs}
+                    onClick={() => handleChangeStudyLanguage(code)}
+                    style={{
+                      textAlign: "left",
+                      padding: "12px 14px",
+                      borderRadius: "var(--radius-md)",
+                      border: isSelected
+                        ? `2px solid ${pal.accentHex}`
+                        : "1px solid var(--border)",
+                      backgroundColor: isSelected
+                        ? "var(--surface-raised)"
+                        : "var(--surface)",
+                      cursor: updatingPrefs ? "wait" : "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        width: "100%",
+                      }}
+                    >
+                      <span style={{ fontSize: "15px", fontWeight: 700 }}>
+                        {pal.flag} {txt.name}
+                      </span>
+                      {isSelected && <CheckCircle2 size={16} color={pal.accentHex} />}
+                    </div>
+                    <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                      {txt.vibeBadge}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              style={{
+                paddingTop: "var(--space-4)",
+                borderTop: "1px solid var(--border)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "12px",
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: "1 1 240px" }}>
+                <div
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "10px",
+                    backgroundColor: showProgramming
+                      ? "rgba(59, 130, 246, 0.15)"
+                      : "var(--surface-raised)",
+                    color: showProgramming ? "var(--accent)" : "var(--text-muted)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Code2 size={18} />
+                </div>
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
+                    {ONBOARDING_TEXTS[language].step2Title}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    {showProgramming
+                      ? ONBOARDING_TEXTS[language].optionProgYesDesc
+                      : ONBOARDING_TEXTS[language].optionProgNoDesc}
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant={showProgramming ? "secondary" : "primary"}
+                disabled={updatingPrefs}
+                onClick={() => handleToggleProgramming(!showProgramming)}
+                style={{ fontSize: "13px" }}
+              >
+                {showProgramming
+                  ? ONBOARDING_TEXTS[language].optionProgYesTitle
+                  : ONBOARDING_TEXTS[language].optionProgNoTitle}
+              </Button>
+            </div>
+          </Card>
         </div>
       )}
 
@@ -1154,26 +1354,28 @@ export function Settings() {
                 gap: "var(--space-5)",
               }}
             >
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "var(--text-secondary)",
-                    marginBottom: "8px",
-                  }}
-                >
-                  {t.settings.weeklyResLabel}
-                </label>
-                <Input
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={goalResources}
-                  onChange={(e) => setGoalResources(e.target.value)}
-                />
-              </div>
+              {showProgramming && (
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "var(--text-secondary)",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {t.settings.weeklyResLabel}
+                  </label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={goalResources}
+                    onChange={(e) => setGoalResources(e.target.value)}
+                  />
+                </div>
+              )}
 
               <div>
                 <label
@@ -1185,7 +1387,7 @@ export function Settings() {
                     marginBottom: "8px",
                   }}
                 >
-                  {t.settings.weeklyCardsLabel}
+                  {studyPalette.flag} {studyText.trackerGoalLabel}
                 </label>
                 <Input
                   type="number"
@@ -1333,20 +1535,22 @@ export function Settings() {
                 gap: "var(--space-4)",
               }}
             >
-              <div
-                style={{
-                  padding: "14px",
-                  backgroundColor: "var(--surface-raised)",
-                  borderRadius: "var(--radius-md)",
-                }}
-              >
-                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {t.settings.statsResources}
+              {showProgramming && (
+                <div
+                  style={{
+                    padding: "14px",
+                    backgroundColor: "var(--surface-raised)",
+                    borderRadius: "var(--radius-md)",
+                  }}
+                >
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    {t.settings.statsResources}
+                  </div>
+                  <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
+                    {vaultStats.resourcesCount}
+                  </div>
                 </div>
-                <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
-                  {vaultStats.resourcesCount}
-                </div>
-              </div>
+              )}
 
               <div
                 style={{
@@ -1356,27 +1560,29 @@ export function Settings() {
                 }}
               >
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {t.settings.statsCards}
+                  {studyPalette.flag} {studyText.dashWordsCardTitle}
                 </div>
                 <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
                   {vaultStats.cardsCount}
                 </div>
               </div>
 
-              <div
-                style={{
-                  padding: "14px",
-                  backgroundColor: "var(--surface-raised)",
-                  borderRadius: "var(--radius-md)",
-                }}
-              >
-                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {t.settings.statsNotes}
+              {showProgramming && (
+                <div
+                  style={{
+                    padding: "14px",
+                    backgroundColor: "var(--surface-raised)",
+                    borderRadius: "var(--radius-md)",
+                  }}
+                >
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    {t.settings.statsNotes}
+                  </div>
+                  <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
+                    {vaultStats.totalNotes}
+                  </div>
                 </div>
-                <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
-                  {vaultStats.totalNotes}
-                </div>
-              </div>
+              )}
             </div>
           </Card>
 
@@ -1437,17 +1643,22 @@ export function Settings() {
                 gap: "8px",
               }}
             >
-              <Sparkles size={18} color="var(--accent)" /> {t.settings.starterPacksTitle}
+              <Sparkles size={18} color={studyPalette.accentHex} /> {t.settings.starterPacksTitle}
             </h3>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 16px 0" }}>
               {t.settings.starterPacksDesc}
             </p>
 
             {(() => {
-              const isJapClaimed = isPackClaimed("japanese", userCards);
-              const isDevClaimed = isPackClaimed("developer", undefined, userResources);
-              const isGitClaimed = isPackClaimed("github", undefined, userResources);
-              const allClaimed = isJapClaimed && isDevClaimed && isGitClaimed;
+              const activeLangPack = studyLanguageToPackType(studyLanguage);
+              const isLangClaimed = isPackClaimed(activeLangPack, userCards);
+              const isDevClaimed = showProgramming
+                ? isPackClaimed("developer", undefined, userResources)
+                : true;
+              const isGitClaimed = showProgramming
+                ? isPackClaimed("github", undefined, userResources)
+                : true;
+              const allClaimed = isLangClaimed && isDevClaimed && isGitClaimed;
 
               if (allClaimed) {
                 return (
@@ -1479,19 +1690,19 @@ export function Settings() {
                     gap: "12px",
                   }}
                 >
-                  {!isJapClaimed && (
+                  {!isLangClaimed && (
                     <Button
                       variant="secondary"
-                      onClick={() => handleLoadStarterPack("japanese")}
+                      onClick={() => handleLoadStarterPack("language")}
                       disabled={importingStarter !== null}
                       style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
                     >
-                      <span>🌸</span>
-                      <span>{importingStarter === "japanese" ? t.settings.loadingText : t.settings.starterJapBtn}</span>
+                      <span>{studyPalette.flag}</span>
+                      <span>{importingStarter === "language" ? t.settings.loadingText : studyText.starterTitle}</span>
                     </Button>
                   )}
 
-                  {!isDevClaimed && (
+                  {showProgramming && !isDevClaimed && (
                     <Button
                       variant="secondary"
                       onClick={() => handleLoadStarterPack("developer")}
@@ -1503,7 +1714,7 @@ export function Settings() {
                     </Button>
                   )}
 
-                  {!isGitClaimed && (
+                  {showProgramming && !isGitClaimed && (
                     <Button
                       variant="secondary"
                       onClick={() => handleLoadStarterPack("github")}
@@ -1515,7 +1726,7 @@ export function Settings() {
                     </Button>
                   )}
 
-                  {!isJapClaimed && !isDevClaimed && !isGitClaimed && (
+                  {showProgramming && !isLangClaimed && !isDevClaimed && !isGitClaimed && (
                     <Button
                       onClick={() => handleLoadStarterPack("all")}
                       disabled={importingStarter !== null}
