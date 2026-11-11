@@ -6,7 +6,13 @@ import { Badge } from "../components/ui/Badge";
 import { api } from "../api/axios";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
-import { getGermanArticleStyle } from "../data/studyVibes";
+import {
+  getGermanArticleStyle,
+  STUDY_LEVELS,
+  LEVEL_ROADMAP_LABELS,
+  getDefaultStudyLevel,
+} from "../data/studyVibes";
+import { speakText, stopSpeaking } from "../utils/audioPlayer";
 import { CulturalAmbientOverlay } from "../components/CulturalAtmosphere";
 import {
   CheckCircle2,
@@ -27,6 +33,7 @@ interface StudyCard {
   meaning: string;
   example?: string;
   type?: string;
+  studyLevel?: string;
   language?: string;
   level: number;
   nextReview: string;
@@ -103,8 +110,12 @@ const playSound = (type: "flip" | "correct" | "wrong" | "victory") => {
 export function ReviewSession() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { t, studyLanguage, studyText, studyPalette } = useApp();
+  const { t, language, studyLanguage, studyText, studyPalette } = useApp();
   const { incrementReviewCount, evaluateAchievements } = useAchievements();
+
+  const levelsMeta = STUDY_LEVELS[studyLanguage];
+  const levelUi = LEVEL_ROADMAP_LABELS[language];
+  const defaultLevel = getDefaultStudyLevel(studyLanguage);
 
   const resolveModeFromParams = (): SessionFilter => {
     const mode = (searchParams.get("mode") || "").toLowerCase();
@@ -114,9 +125,15 @@ export function ReviewSession() {
     return studyLanguage === "ja" ? "S2" : "S1";
   };
 
+  const resolveLevelFromParams = (): string => {
+    const lvl = (searchParams.get("level") || "ALL").toUpperCase();
+    return lvl || "ALL";
+  };
+
   const [sessionFilter, setSessionFilter] = useState<SessionFilter>(
     resolveModeFromParams,
   );
+  const [levelFilter, setLevelFilter] = useState<string>(resolveLevelFromParams);
 
   const [rawCards, setRawCards] = useState<StudyCard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -134,23 +151,21 @@ export function ReviewSession() {
   const [flyDirection, setFlyDirection] = useState<"left" | "right" | null>(null);
   const dragStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
-  // Озвучка слова на изучаемом языке
+  // Озвучка слова на изучаемом языке (серверный MP3 + офлайн fallback)
   const speakWord = useCallback(
     (text: string) => {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        try {
-          window.speechSynthesis.cancel();
-          const u = new SpeechSynthesisUtterance(text);
-          u.lang = studyPalette.ttsLang;
-          u.rate = studyLanguage === "ja" ? 0.85 : 0.95;
-          window.speechSynthesis.speak(u);
-        } catch (err) {
-          console.warn("Speech synthesis error", err);
-        }
-      }
+      void speakText(text, studyPalette.ttsLang, {
+        rate: studyLanguage === "ja" ? 0.85 : 0.95,
+      });
     },
     [studyLanguage, studyPalette.ttsLang],
   );
+
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+    };
+  }, []);
 
   const [soundEnabled, setSoundEnabled] = useState(() => {
     return localStorage.getItem("kavault_sound_fx") !== "false";
@@ -178,7 +193,7 @@ export function ReviewSession() {
     fetchCards();
   }, [studyLanguage]);
 
-  // Фильтрация колоды по выбранному режиму и изучаемому языку
+  // Фильтрация колоды по выбранному режиму, уровню и изучаемому языку
   const activeDeck = useMemo(() => {
     const now = new Date();
 
@@ -190,6 +205,10 @@ export function ReviewSession() {
     };
 
     const categoryFiltered = rawCards.filter((card) => {
+      if (levelFilter !== "ALL") {
+        const cardLvl = card.studyLevel || defaultLevel;
+        if (cardLvl !== levelFilter) return false;
+      }
       if (sessionFilter === "S1") return isCardS1(card);
       if (sessionFilter === "S2") return !isCardS1(card);
       return true;
@@ -204,10 +223,18 @@ export function ReviewSession() {
       (card) => new Date(card.nextReview) <= now,
     );
     return [...due].sort(() => Math.random() - 0.5);
-  }, [rawCards, sessionFilter, isPracticeMode, studyLanguage]);
+  }, [rawCards, sessionFilter, levelFilter, defaultLevel, isPracticeMode, studyLanguage]);
 
   const switchFilter = (newFilter: SessionFilter) => {
     setSessionFilter(newFilter);
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setSessionCompleted(false);
+    setStats({ correct: 0, wrong: 0 });
+  };
+
+  const switchLevelFilter = (lvl: string) => {
+    setLevelFilter(lvl);
     setCurrentIndex(0);
     setIsFlipped(false);
     setSessionCompleted(false);
@@ -609,6 +636,43 @@ export function ReviewSession() {
           </button>
         </div>
 
+        {/* Фильтр по уровням (N5/N4/N3 или A1-B2) */}
+        <div style={{ display: "flex", gap: "6px", marginTop: "6px", flexWrap: "wrap", justifyContent: "center" }}>
+          <button
+            onClick={() => switchLevelFilter("ALL")}
+            style={{
+              padding: "4px 10px",
+              borderRadius: "999px",
+              border: levelFilter === "ALL" ? `1px solid ${studyPalette.accentHex}` : "1px solid var(--border)",
+              backgroundColor: levelFilter === "ALL" ? `${studyPalette.accentHex}20` : "transparent",
+              color: levelFilter === "ALL" ? studyPalette.accentHex : "var(--text-muted)",
+              cursor: "pointer",
+              fontSize: "12px",
+              fontWeight: 600,
+            }}
+          >
+            {levelUi.allLevels}
+          </button>
+          {levelsMeta.map((lvl) => (
+            <button
+              key={lvl.id}
+              onClick={() => switchLevelFilter(lvl.id)}
+              style={{
+                padding: "4px 10px",
+                borderRadius: "999px",
+                border: levelFilter === lvl.id ? `1px solid ${lvl.color}` : "1px solid var(--border)",
+                backgroundColor: levelFilter === lvl.id ? `${lvl.color}22` : "transparent",
+                color: levelFilter === lvl.id ? lvl.color : "var(--text-muted)",
+                cursor: "pointer",
+                fontSize: "12px",
+                fontWeight: 600,
+              }}
+            >
+              {lvl.badge}
+            </button>
+          ))}
+        </div>
+
         <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-3)" }}>
           <Button variant="secondary" onClick={() => navigate("/dashboard")}>
             {t.review.backToDash}
@@ -681,6 +745,19 @@ export function ReviewSession() {
               }}
             >
               {isCurrentCardS1 ? studyText.section1.cardBadge : studyText.section2.cardBadge}
+            </span>
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: 700,
+                padding: "2px 7px",
+                borderRadius: "999px",
+                backgroundColor: "var(--surface-raised)",
+                border: "1px solid var(--border)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              {currentCard.studyLevel || defaultLevel}
             </span>
             {deArticle?.article && (
               <span
@@ -763,6 +840,43 @@ export function ReviewSession() {
             {currentIndex + 1} / {activeDeck.length}
           </Badge>
         </div>
+      </div>
+
+      {/* Быстрый фильтр по уровню (N5/N4/N3 или A1-B2) */}
+      <div style={{ display: "flex", gap: "6px", width: "100%", flexWrap: "wrap" }}>
+        <button
+          onClick={() => switchLevelFilter("ALL")}
+          style={{
+            padding: "3px 10px",
+            borderRadius: "999px",
+            border: levelFilter === "ALL" ? `1px solid ${studyPalette.accentHex}` : "1px solid var(--border)",
+            backgroundColor: levelFilter === "ALL" ? `${studyPalette.accentHex}1f` : "transparent",
+            color: levelFilter === "ALL" ? studyPalette.accentHex : "var(--text-muted)",
+            cursor: "pointer",
+            fontSize: "11px",
+            fontWeight: 700,
+          }}
+        >
+          {levelUi.allLevels}
+        </button>
+        {levelsMeta.map((lvl) => (
+          <button
+            key={lvl.id}
+            onClick={() => switchLevelFilter(lvl.id)}
+            style={{
+              padding: "3px 10px",
+              borderRadius: "999px",
+              border: levelFilter === lvl.id ? `1px solid ${lvl.color}` : "1px solid var(--border)",
+              backgroundColor: levelFilter === lvl.id ? `${lvl.color}20` : "transparent",
+              color: levelFilter === lvl.id ? lvl.color : "var(--text-muted)",
+              cursor: "pointer",
+              fontSize: "11px",
+              fontWeight: 700,
+            }}
+          >
+            {lvl.badge}
+          </button>
+        ))}
       </div>
 
       {/* Прогресс-бар */}

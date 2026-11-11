@@ -1,8 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class JapaneseService {
+  private readonly ttsCache = new Map<string, Buffer>();
+
   constructor(private prisma: PrismaService) {}
 
   async create(
@@ -14,6 +20,7 @@ export class JapaneseService {
       example?: string;
       type?: any;
       language?: string;
+      studyLevel?: string;
     },
   ) {
     return this.prisma.japaneseCard.create({
@@ -24,6 +31,7 @@ export class JapaneseService {
         example: data.example,
         type: data.type,
         language: data.language || 'ja',
+        studyLevel: data.studyLevel,
         userId,
       },
     });
@@ -38,6 +46,7 @@ export class JapaneseService {
       example?: string;
       type?: any;
       language?: string;
+      studyLevel?: string;
     }>,
     language?: string,
   ) {
@@ -68,6 +77,7 @@ export class JapaneseService {
       example: item.example,
       type: item.type,
       language: item.language || targetLang,
+      studyLevel: item.studyLevel,
       userId,
     }));
     return this.prisma.japaneseCard.createMany({
@@ -75,11 +85,12 @@ export class JapaneseService {
     });
   }
 
-  async findAll(userId: string, language?: string) {
+  async findAll(userId: string, language?: string, level?: string) {
     return this.prisma.japaneseCard.findMany({
       where: {
         userId,
         ...(language ? { language } : {}),
+        ...(level && level !== 'ALL' ? { studyLevel: level } : {}),
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -203,5 +214,103 @@ export class JapaneseService {
     return this.prisma.studyPassage.deleteMany({
       where: { id, userId },
     });
+  }
+
+  private normalizeTtsLang(lang?: string): string {
+    const clean = (lang || 'ja').trim().toLowerCase();
+    if (clean.startsWith('ja')) return 'ja';
+    if (clean === 'en-gb' || clean === 'en_gb') return 'en-GB';
+    if (clean.startsWith('en')) return 'en';
+    if (clean.startsWith('de')) return 'de';
+    return 'ja';
+  }
+
+  private splitTtsChunks(text: string, maxLen = 170): string[] {
+    const normalized = text.replace(/\s+/g, ' ').trim();
+    if (normalized.length <= maxLen) return [normalized];
+
+    const chunks: string[] = [];
+    let rest = normalized;
+    while (rest.length > 0) {
+      if (rest.length <= maxLen) {
+        chunks.push(rest);
+        break;
+      }
+      const slice = rest.slice(0, maxLen);
+      let cut = Math.max(
+        slice.lastIndexOf('。'),
+        slice.lastIndexOf('. '),
+        slice.lastIndexOf('! '),
+        slice.lastIndexOf('? '),
+        slice.lastIndexOf('、'),
+        slice.lastIndexOf(', '),
+        slice.lastIndexOf(' '),
+      );
+      if (cut < Math.floor(maxLen * 0.4)) cut = maxLen;
+      else cut += 1;
+      chunks.push(rest.slice(0, cut).trim());
+      rest = rest.slice(cut).trim();
+    }
+    return chunks.filter(Boolean);
+  }
+
+  private async fetchSingleTtsChunk(chunk: string, tl: string): Promise<Buffer> {
+    const q = encodeURIComponent(chunk);
+    const endpoints = [
+      `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=${tl}&q=${q}`,
+      `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${tl}&q=${q}`,
+    ];
+
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            Referer: 'https://translate.google.com/',
+          },
+        });
+        if (res.ok) {
+          const arr = await res.arrayBuffer();
+          if (arr.byteLength > 200) {
+            return Buffer.from(arr);
+          }
+        }
+      } catch {
+        // пробовать резервный URL
+      }
+    }
+    throw new ServiceUnavailableException('TTS service unavailable');
+  }
+
+  async getSpeechAudio(text: string, lang?: string): Promise<Buffer> {
+    const cleanText = (text || '').trim();
+    if (!cleanText) {
+      throw new BadRequestException('Text is required');
+    }
+    if (cleanText.length > 1500) {
+      throw new BadRequestException('Text is too long (max 1500 chars)');
+    }
+
+    const tl = this.normalizeTtsLang(lang);
+    const cacheKey = `${tl}::${cleanText}`;
+    const cached = this.ttsCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const chunks = this.splitTtsChunks(cleanText, 170);
+    const buffers = await Promise.all(
+      chunks.map((c) => this.fetchSingleTtsChunk(c, tl)),
+    );
+    const combined = Buffer.concat(buffers);
+
+    if (this.ttsCache.size >= 400) {
+      const oldestKey = this.ttsCache.keys().next().value;
+      if (oldestKey) this.ttsCache.delete(oldestKey);
+    }
+    this.ttsCache.set(cacheKey, combined);
+
+    return combined;
   }
 }

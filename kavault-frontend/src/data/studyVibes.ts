@@ -786,3 +786,130 @@ export function getGermanArticleStyle(word: string): {
   }
   return null;
 }
+
+export interface StudyLevelMeta {
+  id: string;
+  badge: string;
+  color: string;
+  title: Record<Language, string>;
+  subtitle: Record<Language, string>;
+}
+
+export const STUDY_LEVELS: Record<StudyLanguage, StudyLevelMeta[]> = {
+  ja: [
+    {
+      id: "N5",
+      badge: "🌱 N5",
+      color: "#10b981",
+      title: { ru: "JLPT N5 — Начальный", en: "JLPT N5 — Beginner", ja: "JLPT N5（初級基礎）" },
+      subtitle: { ru: "Азбука, базовые фразы, ~100 иероглифов", en: "Kana, polite basics, ~100 kanji", ja: "かな・基本表現・基礎漢字" },
+    },
+    {
+      id: "N4",
+      badge: "🌿 N4",
+      color: "#3b82f6",
+      title: { ru: "JLPT N4 — Базовый", en: "JLPT N4 — Elementary", ja: "JLPT N4（初級応用）" },
+      subtitle: { ru: "Повседневное общение, длительное время, причины", en: "Everyday conversation & て-forms", ja: "日常会話・て形・理由表現" },
+    },
+    {
+      id: "N3",
+      badge: "🎋 N3",
+      color: "#ec4899",
+      title: { ru: "JLPT N3 — Средний", en: "JLPT N3 — Intermediate", ja: "JLPT N3（中級）" },
+      subtitle: { ru: "Сложные обороты, чтение статей и оттенки", en: "Natural speech, reading & nuance", ja: "自然表現・読解・複合文法" },
+    },
+  ],
+  en: [
+    {
+      id: "A1",
+      badge: "🌱 A1",
+      color: "#10b981",
+      title: { ru: "CEFR A1 — Старт", en: "CEFR A1 — Beginner", ja: "CEFR A1（入門）" },
+      subtitle: { ru: "Алфавит жизни, знакомство, базовые времена", en: "Core phrases & everyday survival", ja: "基本表現と日常の挨拶" },
+    },
+    {
+      id: "A2",
+      badge: "🌿 A2",
+      color: "#3b82f6",
+      title: { ru: "CEFR A2 — Базовый", en: "CEFR A2 — Elementary", ja: "CEFR A2（初級）" },
+      subtitle: { ru: "Город, путешествия, модальные глаголы", en: "City life, routines & modals", ja: "街歩き・日常・助動詞" },
+    },
+    {
+      id: "B1",
+      badge: "🏛️ B1",
+      color: "#8b5cf6",
+      title: { ru: "CEFR B1 — Средний", en: "CEFR B1 — Intermediate", ja: "CEFR B1（中級）" },
+      subtitle: { ru: "Present Perfect, пассив, живые дискуссии", en: "Fluency, conditionals & stories", ja: "現在完了・条件文・長文理解" },
+    },
+    {
+      id: "B2",
+      badge: "🎓 B2",
+      color: "#f43f5e",
+      title: { ru: "CEFR B2 — Продвинутый", en: "CEFR B2 — Upper-Int", ja: "CEFR B2（中上級）" },
+      subtitle: { ru: "Сложные идиомы, дебаты и академический стиль", en: "Nuance, idioms & sharp expression", ja: "高度な語彙・イディオム・議論" },
+    },
+  ],
+  de: [
+    {
+      id: "A1",
+      badge: "🌱 A1",
+      color: "#10b981",
+      title: { ru: "Goethe A1 — Старт", en: "Goethe A1 — Beginner", ja: "A1（入門・基礎）" },
+      subtitle: { ru: "Артикли der/die/das, порядок V2, кафе", en: "Articles der/die/das & V2 rule", ja: "冠詞と動詞第2位のルール" },
+    },
+    {
+      id: "A2",
+      badge: "🌿 A2",
+      color: "#3b82f6",
+      title: { ru: "Goethe A2 — Базовый", en: "Goethe A2 — Elementary", ja: "A2（初級日常）" },
+      subtitle: { ru: "Akkusativ / Dativ, прошедшее Perfekt", en: "Cases, transit & Perfekt past", ja: "3・4格変化と完了形" },
+    },
+    {
+      id: "B1",
+      badge: "🏛️ B1",
+      color: "#f59e0b",
+      title: { ru: "Goethe B1 — Средний", en: "Goethe B1 — Intermediate", ja: "B1（中級）" },
+      subtitle: { ru: "Придаточные weil/obwohl, природа, работа", en: "Subordinate clauses & stories", ja: "従属節と長文ストーリー" },
+    },
+    {
+      id: "B2",
+      badge: "🎓 B2",
+      color: "#ef4444",
+      title: { ru: "Goethe B2 — Продвинутый", en: "Goethe B2 — Upper-Int", ja: "B2（中上級）" },
+      subtitle: { ru: "Konjunktiv II, Passiv и деловой немецкий", en: "Konjunktiv II, passive & nuance", ja: "接続法II式と受動態の応用" },
+    },
+  ],
+};
+
+export function getDefaultStudyLevel(lang: StudyLanguage): string {
+  return lang === "ja" ? "N5" : "A1";
+}
+
+export const LEVEL_ROADMAP_LABELS: Record<
+  Language,
+  {
+    roadmapTitle: string;
+    allLevels: string;
+    sectionReviewBtn: string;
+    cardLevelLabel: string;
+  }
+> = {
+  ru: {
+    roadmapTitle: "Уровни программы",
+    allLevels: "Все уровни",
+    sectionReviewBtn: "Повторить уровень",
+    cardLevelLabel: "Уровень программы",
+  },
+  en: {
+    roadmapTitle: "Course Levels",
+    allLevels: "All Levels",
+    sectionReviewBtn: "Review Level",
+    cardLevelLabel: "Course Level",
+  },
+  ja: {
+    roadmapTitle: "レベル別コース",
+    allLevels: "全レベル",
+    sectionReviewBtn: "このレベルを復習",
+    cardLevelLabel: "コースレベル",
+  },
+};

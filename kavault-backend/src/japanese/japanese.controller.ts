@@ -8,7 +8,9 @@ import {
   Request,
   Query,
   Delete,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { JapaneseService } from './japanese.service';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -28,6 +30,7 @@ export class JapaneseController {
       example?: string;
       type?: any;
       language?: string;
+      studyLevel?: string;
     },
   ) {
     return this.japaneseService.create(req.user.userId, body);
@@ -44,6 +47,7 @@ export class JapaneseController {
       example?: string;
       type?: any;
       language?: string;
+      studyLevel?: string;
     }>,
     @Body('language') language?: string,
   ) {
@@ -51,8 +55,25 @@ export class JapaneseController {
   }
 
   @Get()
-  findAll(@Request() req, @Query('language') language?: string) {
-    return this.japaneseService.findAll(req.user.userId, language);
+  findAll(
+    @Request() req,
+    @Query('language') language?: string,
+    @Query('level') level?: string,
+  ) {
+    return this.japaneseService.findAll(req.user.userId, language, level);
+  }
+
+  @Get('tts')
+  async synthesizeSpeech(
+    @Query('text') text: string,
+    @Query('lang') lang: string,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.japaneseService.getSpeechAudio(text, lang);
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Content-Length', String(buffer.length));
+    res.send(buffer);
   }
 
   @Get('passages')

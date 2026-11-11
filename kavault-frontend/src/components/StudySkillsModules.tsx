@@ -30,6 +30,7 @@ import {
   LISTENING_PROMPTS,
   SKILL_STUDIO_TEXTS,
 } from "../data/languageCurriculum";
+import { speakText, stopSpeaking } from "../utils/audioPlayer";
 
 export interface StudyPassageRecord {
   id: string;
@@ -49,6 +50,7 @@ export interface SimpleStudyCard {
   reading?: string;
   meaning: string;
   example?: string;
+  studyLevel?: string;
   type: string;
 }
 
@@ -58,21 +60,7 @@ function speakSentence(
   rate = 0.95,
   onEnd?: () => void,
 ) {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-    onEnd?.();
-    return;
-  }
-  try {
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = lang;
-    utter.rate = rate;
-    utter.onend = () => onEnd?.();
-    utter.onerror = () => onEnd?.();
-    window.speechSynthesis.speak(utter);
-  } catch {
-    onEnd?.();
-  }
+  void speakText(text, lang, { rate, onEnd });
 }
 
 const normalizeForDictation = (s: string) =>
@@ -87,6 +75,7 @@ const normalizeForDictation = (s: string) =>
 
 export function GrammarStudio({
   studyLanguage,
+  selectedLevel,
   uiLang,
   ttsLang,
   accentColor,
@@ -97,6 +86,7 @@ export function GrammarStudio({
   onRefreshPassages,
 }: {
   studyLanguage: StudyLanguage;
+  selectedLevel: string;
   uiLang: Language;
   ttsLang: string;
   accentColor: string;
@@ -107,28 +97,40 @@ export function GrammarStudio({
     reading?: string;
     meaning: string;
     example?: string;
+    studyLevel?: string;
     type: "GRAMMAR";
   }) => Promise<void>;
   customPassages: StudyPassageRecord[];
   onRefreshPassages: () => Promise<void>;
 }) {
   const labels = SKILL_STUDIO_TEXTS[uiLang].grammar;
-  const lessons = GRAMMAR_LESSONS[studyLanguage];
+  const allLessons = GRAMMAR_LESSONS[studyLanguage];
+  const lessons = useMemo(() => {
+    if (selectedLevel === "ALL") return allLessons;
+    const filtered = allLessons.filter((l) => l.level === selectedLevel);
+    return filtered.length > 0 ? filtered : allLessons;
+  }, [allLessons, selectedLevel]);
+
   const [selectedId, setSelectedId] = useState(lessons[0].id);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [addingPattern, setAddingPattern] = useState<string | null>(null);
 
   // Custom grammar form
   const [noteTitle, setNoteTitle] = useState("");
-  const [noteLevel, setNoteLevel] = useState("A2");
+  const [noteLevel, setNoteLevel] = useState(
+    selectedLevel !== "ALL" ? selectedLevel : studyLanguage === "ja" ? "N5" : "A1",
+  );
   const [noteContent, setNoteContent] = useState("");
   const [noteExample, setNoteExample] = useState("");
   const [savingNote, setSavingNote] = useState(false);
 
   useEffect(() => {
-    setSelectedId(GRAMMAR_LESSONS[studyLanguage][0].id);
+    setSelectedId(lessons[0].id);
     setQuizAnswers({});
-  }, [studyLanguage]);
+    if (selectedLevel !== "ALL") {
+      setNoteLevel(selectedLevel);
+    }
+  }, [studyLanguage, selectedLevel, lessons]);
 
   const activeLesson = useMemo(
     () => lessons.find((l) => l.id === selectedId) || lessons[0],
@@ -136,8 +138,13 @@ export function GrammarStudio({
   );
 
   const grammarNotes = useMemo(
-    () => customPassages.filter((p) => p.kind === "GRAMMAR"),
-    [customPassages],
+    () =>
+      customPassages.filter(
+        (p) =>
+          p.kind === "GRAMMAR" &&
+          (selectedLevel === "ALL" || p.level === selectedLevel),
+      ),
+    [customPassages, selectedLevel],
   );
 
   const handleSaveCustomRule = async (e: React.FormEvent) => {
@@ -148,7 +155,7 @@ export function GrammarStudio({
       await api.post("/japanese/passages", {
         language: studyLanguage,
         kind: "GRAMMAR",
-        level: noteLevel.trim() || "A2",
+        level: noteLevel.trim() || (studyLanguage === "ja" ? "N5" : "A1"),
         title: noteTitle.trim(),
         content: noteExample.trim() || noteTitle.trim(),
         translation: noteContent.trim(),
@@ -308,6 +315,7 @@ export function GrammarStudio({
                     reading: activeLesson.title[uiLang],
                     meaning: activeLesson.examples[0]?.tr[uiLang] || activeLesson.title[uiLang],
                     example: activeLesson.examples[0]?.target,
+                    studyLevel: activeLesson.level,
                     type: "GRAMMAR",
                   });
                 } finally {
@@ -614,6 +622,7 @@ export function GrammarStudio({
 
 export function ReadingStudio({
   studyLanguage,
+  selectedLevel,
   uiLang,
   ttsLang,
   accentColor,
@@ -624,6 +633,7 @@ export function ReadingStudio({
   onRefreshPassages,
 }: {
   studyLanguage: StudyLanguage;
+  selectedLevel: string;
   uiLang: Language;
   ttsLang: string;
   accentColor: string;
@@ -633,13 +643,20 @@ export function ReadingStudio({
     word: string;
     reading?: string;
     meaning: string;
+    studyLevel?: string;
     type: "VOCABULARY" | "KANJI" | "GRAMMAR" | "KANA";
   }) => Promise<void>;
   customPassages: StudyPassageRecord[];
   onRefreshPassages: () => Promise<void>;
 }) {
   const labels = SKILL_STUDIO_TEXTS[uiLang].reading;
-  const passages = READING_PASSAGES[studyLanguage];
+  const allPassages = READING_PASSAGES[studyLanguage];
+  const passages = useMemo(() => {
+    if (selectedLevel === "ALL") return allPassages;
+    const filtered = allPassages.filter((p) => p.level === selectedLevel);
+    return filtered.length > 0 ? filtered : allPassages;
+  }, [allPassages, selectedLevel]);
+
   const [selectedId, setSelectedId] = useState(passages[0].id);
   const [speed, setSpeed] = useState(0.95);
   const [showHints, setShowHints] = useState(true);
@@ -658,16 +675,16 @@ export function ReadingStudio({
 
   useEffect(() => {
     seqAbortRef.current = true;
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     setSpeakingIdx(null);
-    setSelectedId(READING_PASSAGES[studyLanguage][0].id);
+    setSelectedId(passages[0].id);
     setQuizChoice({});
-  }, [studyLanguage]);
+  }, [studyLanguage, selectedLevel, passages]);
 
   useEffect(() => {
     return () => {
       seqAbortRef.current = true;
-      window.speechSynthesis?.cancel();
+      stopSpeaking();
     };
   }, []);
 
@@ -678,7 +695,7 @@ export function ReadingStudio({
 
   const stopPlayback = () => {
     seqAbortRef.current = true;
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     setSpeakingIdx(null);
   };
 
@@ -697,8 +714,13 @@ export function ReadingStudio({
   };
 
   const userReadings = useMemo(
-    () => customPassages.filter((p) => p.kind === "READING"),
-    [customPassages],
+    () =>
+      customPassages.filter(
+        (p) =>
+          p.kind === "READING" &&
+          (selectedLevel === "ALL" || p.level === selectedLevel),
+      ),
+    [customPassages, selectedLevel],
   );
 
   const handleSaveCustomText = async (e: React.FormEvent) => {
@@ -709,7 +731,7 @@ export function ReadingStudio({
       await api.post("/japanese/passages", {
         language: studyLanguage,
         kind: "READING",
-        level: "Custom",
+        level: selectedLevel !== "ALL" ? selectedLevel : studyLanguage === "ja" ? "N5" : "A1",
         title: customTitle.trim(),
         content: customBody.trim(),
         translation: customTrans.trim() || "—",
@@ -992,6 +1014,7 @@ export function ReadingStudio({
                             word: v.word,
                             reading: v.reading,
                             meaning: v.meaning[uiLang],
+                            studyLevel: activePassage.level,
                             type: v.type,
                           });
                         } finally {
@@ -1217,6 +1240,7 @@ export function ReadingStudio({
 
 export function ListeningStudio({
   studyLanguage,
+  selectedLevel,
   uiLang,
   ttsLang,
   accentColor,
@@ -1224,6 +1248,7 @@ export function ListeningStudio({
   userCards,
 }: {
   studyLanguage: StudyLanguage;
+  selectedLevel: string;
   uiLang: Language;
   ttsLang: string;
   accentColor: string;
@@ -1231,7 +1256,13 @@ export function ListeningStudio({
   userCards: SimpleStudyCard[];
 }) {
   const labels = SKILL_STUDIO_TEXTS[uiLang].listening;
-  const dialogues = LISTENING_DIALOGUES[studyLanguage];
+  const allDialogues = LISTENING_DIALOGUES[studyLanguage];
+  const dialogues = useMemo(() => {
+    if (selectedLevel === "ALL") return allDialogues;
+    const filtered = allDialogues.filter((d) => d.level === selectedLevel);
+    return filtered.length > 0 ? filtered : allDialogues;
+  }, [allDialogues, selectedLevel]);
+
   const [mode, setMode] = useState<"dialogues" | "quiz" | "dictation">("dialogues");
   const [selectedDlgId, setSelectedDlgId] = useState(dialogues[0].id);
   const [slowMode, setSlowMode] = useState(false);
@@ -1252,21 +1283,21 @@ export function ListeningStudio({
 
   useEffect(() => {
     dlgAbortRef.current = true;
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     setPlayingLineIdx(null);
-    setSelectedDlgId(LISTENING_DIALOGUES[studyLanguage][0].id);
+    setSelectedDlgId(dialogues[0].id);
     setQuizIndex(0);
     setPickedOption(null);
     setDictInput("");
     setDictChecked(null);
     setScore(0);
     setStreak(0);
-  }, [studyLanguage]);
+  }, [studyLanguage, selectedLevel, dialogues]);
 
   useEffect(() => {
     return () => {
       dlgAbortRef.current = true;
-      window.speechSynthesis?.cancel();
+      stopSpeaking();
     };
   }, []);
 
@@ -1275,38 +1306,57 @@ export function ListeningStudio({
     [dialogues, selectedDlgId],
   );
 
+  const levelScopedCards = useMemo(() => {
+    if (selectedLevel === "ALL") return userCards;
+    const matched = userCards.filter(
+      (c) => (c.studyLevel || (studyLanguage === "ja" ? "N5" : "A1")) === selectedLevel,
+    );
+    return matched.length >= 4 ? matched : userCards;
+  }, [userCards, selectedLevel, studyLanguage]);
+
   const promptPool = useMemo(() => {
-    if (useDeckSource && userCards.length >= 4) {
-      return userCards.map((c) => ({
+    if (useDeckSource && levelScopedCards.length >= 4) {
+      return levelScopedCards.map((c) => ({
+        level: c.studyLevel || selectedLevel,
         text: c.word,
         reading: c.reading,
         meaning: { ru: c.meaning, en: c.meaning, ja: c.meaning },
       }));
     }
-    return LISTENING_PROMPTS[studyLanguage];
-  }, [useDeckSource, userCards, studyLanguage]);
+    const curated = LISTENING_PROMPTS[studyLanguage];
+    if (selectedLevel === "ALL") return curated;
+    const filtered = curated.filter((p) => p.level === selectedLevel);
+    return filtered.length > 0 ? filtered : curated;
+  }, [useDeckSource, levelScopedCards, studyLanguage, selectedLevel]);
 
   const safeIdx = promptPool.length > 0 ? quizIndex % promptPool.length : 0;
   const currentPrompt = promptPool[safeIdx];
 
   const quizOptions = useMemo(() => {
-    if (!currentPrompt || promptPool.length < 2) return [];
-    const others = promptPool
-      .filter((_, i) => i !== safeIdx)
-      .slice(0, 3);
-    const list = [
-      { label: currentPrompt.meaning[uiLang], isTarget: true },
-      ...others.map((o) => ({ label: o.meaning[uiLang], isTarget: false })),
+    if (!currentPrompt) return [];
+    const distractorSource = [
+      ...promptPool.filter((_, i) => i !== safeIdx),
+      ...LISTENING_PROMPTS[studyLanguage].filter((p) => p.text !== currentPrompt.text),
     ];
-    // Deterministic shuffle per question index so choices stay stable until Next
+    const seenLabels = new Set<string>([currentPrompt.meaning[uiLang]]);
+    const others: { label: string; isTarget: boolean }[] = [];
+    for (const candidate of distractorSource) {
+      const lbl = candidate.meaning[uiLang];
+      if (!seenLabels.has(lbl)) {
+        seenLabels.add(lbl);
+        others.push({ label: lbl, isTarget: false });
+        if (others.length === 3) break;
+      }
+    }
+    const list = [{ label: currentPrompt.meaning[uiLang], isTarget: true }, ...others];
     return list
       .map((item, idx) => ({ ...item, sortKey: (safeIdx * 7 + idx * 13) % 19 }))
       .sort((a, b) => a.sortKey - b.sortKey);
-  }, [currentPrompt, promptPool, safeIdx, uiLang]);
+  }, [currentPrompt, promptPool, safeIdx, uiLang, studyLanguage]);
 
   const stopDlg = () => {
     dlgAbortRef.current = true;
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     setPlayingLineIdx(null);
   };
 

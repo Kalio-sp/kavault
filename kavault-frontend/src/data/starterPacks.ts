@@ -5,15 +5,19 @@ export interface StarterCard {
   word: string;
   reading?: string;
   meaning: string;
+  example?: string;
   type: "KANA" | "KANJI" | "VOCABULARY" | "GRAMMAR";
   language?: StudyLanguage;
+  studyLevel?: string;
 }
 
 interface LocalizedStarterCardRaw {
   word: string;
   reading?: string;
   meanings: Record<Language, string>;
+  example?: string;
   type: "KANA" | "KANJI" | "VOCABULARY" | "GRAMMAR";
+  studyLevel: string;
 }
 
 export interface StarterResource {
@@ -25,126 +29,120 @@ export interface StarterResource {
 }
 
 const RAW_JAPANESE_CARDS: LocalizedStarterCardRaw[] = [
-  // Приветствия и основы (Кана)
-  { word: "ありがとう", reading: "arigatou", type: "KANA", meanings: { ru: "Спасибо", en: "Thank you", ja: "感謝の言葉" } },
-  { word: "こんにちは", reading: "konnichiwa", type: "KANA", meanings: { ru: "Здравствуйте / Привет", en: "Hello / Good afternoon", ja: "昼の挨拶" } },
-  { word: "さようなら", reading: "sayounara", type: "KANA", meanings: { ru: "До свидания", en: "Goodbye", ja: "別れの挨拶" } },
-  { word: "はい", reading: "hai", type: "KANA", meanings: { ru: "Да", en: "Yes", ja: "肯定の返事" } },
-  { word: "いいえ", reading: "iie", type: "KANA", meanings: { ru: "Нет", en: "No", ja: "否定の返事" } },
-  { word: "すみません", reading: "sumimasen", type: "KANA", meanings: { ru: "Извините / Прошу прощения", en: "Excuse me / Sorry", ja: "謝罪・呼びかけ" } },
-  { word: "おねがいします", reading: "onegaishimasu", type: "KANA", meanings: { ru: "Пожалуйста (просьба)", en: "Please", ja: "依頼の表現" } },
-  { word: "おはよう", reading: "ohayou", type: "KANA", meanings: { ru: "Доброе утро", en: "Good morning", ja: "朝の挨拶" } },
-  { word: "こんばんは", reading: "konbanwa", type: "KANA", meanings: { ru: "Добрый вечер", en: "Good evening", ja: "夜の挨拶" } },
-  { word: "いただきます", reading: "itadakimasu", type: "KANA", meanings: { ru: "Приятного аппетита (перед едой)", en: "Phrase before eating", ja: "食事前の挨拶" } },
+  // N5: Приветствия и базовые слова (Кана)
+  { word: "ありがとう", reading: "arigatou", studyLevel: "N5", type: "KANA", example: "いつもありがとう！", meanings: { ru: "Спасибо", en: "Thank you", ja: "感謝の言葉" } },
+  { word: "こんにちは", reading: "konnichiwa", studyLevel: "N5", type: "KANA", example: "こんにちは、お元気ですか。", meanings: { ru: "Здравствуйте / Привет", en: "Hello / Good afternoon", ja: "昼の挨拶" } },
+  { word: "さようなら", reading: "sayounara", studyLevel: "N5", type: "KANA", meanings: { ru: "До свидания", en: "Goodbye", ja: "別れの挨拶" } },
+  { word: "はい", reading: "hai", studyLevel: "N5", type: "KANA", meanings: { ru: "Да", en: "Yes", ja: "肯定の返事" } },
+  { word: "いいえ", reading: "iie", studyLevel: "N5", type: "KANA", meanings: { ru: "Нет", en: "No", ja: "否定の返事" } },
+  { word: "すみません", reading: "sumimasen", studyLevel: "N5", type: "KANA", example: "すみません、駅はどこですか。", meanings: { ru: "Извините / Прошу прощения", en: "Excuse me / Sorry", ja: "謝罪・呼びかけ" } },
+  { word: "おねがいします", reading: "onegaishimasu", studyLevel: "N5", type: "KANA", meanings: { ru: "Пожалуйста (просьба)", en: "Please", ja: "依頼の表現" } },
+  { word: "おはよう", reading: "ohayou", studyLevel: "N5", type: "KANA", meanings: { ru: "Доброе утро", en: "Good morning", ja: "朝の挨拶" } },
+  { word: "みず", reading: "mizu", studyLevel: "N5", type: "KANA", meanings: { ru: "Вода", en: "Water", ja: "水 (おひや)" } },
+  { word: "おちゃ", reading: "ocha", studyLevel: "N5", type: "KANA", meanings: { ru: "Зелёный чай", en: "Green tea", ja: "お茶" } },
+  { word: "ごはん", reading: "gohan", studyLevel: "N5", type: "KANA", meanings: { ru: "Рис / Еда", en: "Rice / Meal", ja: "ご飯・食事" } },
+  { word: "ともだち", reading: "tomodachi", studyLevel: "N5", type: "KANA", meanings: { ru: "Друг / Приятель", en: "Friend", ja: "友人" } },
+  { word: "たべる", reading: "taberu", studyLevel: "N5", type: "KANA", meanings: { ru: "Кушать / Есть", en: "To eat", ja: "食事する" } },
+  { word: "のむ", reading: "nomu", studyLevel: "N5", type: "KANA", meanings: { ru: "Пить", en: "To drink", ja: "飲み物を摂取する" } },
 
-  // Базовые существительные (Кана)
-  { word: "みず", reading: "mizu", type: "KANA", meanings: { ru: "Вода", en: "Water", ja: "水 (おひや)" } },
-  { word: "おちゃ", reading: "ocha", type: "KANA", meanings: { ru: "Зелёный чай", en: "Green tea", ja: "お茶" } },
-  { word: "ごはん", reading: "gohan", type: "KANA", meanings: { ru: "Рис / Еда", en: "Rice / Meal", ja: "ご飯・食事" } },
-  { word: "ほん", reading: "hon", type: "KANA", meanings: { ru: "Книга", en: "Book", ja: "書物・本" } },
-  { word: "ねこ", reading: "neko", type: "KANA", meanings: { ru: "Кот / Кошка", en: "Cat", ja: "猫" } },
-  { word: "いぬ", reading: "inu", type: "KANA", meanings: { ru: "Собака", en: "Dog", ja: "犬" } },
-  { word: "くるま", reading: "kuruma", type: "KANA", meanings: { ru: "Машина / Автомобиль", en: "Car", ja: "自動車" } },
-  { word: "でんしゃ", reading: "densha", type: "KANA", meanings: { ru: "Поезд / Электричка", en: "Train", ja: "鉄道車両" } },
-  { word: "ともだち", reading: "tomodachi", type: "KANA", meanings: { ru: "Друг / Приятель", en: "Friend", ja: "友人" } },
-  { word: "せんせい", reading: "sensei", type: "KANA", meanings: { ru: "Учитель / Наставник", en: "Teacher / Sensei", ja: "教師" } },
+  // N5: Базовые Кандзи
+  { word: "日", reading: "ひ / にち (hi / nichi)", studyLevel: "N5", type: "KANJI", meanings: { ru: "День / Солнце", en: "Day / Sun", ja: "太陽・一日" } },
+  { word: "月", reading: "つき / げつ (tsuki / getsu)", studyLevel: "N5", type: "KANJI", meanings: { ru: "Луна / Месяц", en: "Moon / Month", ja: "お月様・月日" } },
+  { word: "山", reading: "やま / さん (yama / san)", studyLevel: "N5", type: "KANJI", meanings: { ru: "Гора", en: "Mountain", ja: "高い地形" } },
+  { word: "川", reading: "かわ / せん (kawa / sen)", studyLevel: "N5", type: "KANJI", meanings: { ru: "Река", en: "River", ja: "流れる水" } },
+  { word: "水", reading: "みず / すい (mizu / sui)", studyLevel: "N5", type: "KANJI", meanings: { ru: "Вода (иероглиф)", en: "Water (Kanji)", ja: "お水" } },
+  { word: "今日", reading: "きょう (kyou)", studyLevel: "N5", type: "KANJI", meanings: { ru: "Сегодня", en: "Today", ja: "この日" } },
 
-  // Базовые глаголы (Кана)
-  { word: "たべる", reading: "taberu", type: "KANA", meanings: { ru: "Кушать / Есть", en: "To eat", ja: "食事する" } },
-  { word: "のむ", reading: "nomu", type: "KANA", meanings: { ru: "Пить", en: "To drink", ja: "飲み物を摂取する" } },
-  { word: "みる", reading: "miru", type: "KANA", meanings: { ru: "Смотреть / Видеть", en: "To see / Watch", ja: "視覚で捉える" } },
-  { word: "きく", reading: "kiku", type: "KANA", meanings: { ru: "Слушать / Слышать", en: "To listen / Ask", ja: "耳で聞く・尋ねる" } },
-  { word: "いく", reading: "iku", type: "KANA", meanings: { ru: "Идти / Ехать", en: "To go", ja: "移動する" } },
-  { word: "くる", reading: "kuru", type: "KANA", meanings: { ru: "Приходить / Приезжать", en: "To come", ja: "こちらへ移動する" } },
+  // N4: Повседневные глаголы, прилагательные и иероглифы
+  { word: "約束", reading: "やくそく (yakusoku)", studyLevel: "N4", type: "KANJI", example: "友だちと約束があります。", meanings: { ru: "Обещание / Договорённость", en: "Promise / Appointment", ja: "取り決め・約束" } },
+  { word: "準備", reading: "じゅんび (junbi)", studyLevel: "N4", type: "KANJI", example: "旅行の準備をします。", meanings: { ru: "Подготовка", en: "Preparation", ja: "前もって用意すること" } },
+  { word: "便利", reading: "べんり (benri)", studyLevel: "N4", type: "KANJI", example: "このアプリはとても便利です。", meanings: { ru: "Удобный", en: "Convenient", ja: "役に立って使いやすい" } },
+  { word: "大切", reading: "たいせつ (taisetsu)", studyLevel: "N4", type: "KANJI", example: "時間はとても大切です。", meanings: { ru: "Важный / Дорогой", en: "Important / Precious", ja: "大事にすべきこと" } },
+  { word: "説明する", reading: "せつめいする (setsumei suru)", studyLevel: "N4", type: "KANJI", meanings: { ru: "Объяснять", en: "To explain", ja: "わかりやすく述べる" } },
+  { word: "ちゅうもん", reading: "chuumon (注文)", studyLevel: "N4", type: "KANA", meanings: { ru: "Заказ (в кафе/онлайн)", en: "Order", ja: "注文すること" } },
+  { word: "まちがえる", reading: "machigaeru", studyLevel: "N4", type: "KANA", meanings: { ru: "Ошибаться / Путать", en: "To make a mistake", ja: "誤る" } },
+  { word: "れんしゅう", reading: "renshuu (練習)", studyLevel: "N4", type: "KANA", meanings: { ru: "Тренировка / Практика", en: "Practice", ja: "繰り返し学ぶこと" } },
 
-  // Первые базовые Кандзи (N5)
-  { word: "日", reading: "ひ / にち (hi / nichi)", type: "KANJI", meanings: { ru: "День / Солнце", en: "Day / Sun", ja: "太陽・一日" } },
-  { word: "月", reading: "つき / げつ (tsuki / getsu)", type: "KANJI", meanings: { ru: "Луна / Месяц", en: "Moon / Month", ja: "お月様・月日" } },
-  { word: "木", reading: "き / もく (ki / moku)", type: "KANJI", meanings: { ru: "Дерево", en: "Tree / Wood", ja: "樹木" } },
-  { word: "山", reading: "やま / さん (yama / san)", type: "KANJI", meanings: { ru: "Гора", en: "Mountain", ja: "高い地形" } },
-  { word: "川", reading: "かわ / せん (kawa / sen)", type: "KANJI", meanings: { ru: "Река", en: "River", ja: "流れる水" } },
-  { word: "人", reading: "ひと / じん (hito / jin)", type: "KANJI", meanings: { ru: "Человек", en: "Person", ja: "人間" } },
-  { word: "水", reading: "みず / すい (mizu / sui)", type: "KANJI", meanings: { ru: "Вода (иероглиф)", en: "Water (Kanji)", ja: "お水" } },
-  { word: "火", reading: "ひ / か (hi / ka)", type: "KANJI", meanings: { ru: "Огонь", en: "Fire", ja: "炎" } },
-  { word: "今日", reading: "きょう (kyou)", type: "KANJI", meanings: { ru: "Сегодня", en: "Today", ja: "この日" } },
-  { word: "時間", reading: "じかん (jikan)", type: "KANJI", meanings: { ru: "Время", en: "Time / Hour", ja: "時刻・長さ" } },
+  // N3: Средний уровень и культурная лексика
+  { word: "経験", reading: "けいけん (keiken)", studyLevel: "N3", type: "KANJI", example: "いい経験になりました。", meanings: { ru: "Опыт", en: "Experience", ja: "実際に体験したこと" } },
+  { word: "集中", reading: "しゅうちゅう (shuuchuu)", studyLevel: "N3", type: "KANJI", example: "静かな所で集中します。", meanings: { ru: "Концентрация / Фокус", en: "Concentration / Focus", ja: "意識を一つに集めること" } },
+  { word: "印象", reading: "いんしょう (inshou)", studyLevel: "N3", type: "KANJI", meanings: { ru: "Впечатление", en: "Impression", ja: "心に強く残る感じ" } },
+  { word: "機会", reading: "きかい (kikai)", studyLevel: "N3", type: "KANJI", example: "良い機会を逃しません。", meanings: { ru: "Возможность / Случай", en: "Opportunity / Chance", ja: "物事をするのに良い折" } },
+  { word: "きもち", reading: "kimochi (気持ち)", studyLevel: "N3", type: "KANA", meanings: { ru: "Чувство / Настроение", en: "Feeling / Mood", ja: "心持ち・感情" } },
+  { word: "やはり", reading: "yahari", studyLevel: "N3", type: "KANA", meanings: { ru: "Всё-таки / Как и ожидалось", en: "As expected / After all", ja: "思った通り" } },
 ];
 
 const RAW_ENGLISH_CARDS: LocalizedStarterCardRaw[] = [
-  // Section 1: Vocabulary
-  { word: "Resilient", reading: "[rɪˈzɪl.i.ənt]", type: "VOCABULARY", meanings: { ru: "Жизнестойкий, быстро восстанавливающийся", en: "Able to withstand or recover quickly", ja: "回復力のある・しなやかな" } },
-  { word: "Eloquent", reading: "[ˈel.ə.kwənt]", type: "VOCABULARY", meanings: { ru: "Красноречивый, выразительный", en: "Fluent and persuasive in speaking", ja: "雄弁な・表現豊かな" } },
-  { word: "Perspective", reading: "[pəˈspek.tɪv]", type: "VOCABULARY", meanings: { ru: "Точка зрения, ракурс", en: "A particular attitude or point of view", ja: "視点・見方" } },
-  { word: "Milestone", reading: "[ˈmaɪl.stəʊn]", type: "VOCABULARY", meanings: { ru: "Важная веха, этап", en: "A significant stage or event", ja: "重要な節目・画期" } },
-  { word: "Breakthrough", reading: "[ˈbreɪk.θruː]", type: "VOCABULARY", meanings: { ru: "Прорыв, важное открытие", en: "A sudden dramatic discovery", ja: "突破口・画期的な発見" } },
-  { word: "Curiosity", reading: "[ˌkjʊə.riˈɒs.ə.ti]", type: "VOCABULARY", meanings: { ru: "Любознательность, интерес", en: "Strong desire to know or learn", ja: "好奇心" } },
-  { word: "Endeavor", reading: "[ɪnˈdev.ər]", type: "VOCABULARY", meanings: { ru: "Усилие, стремление, попытка", en: "An attempt to achieve a goal", ja: "努力・試み" } },
-  { word: "Inevitable", reading: "[ɪˈnev.ɪ.tə.bəl]", type: "VOCABULARY", meanings: { ru: "Неизбежный, неминуемый", en: "Certain to happen; unavoidable", ja: "避けられない・必然の" } },
-  { word: "Insightful", reading: "[ˈɪn.saɪt.fəl]", type: "VOCABULARY", meanings: { ru: "Проницательный, глубокий", en: "Showing deep understanding", ja: "洞察力のある" } },
-  { word: "Thorough", reading: "[ˈθʌr.ə]", type: "VOCABULARY", meanings: { ru: "Тщательный, обстоятельный", en: "Complete with regard to every detail", ja: "徹底的な・綿密な" } },
-  { word: "Serendipity", reading: "[ˌser.ənˈdɪp.ə.ti]", type: "VOCABULARY", meanings: { ru: "Счастливая случайность", en: "Finding good things by chance", ja: "思いがけない幸運" } },
-  { word: "Authentic", reading: "[ɔːˈθen.tɪk]", type: "VOCABULARY", meanings: { ru: "Подлинный, настоящий", en: "Genuine and original", ja: "本物の・信頼できる" } },
-  { word: "Ambiguous", reading: "[æmˈbɪɡ.ju.əs]", type: "VOCABULARY", meanings: { ru: "Двусмысленный, неоднозначный", en: "Open to more than one interpretation", ja: "曖昧な・多義的な" } },
-  { word: "Fluent", reading: "[ˈfluː.ənt]", type: "VOCABULARY", meanings: { ru: "Свободно владеющий (языком)", en: "Able to express oneself easily", ja: "流暢な" } },
-  { word: "Gratitude", reading: "[ˈɡræt.ɪ.tʃuːd]", type: "VOCABULARY", meanings: { ru: "Благодарность", en: "The quality of being thankful", ja: "感謝の気持ち" } },
+  // A1: Basics & Daily Survival
+  { word: "Morning", reading: "[ˈmɔː.nɪŋ]", studyLevel: "A1", type: "VOCABULARY", example: "Good morning! Fancy a coffee?", meanings: { ru: "Утро", en: "The early part of the day", ja: "朝" } },
+  { word: "Journey", reading: "[ˈdʒɜː.ni]", studyLevel: "A1", type: "VOCABULARY", meanings: { ru: "Путешествие, поездка", en: "An act of travelling from one place to another", ja: "旅・道のり" } },
+  { word: "Library", reading: "[ˈlaɪ.brər.i]", studyLevel: "A1", type: "VOCABULARY", meanings: { ru: "Библиотека", en: "A place filled with books for reading", ja: "図書館" } },
+  { word: "Wake up", reading: "phrasal verb", studyLevel: "A1", type: "GRAMMAR", example: "I usually wake up at 7 AM.", meanings: { ru: "Просыпаться", en: "Stop sleeping", ja: "目を覚ます" } },
+  { word: "Check in", reading: "phrasal verb", studyLevel: "A1", type: "GRAMMAR", meanings: { ru: "Заселиться / Зарегистрироваться", en: "Register at a hotel or airport", ja: "チェックインする" } },
 
-  // Section 2: Phrasal Verbs & Idioms
-  { word: "Figure out", reading: "phrasal verb", type: "GRAMMAR", meanings: { ru: "Разобраться, понять, решить", en: "Understand or solve something", ja: "理解する・解決する" } },
-  { word: "Carry on", reading: "phrasal verb", type: "GRAMMAR", meanings: { ru: "Продолжать (несмотря ни на что)", en: "Continue doing something", ja: "続ける・続行する" } },
-  { word: "Look forward to", reading: "phrasal verb", type: "GRAMMAR", meanings: { ru: "Ждать с нетерпением", en: "Await eagerly with pleasure", ja: "〜を楽しみに待つ" } },
-  { word: "Break the ice", reading: "idiom", type: "GRAMMAR", meanings: { ru: "Разрядить обстановку, начать общение", en: "Relieve tension at first meeting", ja: "打ち解ける・緊張をほぐす" } },
-  { word: "Piece of cake", reading: "idiom", type: "GRAMMAR", meanings: { ru: "Проще простого, пустяк", en: "Something very easy to do", ja: "朝飯前・とても簡単なこと" } },
-  { word: "Call it a day", reading: "idiom", type: "GRAMMAR", meanings: { ru: "Закончить работу на сегодня", en: "Stop working for the day", ja: "今日の作業を切り上げる" } },
-  { word: "Get the hang of", reading: "idiom", type: "GRAMMAR", meanings: { ru: "Набить руку, освоиться", en: "Learn how to do something skillfully", ja: "コツをつかむ" } },
-  { word: "Make up one's mind", reading: "idiom", type: "GRAMMAR", meanings: { ru: "Принять решение, решиться", en: "Make a firm decision", ja: "決心する" } },
-  { word: "Keep in touch", reading: "expression", type: "GRAMMAR", meanings: { ru: "Поддерживать связь", en: "Maintain regular communication", ja: "連絡を取り合う" } },
-  { word: "Run into", reading: "phrasal verb", type: "GRAMMAR", meanings: { ru: "Случайно встретить / столкнуться", en: "Meet unexpectedly or encounter", ja: "偶然出会う・直面する" } },
-  { word: "Put off", reading: "phrasal verb", type: "GRAMMAR", meanings: { ru: "Откладывать на потом", en: "Postpone to a later time", ja: "延期する・後回しにする" } },
-  { word: "Catch up", reading: "phrasal verb", type: "GRAMMAR", meanings: { ru: "Нагнать, обменяться новостями", en: "Reach the same level or talk after a break", ja: "追いつく・近況を話す" } },
-  { word: "Take into account", reading: "expression", type: "GRAMMAR", meanings: { ru: "Принимать во внимание", en: "Consider when judging something", ja: "考慮に入れる" } },
-  { word: "Give up", reading: "phrasal verb", type: "GRAMMAR", meanings: { ru: "Сдаваться / бросить привычку", en: "Stop trying or quit a habit", ja: "諦める・やめる" } },
-  { word: "In the long run", reading: "idiom", type: "GRAMMAR", meanings: { ru: "В конечном счёте, в перспективе", en: "Over a long period of time eventually", ja: "長い目で見れば・結局は" } },
+  // A2: Everyday Confidence & Conversations
+  { word: "Neighborhood", reading: "[ˈneɪ.bə.hʊd]", studyLevel: "A2", type: "VOCABULARY", meanings: { ru: "Район, окрестности", en: "Local area or district around home", ja: "近所・地域" } },
+  { word: "Comfortable", reading: "[ˈkʌm.fə.tə.bəl]", studyLevel: "A2", type: "VOCABULARY", meanings: { ru: "Удобный, комфортный", en: "Giving physical or mental ease", ja: "快適な・心地よい" } },
+  { word: "Curiosity", reading: "[ˌkjʊə.riˈɒs.ə.ti]", studyLevel: "A2", type: "VOCABULARY", example: "Curiosity sparks every great discovery.", meanings: { ru: "Любознательность", en: "Strong desire to know or learn", ja: "好奇心" } },
+  { word: "Look forward to", reading: "phrasal verb", studyLevel: "A2", type: "GRAMMAR", example: "I look forward to visiting London.", meanings: { ru: "Ждать с нетерпением", en: "Await eagerly with pleasure", ja: "〜を楽しみに待つ" } },
+  { word: "Figure out", reading: "phrasal verb", studyLevel: "A2", type: "GRAMMAR", meanings: { ru: "Разобраться, понять", en: "Understand or solve something", ja: "理解する・解決する" } },
+  { word: "Keep in touch", reading: "expression", studyLevel: "A2", type: "GRAMMAR", meanings: { ru: "Поддерживать связь", en: "Maintain regular communication", ja: "連絡を取り合う" } },
+
+  // B1: Fluency, Storytelling & Idioms
+  { word: "Milestone", reading: "[ˈmaɪl.stəʊn]", studyLevel: "B1", type: "VOCABULARY", meanings: { ru: "Важная веха, этап", en: "A significant stage or achievement", ja: "重要な節目" } },
+  { word: "Perspective", reading: "[pəˈspek.tɪv]", studyLevel: "B1", type: "VOCABULARY", meanings: { ru: "Точка зрения, ракурс", en: "A particular attitude or point of view", ja: "視点・見方" } },
+  { word: "Authentic", reading: "[ɔːˈθen.tɪk]", studyLevel: "B1", type: "VOCABULARY", meanings: { ru: "Подлинный, настоящий", en: "Genuine and original", ja: "本物の" } },
+  { word: "Break the ice", reading: "idiom", studyLevel: "B1", type: "GRAMMAR", meanings: { ru: "Разрядить обстановку, начать общение", en: "Relieve tension at first meeting", ja: "緊張をほぐす" } },
+  { word: "Put off", reading: "phrasal verb", studyLevel: "B1", type: "GRAMMAR", meanings: { ru: "Откладывать на потом", en: "Postpone to a later time", ja: "先延ばしにする" } },
+  { word: "Call it a day", reading: "idiom", studyLevel: "B1", type: "GRAMMAR", meanings: { ru: "Закончить работу на сегодня", en: "Stop working for the day", ja: "今日はここまでにする" } },
+
+  // B2: Nuanced, Academic & C1-bridge Vocabulary
+  { word: "Resilient", reading: "[rɪˈzɪl.i.ənt]", studyLevel: "B2", type: "VOCABULARY", example: "Resilient learners adapt fast.", meanings: { ru: "Жизнестойкий, гибкий", en: "Able to recover quickly from challenges", ja: "回復力のある・しなやかな" } },
+  { word: "Eloquent", reading: "[ˈel.ə.kwənt]", studyLevel: "B2", type: "VOCABULARY", meanings: { ru: "Красноречивый, выразительный", en: "Fluent and persuasive in speaking", ja: "雄弁な" } },
+  { word: "Serendipity", reading: "[ˌser.ənˈdɪp.ə.ti]", studyLevel: "B2", type: "VOCABULARY", meanings: { ru: "Счастливая случайность", en: "Finding good things by chance", ja: "思いがけない幸運" } },
+  { word: "Inevitable", reading: "[ɪˈnev.ɪ.tə.bəl]", studyLevel: "B2", type: "VOCABULARY", meanings: { ru: "Неизбежный, неминуемый", en: "Certain to happen; unavoidable", ja: "避けられない" } },
+  { word: "Take into account", reading: "expression", studyLevel: "B2", type: "GRAMMAR", meanings: { ru: "Принимать во внимание", en: "Consider when judging something", ja: "考慮に入れる" } },
+  { word: "In the long run", reading: "idiom", studyLevel: "B2", type: "GRAMMAR", meanings: { ru: "В конечном счёте, в перспективе", en: "Over a long period eventually", ja: "長い目で見れば" } },
 ];
 
 const RAW_GERMAN_CARDS: LocalizedStarterCardRaw[] = [
-  // Section 1: Nouns with der/die/das
-  { word: "der Bahnhof", reading: "die Bahnhöfe", type: "VOCABULARY", meanings: { ru: "Вокзал", en: "Train station", ja: "駅 (えき)" } },
-  { word: "das Wasser", reading: "[ˈvasɐ] · unzählbar", type: "VOCABULARY", meanings: { ru: "Вода", en: "Water", ja: "水" } },
-  { word: "die Zeit", reading: "die Zeiten", type: "VOCABULARY", meanings: { ru: "Время", en: "Time", ja: "時間" } },
-  { word: "der Freund", reading: "die Freunde", type: "VOCABULARY", meanings: { ru: "Друг", en: "Friend", ja: "友達" } },
-  { word: "das Buch", reading: "die Bücher", type: "VOCABULARY", meanings: { ru: "Книга", en: "Book", ja: "本" } },
-  { word: "die Stadt", reading: "die Städte", type: "VOCABULARY", meanings: { ru: "Город", en: "City", ja: "都市・街" } },
-  { word: "der Morgen", reading: "die Morgen", type: "VOCABULARY", meanings: { ru: "Утро", en: "Morning", ja: "朝" } },
-  { word: "das Haus", reading: "die Häuser", type: "VOCABULARY", meanings: { ru: "Дом", en: "House", ja: "家" } },
-  { word: "die Frage", reading: "die Fragen", type: "VOCABULARY", meanings: { ru: "Вопрос", en: "Question", ja: "質問" } },
-  { word: "der Weg", reading: "die Wege", type: "VOCABULARY", meanings: { ru: "Путь / Дорога", en: "Way / Path", ja: "道" } },
-  { word: "das Ziel", reading: "die Ziele", type: "VOCABULARY", meanings: { ru: "Цель", en: "Goal / Destination", ja: "目標・目的地" } },
-  { word: "die Sprache", reading: "die Sprachen", type: "VOCABULARY", meanings: { ru: "Язык (речь)", en: "Language", ja: "言語" } },
-  { word: "der Kaffee", reading: "die Kaffees", type: "VOCABULARY", meanings: { ru: "Кофе", en: "Coffee", ja: "コーヒー" } },
-  { word: "das Wissen", reading: "[ˈvɪsn̩]", type: "VOCABULARY", meanings: { ru: "Знание", en: "Knowledge", ja: "知識" } },
-  { word: "die Musik", reading: "[muˈziːk]", type: "VOCABULARY", meanings: { ru: "Музыка", en: "Music", ja: "音楽" } },
-  { word: "der Traum", reading: "die Träume", type: "VOCABULARY", meanings: { ru: "Мечта / Сон", en: "Dream", ja: "夢" } },
+  // A1: Basisnomen (der/die/das) & Grußformeln
+  { word: "das Wasser", reading: "[ˈvasɐ] · unzählbar", studyLevel: "A1", type: "VOCABULARY", meanings: { ru: "Вода", en: "Water", ja: "水" } },
+  { word: "das Buch", reading: "die Bücher", studyLevel: "A1", type: "VOCABULARY", example: "Ich lese ein interessantes Buch.", meanings: { ru: "Книга", en: "Book", ja: "本" } },
+  { word: "der Kaffee", reading: "die Kaffees", studyLevel: "A1", type: "VOCABULARY", meanings: { ru: "Кофе", en: "Coffee", ja: "コーヒー" } },
+  { word: "die Stadt", reading: "die Städte", studyLevel: "A1", type: "VOCABULARY", meanings: { ru: "Город", en: "City", ja: "都市・街" } },
+  { word: "Guten Morgen", reading: "[ˈɡuːtn̩ ˈmɔʁɡn̩]", studyLevel: "A1", type: "GRAMMAR", meanings: { ru: "Доброе утро", en: "Good morning", ja: "おはようございます" } },
+  { word: "Vielen Dank", reading: "[ˈfiːlən daŋk]", studyLevel: "A1", type: "GRAMMAR", meanings: { ru: "Большое спасибо", en: "Thank you very much", ja: "ありがとうございます" } },
 
-  // Section 2: Verbs & Everyday Phrases
-  { word: "Guten Morgen", reading: "[ˈɡuːtn̩ ˈmɔʁɡn̩]", type: "GRAMMAR", meanings: { ru: "Доброе утро", en: "Good morning", ja: "おはようございます" } },
-  { word: "Vielen Dank", reading: "[ˈfiːlən daŋk]", type: "GRAMMAR", meanings: { ru: "Большое спасибо", en: "Thank you very much", ja: "どうもありがとうございます" } },
-  { word: "verstehen", reading: "verstand · hat verstanden", type: "GRAMMAR", meanings: { ru: "Понимать", en: "To understand", ja: "理解する" } },
-  { word: "lernen", reading: "lernte · hat gelernt", type: "GRAMMAR", meanings: { ru: "Учить / Изучать", en: "To learn / study", ja: "学ぶ" } },
-  { word: "sprechen", reading: "sprach · hat gesprochen", type: "GRAMMAR", meanings: { ru: "Говорить", en: "To speak", ja: "話す" } },
-  { word: "arbeiten", reading: "arbeitete · hat gearbeitet", type: "GRAMMAR", meanings: { ru: "Работать", en: "To work", ja: "働く" } },
-  { word: "reisen", reading: "reiste · ist gereist", type: "GRAMMAR", meanings: { ru: "Путешествовать", en: "To travel", ja: "旅行する" } },
-  { word: "träumen", reading: "träumte · hat geträumt", type: "GRAMMAR", meanings: { ru: "Мечтать / Видеть сны", en: "To dream", ja: "夢を見る" } },
-  { word: "Entschuldigen Sie", reading: "höflich", type: "GRAMMAR", meanings: { ru: "Извините меня", en: "Excuse me (polite)", ja: "すみません（丁寧）" } },
-  { word: "Wie geht es Ihnen?", reading: "höflich", type: "GRAMMAR", meanings: { ru: "Как ваши дела?", en: "How are you?", ja: "お元気ですか？" } },
-  { word: "Ich hätte gern...", reading: "Bestellung", type: "GRAMMAR", meanings: { ru: "Я бы хотел(а)...", en: "I would like...", ja: "〜をお願いします" } },
-  { word: "Kein Problem", reading: "Alltag", type: "GRAMMAR", meanings: { ru: "Без проблем", en: "No problem", ja: "問題ありません" } },
-  { word: "Bis bald!", reading: "Abschied", type: "GRAMMAR", meanings: { ru: "До скорого!", en: "See you soon!", ja: "またね！" } },
-  { word: "Viel Erfolg!", reading: "Wunsch", type: "GRAMMAR", meanings: { ru: "Большого успеха! Удачи!", en: "Good luck / Much success!", ja: "成功を祈ります！" } },
+  // A2: Alltag, Reisen & Trennbare Verben
+  { word: "der Bahnhof", reading: "die Bahnhöfe", studyLevel: "A2", type: "VOCABULARY", example: "Der Zug fährt vom Bahnhof ab.", meanings: { ru: "Вокзал", en: "Train station", ja: "駅" } },
+  { word: "die Haltestelle", reading: "die Haltestellen", studyLevel: "A2", type: "VOCABULARY", meanings: { ru: "Остановка транспорта", en: "Bus / tram stop", ja: "停留所" } },
+  { word: "die Zeit", reading: "die Zeiten", studyLevel: "A2", type: "VOCABULARY", meanings: { ru: "Время", en: "Time", ja: "時間" } },
+  { word: "der Weg", reading: "die Wege", studyLevel: "A2", type: "VOCABULARY", meanings: { ru: "Путь / Дорога", en: "Way / Path", ja: "道" } },
+  { word: "verstehen", reading: "verstand · hat verstanden", studyLevel: "A2", type: "GRAMMAR", meanings: { ru: "Понимать", en: "To understand", ja: "理解する" } },
+  { word: "umsteigen", reading: "stieg um · ist umgestiegen", studyLevel: "A2", type: "GRAMMAR", meanings: { ru: "Пересаживаться (на транспорте)", en: "To change lines / transfer", ja: "乗り換える" } },
+  { word: "Ich hätte gern...", reading: "Bestellung", studyLevel: "A2", type: "GRAMMAR", meanings: { ru: "Я бы хотел(а)...", en: "I would like...", ja: "〜をお願いします" } },
+
+  // B1: Kultur, Beruf & Ausdrücke
+  { word: "das Wissen", reading: "[ˈvɪsn̩]", studyLevel: "B1", type: "VOCABULARY", example: "Wissen wächst jeden Tag.", meanings: { ru: "Знание", en: "Knowledge", ja: "知識" } },
+  { word: "das Ziel", reading: "die Ziele", studyLevel: "B1", type: "VOCABULARY", meanings: { ru: "Цель", en: "Goal / Destination", ja: "目標" } },
+  { word: "die Erfahrung", reading: "die Erfahrungen", studyLevel: "B1", type: "VOCABULARY", meanings: { ru: "Опыт", en: "Experience", ja: "経験" } },
+  { word: "der Traum", reading: "die Träume", studyLevel: "B1", type: "VOCABULARY", meanings: { ru: "Мечта / Сон", en: "Dream", ja: "夢" } },
+  { word: "träumen", reading: "träumte · hat geträumt", studyLevel: "B1", type: "GRAMMAR", meanings: { ru: "Мечтать / Видеть сны", en: "To dream", ja: "夢を見る" } },
+  { word: "Entschuldigen Sie", reading: "höflich", studyLevel: "B1", type: "GRAMMAR", meanings: { ru: "Извините меня", en: "Excuse me (polite)", ja: "すみません" } },
+
+  // B2: Abstrakte Begriffe & Feinheiten
+  { word: "die Entscheidung", reading: "die Entscheidungen", studyLevel: "B2", type: "VOCABULARY", example: "Eine kluge Entscheidung treffen.", meanings: { ru: "Решение, выбор", en: "Decision", ja: "決断・決定" } },
+  { word: "die Verantwortung", reading: "unzählbar", studyLevel: "B2", type: "VOCABULARY", meanings: { ru: "Ответственность", en: "Responsibility", ja: "責任" } },
+  { word: "der Zusammenhang", reading: "die Zusammenhänge", studyLevel: "B2", type: "VOCABULARY", meanings: { ru: "Контекст / Взаимосвязь", en: "Context / Connection", ja: "文脈・関連性" } },
+  { word: "in Betracht ziehen", reading: "Redewendung", studyLevel: "B2", type: "GRAMMAR", meanings: { ru: "Принимать в расчёт / рассматривать", en: "To take into consideration", ja: "考慮に入れる" } },
+  { word: "Viel Erfolg!", reading: "Wunsch", studyLevel: "B2", type: "GRAMMAR", meanings: { ru: "Большого успеха!", en: "Wishing great success!", ja: "成功を祈ります！" } },
 ];
 
 export function getStarterCardsForStudy(
   studyLanguage: StudyLanguage,
   uiLanguage: Language,
+  levelFilter?: string,
 ): StarterCard[] {
   const source =
     studyLanguage === "en"
@@ -152,12 +150,18 @@ export function getStarterCardsForStudy(
       : studyLanguage === "de"
         ? RAW_GERMAN_CARDS
         : RAW_JAPANESE_CARDS;
-  return source.map((c) => ({
+  const filtered =
+    levelFilter && levelFilter !== "ALL"
+      ? source.filter((c) => c.studyLevel === levelFilter)
+      : source;
+  return filtered.map((c) => ({
     word: c.word,
     reading: c.reading,
     meaning: c.meanings[uiLanguage] || c.meanings.ru,
+    example: c.example,
     type: c.type,
     language: studyLanguage,
+    studyLevel: c.studyLevel,
   }));
 }
 

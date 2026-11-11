@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/axios";
 import { Card } from "../components/ui/Card";
@@ -30,7 +30,12 @@ import {
   markPackClaimed,
   unmarkPackClaimed,
 } from "../data/starterPacks";
-import { getGermanArticleStyle } from "../data/studyVibes";
+import {
+  getGermanArticleStyle,
+  STUDY_LEVELS,
+  LEVEL_ROADMAP_LABELS,
+  getDefaultStudyLevel,
+} from "../data/studyVibes";
 import {
   CulturalAmbientOverlay,
   CulturalHeroScene,
@@ -45,6 +50,7 @@ import {
   ListeningStudio,
   type StudyPassageRecord,
 } from "../components/StudySkillsModules";
+import { speakText } from "../utils/audioPlayer";
 
 type HubSlot = "S1" | "S2";
 
@@ -54,6 +60,7 @@ interface StudyCard {
   reading?: string;
   meaning: string;
   example?: string;
+  studyLevel?: string;
   type: string;
   language?: string;
   level: number;
@@ -84,19 +91,10 @@ const playFlipSound = () => {
 };
 
 const speakPhrase = (text: string, lang: string) => {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  try {
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = lang;
-    utter.rate = lang.startsWith("ja") ? 0.9 : 0.95;
-    window.speechSynthesis.speak(utter);
-  } catch {
-    // синтез речи опционален
-  }
+  void speakText(text, lang, { rate: lang.startsWith("ja") ? 0.9 : 0.95 });
 };
 
-function FlashcardItem({
+const FlashcardItem = React.memo(function FlashcardItem({
   item,
   slot,
   onDelete,
@@ -242,6 +240,21 @@ function FlashcardItem({
             {deArticle.article}
           </div>
         )}
+        {item.studyLevel && (
+          <div
+            style={{
+              fontSize: "10px",
+              fontWeight: 700,
+              padding: "2px 5px",
+              borderRadius: "4px",
+              backgroundColor: "var(--surface-raised)",
+              border: "1px solid var(--border)",
+              color: "var(--text-secondary)",
+            }}
+          >
+            {item.studyLevel}
+          </div>
+        )}
       </div>
 
       {!isFlipped ? (
@@ -348,7 +361,7 @@ function FlashcardItem({
       )}
     </Card>
   );
-}
+});
 
 export function JapaneseHub() {
   const navigate = useNavigate();
@@ -363,6 +376,9 @@ export function JapaneseHub() {
   const { evaluateAchievements } = useAchievements();
 
   const studioText = SKILL_STUDIO_TEXTS[language];
+  const levelUi = LEVEL_ROADMAP_LABELS[language];
+  const levelsMeta = STUDY_LEVELS[studyLanguage];
+  const defaultLevel = getDefaultStudyLevel(studyLanguage);
 
   const resolveInitialTab = (): StudySkillTab => {
     const q = searchParams.get("tab");
@@ -373,9 +389,27 @@ export function JapaneseHub() {
   };
 
   const [skillTab, setSkillTab] = useState<StudySkillTab>(resolveInitialTab);
+  const [selectedLevel, setSelectedLevel] = useState<string>(() => {
+    return localStorage.getItem(`kavault_study_level_${studyLanguage}`) || "ALL";
+  });
+  const [cardLevel, setCardLevel] = useState<string>(() => defaultLevel);
   const [ambientEnabled, setAmbientEnabled] = useState<boolean>(() => {
     return localStorage.getItem("kavault_ambient_vibe") !== "false";
   });
+
+  useEffect(() => {
+    const savedLvl = localStorage.getItem(`kavault_study_level_${studyLanguage}`) || "ALL";
+    setSelectedLevel(savedLvl);
+    setCardLevel(savedLvl === "ALL" ? getDefaultStudyLevel(studyLanguage) : savedLvl);
+  }, [studyLanguage]);
+
+  const handleSelectLevel = (lvl: string) => {
+    setSelectedLevel(lvl);
+    localStorage.setItem(`kavault_study_level_${studyLanguage}`, lvl);
+    if (lvl !== "ALL") {
+      setCardLevel(lvl);
+    }
+  };
 
   useEffect(() => {
     const q = searchParams.get("tab");
@@ -463,10 +497,12 @@ export function JapaneseHub() {
     reading?: string;
     meaning: string;
     example?: string;
+    studyLevel?: string;
     type: "VOCABULARY" | "KANJI" | "GRAMMAR" | "KANA";
   }) => {
     await api.post("/japanese", {
       ...card,
+      studyLevel: card.studyLevel || defaultLevel,
       language: studyLanguage,
     });
     await fetchCards(true);
@@ -495,12 +531,27 @@ export function JapaneseHub() {
     fetchCards();
   }, [studyLanguage]);
 
-  // Разделение колоды на 2 независимых раздела для активного языка
+  const levelCounts = useMemo(() => {
+    const map: Record<string, number> = { ALL: cards.length };
+    levelsMeta.forEach((m) => {
+      map[m.id] = 0;
+    });
+    cards.forEach((c) => {
+      const lvl = c.studyLevel || defaultLevel;
+      map[lvl] = (map[lvl] || 0) + 1;
+    });
+    return map;
+  }, [cards, levelsMeta, defaultLevel]);
+
+  // Разделение колоды на 2 независимых раздела + фильтр по выбранному уровню
   const { section1Cards, section2Cards } = useMemo(() => {
     const s1: StudyCard[] = [];
     const s2: StudyCard[] = [];
 
     cards.forEach((c) => {
+      const cardLvl = c.studyLevel || defaultLevel;
+      if (selectedLevel !== "ALL" && cardLvl !== selectedLevel) return;
+
       if (studyLanguage === "ja") {
         if (c.type === "KANJI" || hasKanji(c.word)) {
           s1.push(c);
@@ -517,7 +568,7 @@ export function JapaneseHub() {
     });
 
     return { section1Cards: s1, section2Cards: s2 };
-  }, [cards, studyLanguage]);
+  }, [cards, studyLanguage, selectedLevel, defaultLevel]);
 
   const currentSectionCards =
     activeSlot === "S1" ? section1Cards : section2Cards;
@@ -553,6 +604,7 @@ export function JapaneseHub() {
         meaning: meaning.trim(),
         type: currentSecText.id,
         language: studyLanguage,
+        studyLevel: cardLevel,
       });
       setWord("");
       setReading("");
@@ -728,7 +780,11 @@ export function JapaneseHub() {
 
         {/* Кнопка запуска сессии SRS */}
         <Button
-          onClick={() => navigate(`/review?mode=${currentSecText.id.toLowerCase()}`)}
+          onClick={() =>
+            navigate(
+              `/review?mode=${currentSecText.id.toLowerCase()}${selectedLevel !== "ALL" ? `&level=${selectedLevel}` : ""}`,
+            )
+          }
           style={{
             position: "relative",
             zIndex: 2,
@@ -742,6 +798,139 @@ export function JapaneseHub() {
           {currentSectionCards.length}) →
         </Button>
       </div>
+
+      {/* ── ПУТЬ ПО УРОВНЯМ ЯЗЫКА (N5 -> N4 -> N3 / A1 -> B2) ── */}
+      {(() => {
+        const activeMeta = levelsMeta.find((m) => m.id === selectedLevel);
+        return (
+          <Card
+            style={{
+              position: "relative",
+              zIndex: 2,
+              padding: "var(--space-3) var(--space-4)",
+              borderRadius: "16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              border: `1px solid ${activeMeta ? `${activeMeta.color}45` : "var(--border-subtle)"}`,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "8px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "var(--text-primary)",
+                }}
+              >
+                <GraduationCap size={16} style={{ color: activeColor }} />
+                <span>{levelUi.roadmapTitle}</span>
+              </div>
+              {activeMeta && (
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: activeMeta.color,
+                    fontWeight: 600,
+                  }}
+                >
+                  {activeMeta.title[language]} · {activeMeta.subtitle[language]}
+                </span>
+              )}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "8px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => handleSelectLevel("ALL")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 12px",
+                  borderRadius: "999px",
+                  border: `1px solid ${selectedLevel === "ALL" ? activeColor : "var(--border-subtle)"}`,
+                  backgroundColor:
+                    selectedLevel === "ALL" ? activeColor : "var(--bg-elevated)",
+                  color:
+                    selectedLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span>{levelUi.allLevels}</span>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    opacity: selectedLevel === "ALL" ? 0.92 : 0.75,
+                    fontWeight: 600,
+                  }}
+                >
+                  ({levelCounts.ALL || 0})
+                </span>
+              </button>
+
+              {levelsMeta.map((lvl) => {
+                const isActive = selectedLevel === lvl.id;
+                const count = levelCounts[lvl.id] || 0;
+                return (
+                  <button
+                    key={lvl.id}
+                    type="button"
+                    onClick={() => handleSelectLevel(lvl.id)}
+                    title={`${lvl.title[language]} — ${lvl.subtitle[language]}`}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "6px 12px",
+                      borderRadius: "999px",
+                      border: `1px solid ${isActive ? lvl.color : "var(--border-subtle)"}`,
+                      backgroundColor: isActive ? lvl.color : "var(--bg-elevated)",
+                      color: isActive ? "#ffffff" : "var(--text-primary)",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      boxShadow: isActive ? `0 4px 12px -4px ${lvl.color}` : "none",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <span>{lvl.badge}</span>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        opacity: isActive ? 0.92 : 0.68,
+                        fontWeight: 600,
+                      }}
+                    >
+                      ({count})
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* ── ПАНЕЛЬ 4-Х ЯЗЫКОВЫХ МОДУЛЕЙ: ЛЕКСИКА · ГРАММАТИКА · ЧТЕНИЕ · АУДИРОВАНИЕ ── */}
       <div
@@ -1026,7 +1215,7 @@ export function JapaneseHub() {
           )}
 
           {/* Поле 3: Перевод */}
-          <div style={{ flex: "1 1 220px" }}>
+          <div style={{ flex: "1 1 200px" }}>
             <Input
               icon={<BookOpen size={16} />}
               placeholder={currentSecText.meaningPlaceholder}
@@ -1035,6 +1224,31 @@ export function JapaneseHub() {
               required
             />
           </div>
+
+          {/* Выбор уровня карточки (N5/N4/N3 или A1-B2) */}
+          <select
+            aria-label={levelUi.cardLevelLabel}
+            title={levelUi.cardLevelLabel}
+            value={cardLevel}
+            onChange={(e) => setCardLevel(e.target.value)}
+            style={{
+              height: "40px",
+              padding: "0 12px",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--border-subtle)",
+              backgroundColor: "var(--bg-elevated)",
+              color: "var(--text-primary)",
+              fontSize: "13px",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            {levelsMeta.map((lvl) => (
+              <option key={lvl.id} value={lvl.id}>
+                {lvl.badge}
+              </option>
+            ))}
+          </select>
 
           <Button
             type="submit"
@@ -1172,22 +1386,125 @@ export function JapaneseHub() {
             )}
           </Card>
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))",
-              gap: "var(--space-4)",
-            }}
-          >
-            {filteredCards.map((item) => (
-              <FlashcardItem
-                key={item.id}
-                item={item}
-                slot={activeSlot}
-                onDelete={handleDeleteCard}
-              />
-            ))}
-          </div>
+          selectedLevel === "ALL" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+              {levelsMeta.map((lvl) => {
+                const lvlCards = filteredCards.filter(
+                  (c) => (c.studyLevel || defaultLevel) === lvl.id,
+                );
+                if (lvlCards.length === 0) return null;
+                return (
+                  <div
+                    key={lvl.id}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "var(--space-3)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: "10px",
+                        padding: "10px 14px",
+                        borderRadius: "12px",
+                        backgroundColor: "var(--bg-surface)",
+                        border: `1px solid ${lvl.color}40`,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            padding: "3px 10px",
+                            borderRadius: "999px",
+                            backgroundColor: `${lvl.color}20`,
+                            color: lvl.color,
+                            border: `1px solid ${lvl.color}45`,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {lvl.badge}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 700,
+                            color: "var(--text-primary)",
+                          }}
+                        >
+                          {lvl.title[language]}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          {lvl.subtitle[language]} · {lvlCards.length}
+                        </span>
+                      </div>
+
+                      <Button
+                        variant="secondary"
+                        onClick={() =>
+                          navigate(
+                            `/review?mode=${currentSecText.id.toLowerCase()}&level=${lvl.id}`,
+                          )
+                        }
+                        style={{
+                          gap: "6px",
+                          padding: "6px 12px",
+                          fontSize: "12px",
+                          borderColor: `${lvl.color}45`,
+                          color: lvl.color,
+                        }}
+                      >
+                        <Sparkles size={13} /> {levelUi.sectionReviewBtn} ({lvlCards.length})
+                      </Button>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))",
+                        gap: "var(--space-4)",
+                      }}
+                    >
+                      {lvlCards.map((item) => (
+                        <FlashcardItem
+                          key={item.id}
+                          item={item}
+                          slot={activeSlot}
+                          onDelete={handleDeleteCard}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))",
+                gap: "var(--space-4)",
+              }}
+            >
+              {filteredCards.map((item) => (
+                <FlashcardItem
+                  key={item.id}
+                  item={item}
+                  slot={activeSlot}
+                  onDelete={handleDeleteCard}
+                />
+              ))}
+            </div>
+          )
         )}
       </div>
         </div>
@@ -1202,6 +1519,7 @@ export function JapaneseHub() {
             ttsLang={studyPalette.ttsLang}
             accentColor={studyPalette.accentHex}
             secondaryColor={studyPalette.secondaryHex}
+            selectedLevel={selectedLevel}
             existingWords={existingWords}
             onAddCard={handleAddCardFromStudio}
             customPassages={passages}
@@ -1219,6 +1537,7 @@ export function JapaneseHub() {
             ttsLang={studyPalette.ttsLang}
             accentColor={studyPalette.accentHex}
             secondaryColor={studyPalette.secondaryHex}
+            selectedLevel={selectedLevel}
             existingWords={existingWords}
             onAddCard={handleAddCardFromStudio}
             customPassages={passages}
@@ -1236,6 +1555,7 @@ export function JapaneseHub() {
             ttsLang={studyPalette.ttsLang}
             accentColor={studyPalette.accentHex}
             secondaryColor={studyPalette.secondaryHex}
+            selectedLevel={selectedLevel}
             userCards={cards}
           />
         </div>

@@ -355,6 +355,7 @@ export interface ListeningDialogue {
 }
 
 export interface ListeningPromptItem {
+  level: string;
   text: string;
   reading?: string;
   meaning: Record<Language, string>;
@@ -584,11 +585,118 @@ export const GRAMMAR_LESSONS: Record<StudyLanguage, GrammarLesson[]> = {
         },
       },
     },
+    {
+      id: "ja-n3-tara",
+      level: "N3",
+      pattern: "V-た形 + ら / A-かったら (условие «если / когда»)",
+      title: {
+        ru: "Условное наклонение 〜たら («если / как только...»)",
+        en: "Natural Conditional Form (〜たら)",
+        ja: "仮定・条件を表す「〜たら」",
+      },
+      explanation: {
+        ru: "Самый универсальный способ выразить условие в разговорном японском («если закончу», «когда приеду в Японию»). Берём прошедшую простую форму (た-форма) и добавляем ら.",
+        en: "The most versatile spoken conditional in Japanese: take the plain past (た-form) and attach ら to say 'if / once / when something happens'.",
+        ja: "「もし〜なら」「〜した後で」を表す最も自然な条件表現です。動詞や形容詞のた形に「ら」をつけます。",
+      },
+      examples: [
+        {
+          target: "東京に 着いたら、すぐ 連絡します。",
+          reading: "とうきょうに ついたら、すぐ れんらくします。",
+          tr: { ru: "Как только приеду в Токио, сразу напишу.", en: "Once I arrive in Tokyo, I'll contact you right away.", ja: "東京到着後にすぐ連絡することを伝えます。" },
+        },
+        {
+          target: "時間があったら、一緒に お茶を 飲みませんか。",
+          reading: "じかんが あったら、いっしょに おちゃを のみませんか。",
+          tr: { ru: "Если будет время, выпьем вместе чаю?", en: "If you have time, shall we get tea together?", ja: "時間がある場合の誘いです。" },
+        },
+      ],
+      quiz: {
+        prompt: "仕事が 終わっ＿＿、映画を 見に 行きましょう。",
+        options: ["たら", "ながら", "ので"],
+        correctIdx: 0,
+        hint: {
+          ru: "終わった + ら → 終わったら («когда/как только закончится работа»).",
+          en: "Attach ら to plain past 終わった → 終わったら.",
+          ja: "た形「終わった」に「ら」をつけます。",
+        },
+      },
+    },
   ],
   en: [
     {
+      id: "en-a1-present",
+      level: "A1",
+      pattern: "Subject + am/is/are  |  V / V-s (Present Simple)",
+      title: {
+        ru: "Базовые глаголы be и Present Simple (привычки и факты)",
+        en: "Verb 'to be' & Present Simple Habits",
+        ja: "be動詞と現在形（習慣・事実）",
+      },
+      explanation: {
+        ru: "Глагол to be меняется по лицам (I am, you/we/they are, he/she/it is). Для регулярных действий и фактов используем Present Simple: с he/she/it к глаголу добавляется окончание -s!",
+        en: "Use am / is / are for identity and states. For daily routines and general facts use Present Simple, adding -s for he / she / it.",
+        ja: "状態や立場にはbe動詞（am/is/are）、毎日の習慣や事実には現在形を使います。三人称単数(he/she/it)には-sをつけます。",
+      },
+      examples: [
+        {
+          target: "My sister lives in London and drinks tea every morning.",
+          tr: { ru: "Моя сестра живёт в Лондоне и каждое утро пьёт чай.", en: "Third-person -s on regular habits.", ja: "姉はロンドンに住んでいて毎朝紅茶を飲みます。" },
+        },
+        {
+          target: "Are you ready for your first English lesson?",
+          tr: { ru: "Ты готов(а) к своему первому уроку английского?", en: "Question word order with 'Are you...'", ja: "最初の英語のレッスンの準備はできましたか？" },
+        },
+      ],
+      quiz: {
+        prompt: "She ___ English for twenty minutes every evening.",
+        options: ["study", "studies", "is study"],
+        correctIdx: 1,
+        hint: {
+          ru: "Для he / she / it в Present Simple глагол получает окончание -s / -es → studies.",
+          en: "Third-person singular 'she' takes '-ies' → studies.",
+          ja: "主語がsheの習慣なので三単現の「studies」になります。",
+        },
+      },
+    },
+    {
+      id: "en-a1-there-is",
+      level: "A1",
+      pattern: "There is (singular) / There are (plural) + some / any",
+      title: {
+        ru: "Конструкция There is / There are (что где находится)",
+        en: "There is / There are + Some & Any",
+        ja: "存在を表す There is / There are",
+      },
+      explanation: {
+        ru: "Чтобы сказать, что где-то что-то есть, начните с There is (единственное число) или There are (множественное число). В утверждениях обычно ставим some, а в вопросах и отрицаниях — any.",
+        en: "Start with 'There is' (singular) or 'There are' (plural) to show something exists in a place. Pair 'some' with positives and 'any' with questions/negatives.",
+        ja: "「〜に…がある」はThere is（単数）/ There are（複数）から始めます。肯定文ではsome、疑問・否定文ではanyを使います。",
+      },
+      examples: [
+        {
+          target: "There are two cosy cafés near the station.",
+          tr: { ru: "Рядом со станцией есть два уютных кафе.", en: "Plural existence.", ja: "駅の近くに居心地の良いカフェが2つあります。" },
+        },
+        {
+          target: "Is there any sugar in the kitchen?",
+          tr: { ru: "На кухне есть немного сахара?", en: "Question with uncountable 'any'.", ja: "キッチンに砂糖はありますか？" },
+        },
+      ],
+      quiz: {
+        prompt: "Look! ___ three libraries in our town.",
+        options: ["There is", "There are", "It is"],
+        correctIdx: 1,
+        hint: {
+          ru: "Множественное число (three libraries) требует There are.",
+          en: "Plural 'three libraries' pairs with 'There are'.",
+          ja: "複数形（three libraries）なので「There are」を使います。",
+        },
+      },
+    },
+    {
       id: "en-pres-perf",
-      level: "A2/B1",
+      level: "A2",
       pattern: "have / has + V3 (Past Participle)",
       title: {
         ru: "Present Perfect: опыт и результат сейчас",
@@ -624,6 +732,41 @@ export const GRAMMAR_LESSONS: Record<StudyLanguage, GrammarLesson[]> = {
       },
     },
     {
+      id: "en-modals",
+      level: "A2",
+      pattern: "must / should / might / used to",
+      title: {
+        ru: "Модальные глаголы оттенков смысла",
+        en: "Modal Verbs of Advice & Deduction",
+        ja: "助動詞（must / should / might）のニュアンス",
+      },
+      explanation: {
+        ru: "must — уверенность или строгая обязанность; should — дружеский совет («стоит»); might / could — вероятность («возможно»); used to + V — привычка в прошлом, которой уже нет.",
+        en: "'must' shows obligation/certainty; 'should' gives advice; 'might' expresses possibility; 'used to' expresses past habits now ended.",
+        ja: "mustは義務や確信、shouldは助言、mightは可能性を表します。",
+      },
+      examples: [
+        {
+          target: "You should take an umbrella; it might rain later.",
+          tr: { ru: "Тебе стоит взять зонт — позже может пойти дождь.", en: "Advice + mild possibility.", ja: "傘を持っていった方がいいよ、後で雨が降るかも。" },
+        },
+        {
+          target: "We used to drink tea every evening at 5.",
+          tr: { ru: "Раньше мы пили чай каждый вечер в 5.", en: "Discontinued past habit.", ja: "以前は毎晩5時に紅茶を飲んでいました。" },
+        },
+      ],
+      quiz: {
+        prompt: "That light is on — someone ___ be in the office.",
+        options: ["must", "should to", "used"],
+        correctIdx: 0,
+        hint: {
+          ru: "Для логической уверенности по факту («точно кто-то есть») используем must.",
+          en: "Logical deduction based on evidence takes 'must'.",
+          ja: "根拠に基づく強い推量には「must」を使います。",
+        },
+      },
+    },
+    {
       id: "en-conditionals",
       level: "B1",
       pattern: "1st (will) vs 2nd Conditional (would + V)",
@@ -655,41 +798,6 @@ export const GRAMMAR_LESSONS: Record<StudyLanguage, GrammarLesson[]> = {
           ru: "В условии стоит Past Simple (had), значит это 2nd Conditional → в результате используем would.",
           en: "'If I had...' signals 2nd Conditional, paired with 'would + verb'.",
           ja: "条件節が過去形「had」なので帰結節は「would」を使います。",
-        },
-      },
-    },
-    {
-      id: "en-modals",
-      level: "A2/B1",
-      pattern: "must / should / might / used to",
-      title: {
-        ru: "Модальные глаголы оттенков смысла",
-        en: "Modal Verbs of Advice & Deduction",
-        ja: "助動詞（must / should / might）のニュアンス",
-      },
-      explanation: {
-        ru: "must — уверенность или строгая обязанность; should — дружеский совет («стоит»); might / could — вероятность («возможно»); used to + V — привычка в прошлом, которой уже нет.",
-        en: "'must' shows obligation/certainty; 'should' gives advice; 'might' expresses possibility; 'used to' expresses past habits now ended.",
-        ja: "mustは義務や確信、shouldは助言、mightは可能性を表します。",
-      },
-      examples: [
-        {
-          target: "You should take an umbrella; it might rain later.",
-          tr: { ru: "Тебе стоит взять зонт — позже может пойти дождь.", en: "Advice + mild possibility.", ja: "傘を持っていった方がいいよ、後で雨が降るかも。" },
-        },
-        {
-          target: "We used to drink tea every evening at 5.",
-          tr: { ru: "Раньше мы пили чай каждый вечер в 5.", en: "Discontinued past habit.", ja: "以前は毎晩5時に紅茶を飲んでいました。" },
-        },
-      ],
-      quiz: {
-        prompt: "That light is on — someone ___ be in the office.",
-        options: ["must", "should to", "used"],
-        correctIdx: 0,
-        hint: {
-          ru: "Для логической уверенности по факту («точно кто-то есть») используем must.",
-          en: "Logical deduction based on evidence takes 'must'.",
-          ja: "根拠に基づく強い推量には「must」を使います。",
         },
       },
     },
@@ -730,7 +838,7 @@ export const GRAMMAR_LESSONS: Record<StudyLanguage, GrammarLesson[]> = {
     },
     {
       id: "en-gerund-inf",
-      level: "B1/B2",
+      level: "B2",
       pattern: "enjoy + V-ing  vs  decide + to V",
       title: {
         ru: "Герундий (-ing) или Инфинитив (to + V)",
@@ -765,7 +873,7 @@ export const GRAMMAR_LESSONS: Record<StudyLanguage, GrammarLesson[]> = {
     },
     {
       id: "en-phrasals",
-      level: "B1/B2",
+      level: "B2",
       pattern: "Verb + Particle (figure out / put off / look forward to)",
       title: {
         ru: "Фразовые глаголы и предлоги (look forward to + -ing)",
@@ -907,7 +1015,7 @@ export const GRAMMAR_LESSONS: Record<StudyLanguage, GrammarLesson[]> = {
     },
     {
       id: "de-weil",
-      level: "A2/B1",
+      level: "B1",
       pattern: "..., weil / dass / obwohl + ... + Verb am Ende!",
       title: {
         ru: "Придаточные с weil, dass, obwohl (глагол в самый конец!)",
@@ -977,7 +1085,7 @@ export const GRAMMAR_LESSONS: Record<StudyLanguage, GrammarLesson[]> = {
     },
     {
       id: "de-trennbare",
-      level: "A2/B1",
+      level: "B1",
       pattern: "Präfix-Verb: Ich stehe um 7 Uhr auf.",
       title: {
         ru: "Отделяемые приставки (auf-, an-, ein-, mit-, zurück-)",
@@ -1007,6 +1115,76 @@ export const GRAMMAR_LESSONS: Record<StudyLanguage, GrammarLesson[]> = {
           ru: "Начинаться = anfangen, отделяемая приставка — an!",
           en: "'to start' is 'anfangen' → separable prefix 'an'.",
           ja: "「始まる」は分離動詞「anfangen」なので文末に「an」が来ます。",
+        },
+      },
+    },
+    {
+      id: "de-konjunktiv",
+      level: "B2",
+      pattern: "würde + Infinitiv  |  könnte / hätte / wäre",
+      title: {
+        ru: "Сослагательное наклонение и вежливость (Konjunktiv II)",
+        en: "Konjunktiv II: Wishes & Polite Hypotheticals",
+        ja: "接続法II式（仮定と丁寧な依頼）",
+      },
+      explanation: {
+        ru: "Konjunktiv II выражает мечты, гипотетические ситуации («если бы у меня было время...») и особо вежливые просьбы. Для haben → hätte, sein → wäre, können → könnte, для всех остальных — würde + инфинитив.",
+        en: "Used for polite requests ('Könnten Sie bitte...') and unreal wishes ('Ich hätte gern mehr Zeit'). Key forms: wäre, hätte, könnte, or 'würde + infinitive'.",
+        ja: "丁寧な依頼や非現実的な願望・仮定を表します。hätte・wäre・könnte、またはwürde＋不定詞を使います。",
+      },
+      examples: [
+        {
+          target: "Könnten Sie diesen Satz bitte etwas langsamer wiederholen?",
+          tr: { ru: "Не могли бы вы повторить эту фразу чуть медленнее?", en: "Very polite request with könnte.", ja: "この文をもう少しゆっくり繰り返していただけませんか？" },
+        },
+        {
+          target: "Wenn ich mehr Zeit hätte, würde ich jeden Tag lesen.",
+          tr: { ru: "Если бы у меня было больше времени, я бы читал каждый день.", en: "Hypothetical conditional with hätte + würde.", ja: "もしもっと時間があれば毎日読むのに。" },
+        },
+      ],
+      quiz: {
+        prompt: "Ich ___ jetzt sehr gern in Berlin.",
+        options: ["wäre", "bin sein", "hätte sein"],
+        correctIdx: 0,
+        hint: {
+          ru: "Сослагательная форма от sein («я бы сейчас с радостью был...») — wäre.",
+          en: "Hypothetical form of 'sein' is 'wäre'.",
+          ja: "「今ベルリンにいたらなあ」はseinの接続法II式「wäre」を使います。",
+        },
+      },
+    },
+    {
+      id: "de-passiv",
+      level: "B2",
+      pattern: "werden (Präs./Prät.) + ... + Partizip II",
+      title: {
+        ru: "Пассивный залог (Vorgangspassiv с werden)",
+        en: "German Passive Voice (werden + Partizip II)",
+        ja: "ドイツ語の受動態 (werden + 過去分詞)",
+      },
+      explanation: {
+        ru: "Когда важен сам процесс или результат действия, а не исполнитель, используем werden (wird / werden / wurde) на 2-м месте и Partizip II в конце. Исполнитель добавляется через von.",
+        en: "Highlights processes and actions using conjugated 'werden' (wird / wurde) in slot 2 plus Partizip II at the end. Optional agent takes 'von'.",
+        ja: "動作のプロセスを強調する受動態です。2番目にwerdenを置き、文末に過去分詞を置きます。",
+      },
+      examples: [
+        {
+          target: "Das neue Projekt wird gerade von unserem Team vorbereitet.",
+          tr: { ru: "Новый проект прямо сейчас готовится нашей командой.", en: "Present passive process.", ja: "新しいプロジェクトは現在私たちのチームによって準備されています。" },
+        },
+        {
+          target: "Das Gebäude wurde im Jahr 1919 gebaut.",
+          tr: { ru: "Здание было построено в 1919 году.", en: "Past passive with wurde.", ja: "その建物は1919年に建てられました。" },
+        },
+      ],
+      quiz: {
+        prompt: "Die Ergebnisse ___ morgen veröffentlicht.",
+        options: ["werden", "sind haben", "würde"],
+        correctIdx: 0,
+        hint: {
+          ru: "Множественное число (die Ergebnisse) требует werden!",
+          en: "Plural 'Die Ergebnisse' takes 'werden' + Partizip II.",
+          ja: "複数形が主語なので「werden」を使います。",
         },
       },
     },
@@ -1152,8 +1330,85 @@ export const READING_PASSAGES: Record<StudyLanguage, ReadingPassageItem[]> = {
         },
       ],
     },
+    {
+      id: "ja-read-ryokan",
+      level: "N3",
+      emoji: "♨️",
+      title: { ru: "Вечер в традиционном рёкане", en: "An Evening at an Onsen Ryokan", ja: "温泉旅館での週末" },
+      subtitle: {
+        ru: "Уровень N3: условная форма 〜たら и культурные впечатления",
+        en: "N3 narrative: 〜たら conditionals & Japanese hospitality",
+        ja: "N3読解：〜たら条件文と日本のおもてなし",
+      },
+      sentences: [
+        {
+          target: "金曜日、仕事が 終わったら、山の 温泉旅館へ 出かけます。",
+          reading: "きんようび、しごとが おわったら、やまの おんせんりょかんへ でかけます。",
+          tr: { ru: "В пятницу, как только закончится работа, я отправляюсь в горный онсэн-рёкан.", en: "Once work ends on Friday, I set off for a mountain onsen ryokan.", ja: "金曜に仕事が終わったら温泉旅館へ向かいます。" },
+        },
+        {
+          target: "畳の 部屋に 入ると、木の 優しい 香りが しました。",
+          reading: "たたみの へやに はいると、きの やさしい かおりが しました。",
+          tr: { ru: "Стоило войти в комнату с татами, как почувствовался мягкий аромат дерева.", en: "Stepping onto the tatami room, a gentle scent of cedar filled the air.", ja: "畳の部屋に入ると落ち着いた木の香りが広がります。" },
+        },
+        {
+          target: "温かい 温泉に 入ってから、季節の 料理を ゆっくり 味わいました。",
+          reading: "あたたかい おんせんに はいってから、きせつの りょうりを ゆっくり あじわいました。",
+          tr: { ru: "После тёплого горячего источника я не спеша насладился сезонными блюдами.", en: "After soaking in the hot spring, I savored seasonal dishes unhurriedly.", ja: "温泉に入った後で季節の会席を楽しみました。" },
+        },
+      ],
+      vocab: [
+        { word: "経験", reading: "けいけん", meaning: { ru: "опыт, переживание", en: "experience", ja: "経験" }, type: "KANJI" },
+        { word: "季節", reading: "きせつ", meaning: { ru: "время года, сезон", en: "season", ja: "季節" }, type: "KANJI" },
+        { word: "ゆっくり", reading: "ゆっくり", meaning: { ru: "не спеша, спокойно", en: "slowly, unhurriedly", ja: "ゆっくり" }, type: "KANA" },
+      ],
+      questions: [
+        {
+          question: { ru: "Чем пахло в комнате с татами?", en: "What scent greeted the guest in the tatami room?", ja: "畳の部屋ではどんな香りがしましたか？" },
+          options: { ru: ["Кофе", "Мягкий аромат дерева", "Цветами апельсина"], en: ["Coffee", "Gentle scent of wood", "Fresh paint"], ja: ["コーヒー", "木の優しい香り", "海の風"] },
+          correctIdx: 1,
+        },
+      ],
+    },
   ],
   en: [
+    {
+      id: "en-read-morning",
+      level: "A1",
+      emoji: "🌤️",
+      title: { ru: "Утро в солнечном Челси", en: "A Sunny Morning in Chelsea", ja: "チェルシーの晴れた朝" },
+      subtitle: {
+        ru: "Уровень A1: простые привычки, время и повседневные слова",
+        en: "A1 starter reading: Present Simple & city basics",
+        ja: "A1初級：現在形と朝のルーティン",
+      },
+      sentences: [
+        {
+          target: "Hello! My name is Emma and I live in a small flat near the river.",
+          tr: { ru: "Привет! Меня зовут Эмма, и я живу в небольшой квартире у реки.", en: "Simple introduction.", ja: "こんにちは！私の名前はエマで、川の近くの小さなアパートに住んでいます。" },
+        },
+        {
+          target: "There is a bakery next to my house and a green park across the street.",
+          tr: { ru: "Рядом с моим домом есть пекарня, а через дорогу — зелёный парк.", en: "'There is...' sentence structure.", ja: "家の隣にはパン屋があり、通りの向かいには緑の公園があります。" },
+        },
+        {
+          target: "At eight o'clock, I drink warm tea, read ten new words, and walk to work.",
+          tr: { ru: "В восемь часов я пью тёплый чай, читаю десять новых слов и иду пешком на работу.", en: "Daily routine verbs.", ja: "8時に温かい紅茶を飲み、10個の新出単語を読んで仕事へ歩いて行きます。" },
+        },
+      ],
+      vocab: [
+        { word: "Morning", reading: "[ˈmɔː.nɪŋ]", meaning: { ru: "утро", en: "early part of the day", ja: "朝" }, type: "VOCABULARY" },
+        { word: "Next to", reading: "preposition", meaning: { ru: "рядом с, возле", en: "beside / right beside", ja: "〜の隣に" }, type: "GRAMMAR" },
+        { word: "Across the street", reading: "phrase", meaning: { ru: "через дорогу", en: "on the opposite side", ja: "通りの向かいに" }, type: "GRAMMAR" },
+      ],
+      questions: [
+        {
+          question: { ru: "Что находится через дорогу от дома Эммы?", en: "What is across the street from Emma's flat?", ja: "エマの家の通りの向かいには何がありますか？" },
+          options: { ru: ["Вокзал", "Зелёный парк", "Кинотеатр"], en: ["A train station", "A green park", "A cinema"], ja: ["駅", "緑の公園", "映画館"] },
+          correctIdx: 1,
+        },
+      ],
+    },
     {
       id: "en-read-notting-hill",
       level: "A2",
@@ -1279,7 +1534,7 @@ export const READING_PASSAGES: Record<StudyLanguage, ReadingPassageItem[]> = {
   de: [
     {
       id: "de-read-berlin",
-      level: "A1/A2",
+      level: "A1",
       emoji: "🥐",
       title: { ru: "Завтрак в Берлине-Митте", en: "Breakfast in Berlin-Mitte", ja: "ベルリン・ミッテの朝食" },
       subtitle: {
@@ -1321,7 +1576,7 @@ export const READING_PASSAGES: Record<StudyLanguage, ReadingPassageItem[]> = {
     },
     {
       id: "de-read-munich",
-      level: "A2/B1",
+      level: "A2",
       emoji: "🚆",
       title: { ru: "На метро через Мюнхен", en: "Crossing Munich by U-Bahn", ja: "地下鉄で巡るミュンヘン" },
       subtitle: {
@@ -1393,6 +1648,43 @@ export const READING_PASSAGES: Record<StudyLanguage, ReadingPassageItem[]> = {
         },
       ],
     },
+    {
+      id: "de-read-bauhaus",
+      level: "B2",
+      emoji: "📐",
+      title: { ru: "Наследие Баухауса: форма следует за смыслом", en: "The Bauhaus Legacy in Germany", ja: "バウハウスの美学と建築" },
+      subtitle: {
+        ru: "Уровень B2: пассивный залог, дизайн и история культуры",
+        en: "B2 cultural essay: Passive Voice & design philosophy",
+        ja: "B2上級：受動態とデザインの思想",
+      },
+      sentences: [
+        {
+          target: "Im Jahr 1919 wurde das berühmte Bauhaus von Walter Gropius in Weimar gegründet.",
+          tr: { ru: "В 1919 году знаменитая школа Баухаус была основана Вальтером Гропиусом в Веймаре.", en: "Historical Passive with 'wurde'.", ja: "1919年、有名なバウハウスはヴァルター・グロピウスによってヴァイマルに設立されました。" },
+        },
+        {
+          target: "Bis heute wird die schlichte Klarheit dieser Architektur weltweit bewundert und weiterentwickelt.",
+          tr: { ru: "По сей день лаконичная ясность этой архитектуры вызывает восхищение и развивается по всему миру.", en: "Present passive + compound verb.", ja: "今日に至るまで、この建築の洗練された明快さは世界中で称賛され続けています。" },
+        },
+        {
+          target: "Wenn wir moderne Räume betrachten, würden wir viele Ideen ohne diese Bewegung kaum wiedererkennen.",
+          tr: { ru: "Глядя на современные интерьеры, без этого движения мы бы едва узнали многие привычные идеи.", en: "Konjunktiv II conditional reflection.", ja: "現代の空間を見るとき、この運動がなければ多くのアイデアは思い浮かばなかったでしょう。" },
+        },
+      ],
+      vocab: [
+        { word: "die Entscheidung", reading: "die Entscheidungen", meaning: { ru: "решение, выбор", en: "decision", ja: "決定" }, type: "VOCABULARY" },
+        { word: "die Klarheit", reading: "[ˈklaːɐ̯haɪ̯t]", meaning: { ru: "ясность, чистота форм", en: "clarity / crispness", ja: "明快さ" }, type: "VOCABULARY" },
+        { word: "betrachten", meaning: { ru: "рассматривать, наблюдать", en: "to observe / contemplate", ja: "観察する・見渡す" }, type: "GRAMMAR" },
+      ],
+      questions: [
+        {
+          question: { ru: "Где и кем был основан Баухаус в 1919 году?", en: "Where was the Bauhaus founded in 1919?", ja: "バウハウスは1919年にどこで設立されましたか？" },
+          options: { ru: ["В Мюнхене", "В Веймаре Вальтером Гропиусом", "В Гамбурге"], en: ["In Munich", "In Weimar by Walter Gropius", "In Hamburg"], ja: ["ミュンヘン", "ヴァイマル（グロピウスによる）", "ハンブルク"] },
+          correctIdx: 1,
+        },
+      ],
+    },
   ],
 };
 
@@ -1403,7 +1695,7 @@ export const LISTENING_DIALOGUES: Record<StudyLanguage, ListeningDialogue[]> = {
       level: "N5",
       emoji: "🍵",
       title: { ru: "В токийской кофейне", en: "Ordering at a Tokyo Café", ja: "東京のカフェで注文する" },
-      scene: { ru: "Учимся вежливо делать заказ в кафе", en: "Polite ordering basics", ja: "丁寧な注文フレーズ" },
+      scene: { ru: "N5: вежливый заказ напитков", en: "N5: Polite ordering basics", ja: "N5：丁寧な注文フレーズ" },
       lines: [
         {
           speaker: "店員",
@@ -1436,7 +1728,7 @@ export const LISTENING_DIALOGUES: Record<StudyLanguage, ListeningDialogue[]> = {
       level: "N4",
       emoji: "🚉",
       title: { ru: "Как пройти к выходу на Синдзюку", en: "Directions at Shinjuku Station", ja: "新宿駅で道を聞く" },
-      scene: { ru: "Ориентирование и вежливые вопросы", en: "Asking for directions politely", ja: "駅構内での質問" },
+      scene: { ru: "N4: ориентирование на вокзале", en: "N4: Asking for directions politely", ja: "N4：駅構内での質問" },
       lines: [
         {
           speaker: "旅行者",
@@ -1458,14 +1750,65 @@ export const LISTENING_DIALOGUES: Record<StudyLanguage, ListeningDialogue[]> = {
         },
       ],
     },
+    {
+      id: "ja-dlg-weekend",
+      level: "N3",
+      emoji: "🏮",
+      title: { ru: "Планы на выходные и онсэн", en: "Weekend Onsen Plans", ja: "週末と温泉の計画" },
+      scene: { ru: "N3: естественный разговор друзей с 〜たら", en: "N3: Natural friend chat with 〜たら", ja: "N3：自然な友人会話（〜たら）" },
+      lines: [
+        {
+          speaker: "美咲",
+          text: "今週の 金曜日、仕事が 終わったら 何を する 予定ですか？",
+          reading: "こんしゅうの きんようび、しごとが おわったら なにを する よていですか？",
+          tr: { ru: "Что планируешь делать в эту пятницу, как только закончится работа?", en: "What are your plans once work finishes this Friday?", ja: "金曜日の退勤後の予定を聞いています。" },
+        },
+        {
+          speaker: "健太",
+          text: "天気が よかったら、箱根の 温泉へ 行こうと 思っています。",
+          reading: "てんきが よかったら、はこねの おんせんへ いこうと おもっています。",
+          tr: { ru: "Если погода будет хорошей, думаю съездить на горячие источники в Хаконэ.", en: "If the weather is nice, I'm thinking of heading to Hakone hot springs.", ja: "天候が良ければ箱根の温泉に行くつもりです。" },
+        },
+        {
+          speaker: "美咲",
+          text: "いいですね！ ゆっくり 休んで きて くださいね。",
+          reading: "いいですね！ ゆっくり やすんで きて くださいね。",
+          tr: { ru: "Здорово! Хорошенько отдохни там.", en: "Sounds wonderful! Enjoy a relaxing rest there.", ja: "ゆっくり休むよう声をかけています。" },
+        },
+      ],
+    },
   ],
   en: [
+    {
+      id: "en-dlg-station-a1",
+      level: "A1",
+      emoji: "🚇",
+      title: { ru: "Билет на лондонском вокзале", en: "At Victoria Station", ja: "ヴィクトリア駅での会話" },
+      scene: { ru: "A1: простые вопросы и время", en: "A1: Simple questions & tickets", ja: "A1：切符と時間の基本表現" },
+      lines: [
+        {
+          speaker: "Traveller",
+          text: "Excuse me, is there a train to Oxford right now?",
+          tr: { ru: "Извините, сейчас есть поезд до Оксфорда?", en: "Simple polite station question.", ja: "すみません、今オックスフォード行きの電車はありますか？" },
+        },
+        {
+          speaker: "Staff",
+          text: "Yes! The next train leaves at ten past two from platform four.",
+          tr: { ru: "Да! Следующий поезд отправляется в 14:10 с четвёртой платформы.", en: "Platform & clear time.", ja: "はい！次の電車は2時10分に4番ホームから出発します。" },
+        },
+        {
+          speaker: "Traveller",
+          text: "Thank you very much! Have a lovely day.",
+          tr: { ru: "Большое спасибо! Хорошего дня!", en: "Warm polite closing.", ja: "どうもありがとうございます！良い一日を！" },
+        },
+      ],
+    },
     {
       id: "en-dlg-soho",
       level: "A2",
       emoji: "☕",
       title: { ru: "Заказ кофе в лондонском Сохо", en: "Ordering Coffee in Soho", ja: "ソーホーのカフェでの会話" },
-      scene: { ru: "Естественный британский диалог у бариста", en: "Natural British café small talk", ja: "自然な英国カフェ会話" },
+      scene: { ru: "A2: естественный британский диалог", en: "A2: Natural British café small talk", ja: "A2：自然な英国カフェ会話" },
       lines: [
         {
           speaker: "Barista",
@@ -1494,7 +1837,7 @@ export const LISTENING_DIALOGUES: Record<StudyLanguage, ListeningDialogue[]> = {
       level: "B1",
       emoji: "💡",
       title: { ru: "Знакомство на митапе разработчиков", en: "Tech Meetup Networking", ja: "テックミートアップでの会話" },
-      scene: { ru: "Смол-ток и обсуждение проектов", en: "Professional networking & Present Perfect", ja: "自己紹介と近況の会話" },
+      scene: { ru: "B1: смол-ток и Present Perfect", en: "B1: Networking & Present Perfect", ja: "B1：自己紹介と現在完了" },
       lines: [
         {
           speaker: "Claire",
@@ -1513,14 +1856,33 @@ export const LISTENING_DIALOGUES: Record<StudyLanguage, ListeningDialogue[]> = {
         },
       ],
     },
+    {
+      id: "en-dlg-review-b2",
+      level: "B2",
+      emoji: "🚀",
+      title: { ru: "Обсуждение стратегии продукта", en: "Product Design Discussion", ja: "プロダクト戦略の議論" },
+      scene: { ru: "B2: аргументация, идиомы и предложения", en: "B2: Nuanced feedback & phrasal verbs", ja: "B2：意見交換と句動詞" },
+      lines: [
+        {
+          speaker: "Sophie",
+          text: "We need to take user feedback into account before launching the redesign.",
+          tr: { ru: "Нам нужно учесть отзывы пользователей до запуска редизайна.", en: "Using 'take into account'.", ja: "リデザイン公開前にユーザーの声を考慮に入れる必要があります。" },
+        },
+        {
+          speaker: "Liam",
+          text: "Agreed. Even though deadlines feel tight, rushing quality never works in the long run.",
+          tr: { ru: "Согласен. Хотя сроки поджимают, спешка в ущерб качеству в перспективе не работает.", en: "Nuanced reasoning + 'in the long run'.", ja: "賛成です。締切が厳しくても品質を急ぐのは長い目で見ると逆効果です。" },
+        },
+      ],
+    },
   ],
   de: [
     {
       id: "de-dlg-bakery",
-      level: "A1/A2",
+      level: "A1",
       emoji: "🥨",
       title: { ru: "Утром в берлинской булочной", en: "At a Berlin Bakery", ja: "ベルリンのパン屋さんで" },
-      scene: { ru: "Покупки, вежливые просьбы и формы на -en", en: "Polite requests with möchten / hätte gern", ja: "丁寧な注文表現" },
+      scene: { ru: "A1: вежливый заказ и числа", en: "A1: Ordering gently at the bakery", ja: "A1：パン屋さんでの丁寧な注文" },
       lines: [
         {
           speaker: "Verkäuferin",
@@ -1546,10 +1908,10 @@ export const LISTENING_DIALOGUES: Record<StudyLanguage, ListeningDialogue[]> = {
     },
     {
       id: "de-dlg-train",
-      level: "A2/B1",
+      level: "A2",
       emoji: "🚅",
       title: { ru: "Билет на вокзале Hauptbahnhof", en: "At Berlin Hauptbahnhof", ja: "ベルリン中央駅で切符を買う" },
-      scene: { ru: "Поездка на ICE, время и платформы", en: "Train travel & platforms (Gleis)", ja: "電車の時間とホームを尋ねる" },
+      scene: { ru: "A2: поезда, платформы и отделяемые глаголы", en: "A2: Train travel & platforms (Gleis)", ja: "A2：電車の時間とホーム" },
       lines: [
         {
           speaker: "Reisender",
@@ -1573,38 +1935,77 @@ export const LISTENING_DIALOGUES: Record<StudyLanguage, ListeningDialogue[]> = {
         },
       ],
     },
+    {
+      id: "de-dlg-plans-b1",
+      level: "B1",
+      emoji: "🌲",
+      title: { ru: "Планы на выходные с weil", en: "Weekend Plans Dialogue", ja: "週末の計画についての会話" },
+      scene: { ru: "B1: аргументы с союзами weil / obwohl", en: "B1: Explaining reasons with weil", ja: "B1：weilを使った理由の説明" },
+      lines: [
+        {
+          speaker: "Nina",
+          text: "Fährst du am Wochenende an den See, weil das Wetter so sonnig wird?",
+          tr: { ru: "Ты поедешь на выходных на озеро, раз погода обещает быть такой солнечной?", en: "'weil' pushes 'wird' to the end.", ja: "天気が晴れるので週末は湖に行きますか？" },
+        },
+        {
+          speaker: "Tobias",
+          text: "Ja, bestimmt! Ich nehme mein Fahrrad mit, damit wir durch den Wald fahren können.",
+          tr: { ru: "Да, точно! Я возьму велосипед, чтобы мы смогли прокатиться через лес.", en: "Natural planning dialogue.", ja: "ええ！森をサイクリングできるように自転車を持っていきます。" },
+        },
+      ],
+    },
+    {
+      id: "de-dlg-office-b2",
+      level: "B2",
+      emoji: "💼",
+      title: { ru: "Обсуждение на совещании (Konjunktiv II)", en: "Project Workshop Discussion", ja: "会議での丁寧な提案" },
+      scene: { ru: "B2: вежливые предложения с könnten / würden", en: "B2: Diplomatic feedback with Konjunktiv II", ja: "B2：接続法II式を使ったビジネス会話" },
+      lines: [
+        {
+          speaker: "Frau Weber",
+          text: "Könnten wir den Zeitplan bitte noch einmal gemeinsam durchgehen?",
+          tr: { ru: "Не могли бы мы, пожалуйста, ещё раз вместе пройтись по графику?", en: "Polite diplomatic question.", ja: "スケジュールをもう一度一緒に確認していただけますか？" },
+        },
+        {
+          speaker: "Herr Klein",
+          text: "Selbstverständlich. Ich würde vorschlagen, dass wir zuerst die wichtigsten Ziele festlegen.",
+          tr: { ru: "Конечно. Я бы предложил сперва определить самые важные цели.", en: "Konjunktiv II 'würde vorschlagen'.", ja: "もちろんです。まず最重要目標を定めることを提案します。" },
+        },
+      ],
+    },
   ],
 };
 
 export const LISTENING_PROMPTS: Record<StudyLanguage, ListeningPromptItem[]> = {
   ja: [
-    { text: "おはよう ございます", reading: "Ohayō gozaimasu", meaning: { ru: "Доброе утро (вежливо)", en: "Good morning (polite)", ja: "丁寧な朝の挨拶" } },
-    { text: "ちょっと 待ってください", reading: "Chotto matte kudasai", meaning: { ru: "Подождите минутку, пожалуйста", en: "Wait a moment, please", ja: "少し待ってもらう表現" } },
-    { text: "これは いくらですか", reading: "Kore wa ikura desu ka", meaning: { ru: "Сколько это стоит?", en: "How much is this?", ja: "値段を聞く表現" } },
-    { text: "駅は どこですか", reading: "Eki wa doko desu ka", meaning: { ru: "Где находится станция?", en: "Where is the station?", ja: "場所を尋ねる表現" } },
-    { text: "日本語が 少し わかります", reading: "Nihongo ga sukoshi wakarimasu", meaning: { ru: "Я немного понимаю по-японски", en: "I understand a little Japanese", ja: "言語能力を伝える表現" } },
-    { text: "お会計を お願いします", reading: "Okaikei o onegaishimasu", meaning: { ru: "Счёт, пожалуйста", en: "Check / bill, please", ja: "支払いを頼む表現" } },
-    { text: "明日は 休みの 日です", reading: "Ashita wa yasumi no hi desu", meaning: { ru: "Завтра — выходной день", en: "Tomorrow is a day off", ja: "休日を伝える文" } },
-    { text: "とても おいしいですね", reading: "Totemo oishii desu ne", meaning: { ru: "Как же это вкусно!", en: "It's so delicious, isn't it!", ja: "味への感想" } },
+    { level: "N5", text: "おはよう ございます", reading: "Ohayō gozaimasu", meaning: { ru: "Доброе утро (вежливо)", en: "Good morning (polite)", ja: "丁寧な朝の挨拶" } },
+    { level: "N5", text: "これは いくらですか", reading: "Kore wa ikura desu ka", meaning: { ru: "Сколько это стоит?", en: "How much is this?", ja: "値段を聞く表現" } },
+    { level: "N5", text: "駅は どこですか", reading: "Eki wa doko desu ka", meaning: { ru: "Где находится станция?", en: "Where is the station?", ja: "場所を尋ねる表現" } },
+    { level: "N5", text: "お会計を お願いします", reading: "Okaikei o onegaishimasu", meaning: { ru: "Счёт, пожалуйста", en: "Check / bill, please", ja: "支払いを頼む表現" } },
+    { level: "N4", text: "ちょっと 待ってください", reading: "Chotto matte kudasai", meaning: { ru: "Подождите минутку, пожалуйста", en: "Wait a moment, please", ja: "少し待ってもらう表現" } },
+    { level: "N4", text: "日本語が 少し わかります", reading: "Nihongo ga sukoshi wakarimasu", meaning: { ru: "Я немного понимаю по-японски", en: "I understand a little Japanese", ja: "言語能力を伝える表現" } },
+    { level: "N4", text: "とても 便利ですね", reading: "Totemo benri desu ne", meaning: { ru: "Как же это удобно!", en: "It's so convenient!", ja: "便利さへの感想" } },
+    { level: "N3", text: "東京に 着いたら すぐ 連絡します", reading: "Tōkyō ni tsuitara sugu renraku shimasu", meaning: { ru: "Как только приеду в Токио, сразу напишу", en: "Once I arrive in Tokyo I'll contact you", ja: "到着後の連絡を伝える表現" } },
+    { level: "N3", text: "良い 経験に なりました", reading: "Ii keiken ni narimashita", meaning: { ru: "Это стал отличный опыт", en: "It turned into a great experience", ja: "感想・振り返りの表現" } },
   ],
   en: [
-    { text: "Could you speak a bit more slowly, please?", meaning: { ru: "Не могли бы вы говорить чуть медленнее?", en: "Request to slow down speech", ja: "もう少しゆっくり話していただけますか？" } },
-    { text: "I'm really looking forward to the weekend.", meaning: { ru: "Я с нетерпением жду выходных.", en: "Excited for the weekend", ja: "週末をとても楽しみにしています。" } },
-    { text: "It took me a while to figure it out.", meaning: { ru: "Мне потребовалось время, чтобы разобраться.", en: "Took time to solve/understand", ja: "理解するのに少し時間がかかりました。" } },
-    { text: "By the way, have we met somewhere before?", meaning: { ru: "Кстати, мы раньше нигде не встречались?", en: "Checking prior acquaintance", ja: "ところで、以前どこかでお会いしましたか？" } },
-    { text: "Let's call it a day and continue tomorrow.", meaning: { ru: "Давай закончим на сегодня и продолжим завтра.", en: "Finish work for today", ja: "今日はここまでにして明日続けましょう。" } },
-    { text: "That makes complete sense now!", meaning: { ru: "Теперь всё стало абсолютно понятно!", en: "Totally clear now", ja: "これで完全に腑に落ちました！" } },
-    { text: "Could you recommend a quiet place for coffee?", meaning: { ru: "Можете порекомендовать тихое место для кофе?", en: "Asking for café tips", ja: "落ち着いたカフェをおすすめしてもらえますか？" } },
-    { text: "Practice consistently and progress will follow.", meaning: { ru: "Занимайся регулярно, и прогресс обязательно придёт.", en: "Consistency builds mastery", ja: "継続して練習すれば、上達は必ずついてきます。" } },
+    { level: "A1", text: "There is a cosy café near the station.", meaning: { ru: "Рядом со станцией есть уютное кафе.", en: "Describing local places", ja: "駅の近くに居心地の良いカフェがあります。" } },
+    { level: "A1", text: "I drink warm tea every morning at eight.", meaning: { ru: "Я пью тёплый чай каждое утро в восемь.", en: "Simple morning habit", ja: "毎朝8時に温かい紅茶を飲みます。" } },
+    { level: "A2", text: "Could you speak a bit more slowly, please?", meaning: { ru: "Не могли бы вы говорить чуть медленнее?", en: "Request to slow down speech", ja: "もう少しゆっくり話していただけますか？" } },
+    { level: "A2", text: "I'm really looking forward to the weekend.", meaning: { ru: "Я с нетерпением жду выходных.", en: "Excited for the weekend", ja: "週末をとても楽しみにしています。" } },
+    { level: "B1", text: "It took me a while to figure it out.", meaning: { ru: "Мне потребовалось время, чтобы разобраться.", en: "Took time to solve/understand", ja: "理解するのに少し時間がかかりました。" } },
+    { level: "B1", text: "If I had more free time, I would visit Scotland.", meaning: { ru: "Если бы у меня было больше времени, я бы посетил Шотландию.", en: "Hypothetical 2nd Conditional", ja: "もっと時間があればスコットランドを訪れるのに。" } },
+    { level: "B2", text: "Let's take user feedback into account.", meaning: { ru: "Давайте учтём отзывы пользователей.", en: "Diplomatic workplace phrasing", ja: "ユーザーのフィードバックを考慮しましょう。" } },
+    { level: "B2", text: "Practice consistently and mastery follows in the long run.", meaning: { ru: "Занимайся регулярно, и мастерство придёт в перспективе.", en: "Consistent habit payoff", ja: "継続して練習すれば、長い目で見て必ず上達します。" } },
   ],
   de: [
-    { text: "Ich hätte gern einen Kaffee mit Milch.", meaning: { ru: "Мне, пожалуйста, кофе с молоком.", en: "I would like a coffee with milk.", ja: "ミルク入りのコーヒーをお願いします。" } },
-    { text: "Entschuldigung, wie komme ich zum Zentrum?", meaning: { ru: "Извините, как добраться до центра?", en: "Excuse me, how do I get to the center?", ja: "すみません、中心街へはどう行けばいいですか？" } },
-    { text: "Das Wetter ist heute wunderbar sonnig.", meaning: { ru: "Сегодня чудесная солнечная погода.", en: "The weather is wonderfully sunny today.", ja: "今日は素晴らしく晴れた天気です。" } },
-    { text: "Ich lerne jeden Tag ein bisschen Deutsch.", meaning: { ru: "Я учу понемногу немецкий каждый день.", en: "I study a little German every day.", ja: "毎日少しずつドイツ語を勉強しています。" } },
-    { text: "Könnten Sie das bitte wiederholen?", meaning: { ru: "Не могли бы вы это повторить, пожалуйста?", en: "Could you repeat that, please?", ja: "もう一度おっしゃっていただけますか？" } },
-    { text: "Am Wochenende treffen wir unsere Freunde.", meaning: { ru: "На выходных мы встречаемся с нашими друзьями.", en: "We're meeting our friends on the weekend.", ja: "週末に友達と会います。" } },
-    { text: "Ich interessiere mich sehr für Musik und Kunst.", meaning: { ru: "Я очень интересуюсь музыкой и искусством.", en: "I am very interested in music and art.", ja: "音楽と芸術にとても興味があります。" } },
-    { text: "Alles klar, wir sehen uns morgen!", meaning: { ru: "Всё ясно, увидимся завтра!", en: "Alright, see you tomorrow!", ja: "了解、また明日ね！" } },
+    { level: "A1", text: "Ich hätte gern einen Kaffee mit Milch.", meaning: { ru: "Мне, пожалуйста, кофе с молоком.", en: "I would like a coffee with milk.", ja: "ミルク入りのコーヒーをお願いします。" } },
+    { level: "A1", text: "Guten Morgen! Was darf es heute sein?", meaning: { ru: "Доброе утро! Что вам предложить сегодня?", en: "Friendly bakery greeting", ja: "おはようございます！今日は何になさいますか？" } },
+    { level: "A2", text: "Entschuldigung, wie komme ich zum Zentrum?", meaning: { ru: "Извините, как добраться до центра?", en: "Excuse me, how do I get to the center?", ja: "すみません、中心街へはどう行けばいいですか？" } },
+    { level: "A2", text: "Der ICE fährt in zehn Minuten von Gleis acht ab.", meaning: { ru: "Скоростной поезд отправляется через 10 минут с 8-го пути.", en: "Platform announcement", ja: "ICEは10分後に8番ホームから出発します。" } },
+    { level: "B1", text: "Ich lerne Deutsch, weil ich Berlin sehr mag.", meaning: { ru: "Я учу немецкий, потому что мне очень нравится Берлин.", en: "Using 'weil' subordinate clause", ja: "ベルリンが好きなのでドイツ語を学んでいます。" } },
+    { level: "B1", text: "Am Wochenende fahren wir zusammen an den See.", meaning: { ru: "На выходных мы вместе поедем на озеро.", en: "Weekend outdoor trip", ja: "週末に一緒に湖へ行きます。" } },
+    { level: "B2", text: "Könnten Sie das bitte etwas langsamer wiederholen?", meaning: { ru: "Не могли бы вы повторить это чуть медленнее?", en: "Polite Konjunktiv II request", ja: "もう少しゆっくり繰り返していただけますか？" } },
+    { level: "B2", text: "Die Entscheidung wird morgen gemeinsam besprochen.", meaning: { ru: "Решение будет совместно обсуждено завтра.", en: "Passive voice discussion", ja: "その決定は明日一緒に議論されます。" } },
   ],
 };

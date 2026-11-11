@@ -80,6 +80,7 @@ model JapaneseCard {
   
   type        CardType @default(VOCABULARY)
   language    String   @default("ja")
+  studyLevel  String?
 
   // Система интервального повторения (SRS)
   level       Int      @default(0) // 0 - новое, 1+ - в процессе повторения
