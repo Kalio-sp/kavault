@@ -199,6 +199,7 @@ export function Dashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
+    window.dispatchEvent(new Event("kavault-auth-changed"));
     navigate("/login");
   };
 

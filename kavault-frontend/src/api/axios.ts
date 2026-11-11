@@ -55,6 +55,9 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("access_token");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("kavault-auth-changed"));
+      }
       if (
         typeof window !== "undefined" &&
         window.location.pathname !== "/login"

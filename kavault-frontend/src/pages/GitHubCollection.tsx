@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
+import { useAchievements } from "../context/AchievementContext";
 import { confirmModal } from "../context/DialogContext";
 
 interface Resource {
@@ -28,6 +29,7 @@ interface Resource {
 
 export function GitHubCollection() {
   const { t } = useApp();
+  const { evaluateAchievements } = useAchievements();
   const [repos, setRepos] = useState<Resource[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [title, setTitle] = useState("");
@@ -37,13 +39,17 @@ export function GitHubCollection() {
   const [activeResource, setActiveResource] = useState<Resource | null>(null);
   const [noteText, setNoteText] = useState("");
 
-  const fetchRepos = async () => {
+  const fetchRepos = async (evaluate = false) => {
     try {
       const response = await api.get("/resources");
-      const filteredRepos = response.data.filter(
+      const allData = response.data || [];
+      const filteredRepos = allData.filter(
         (r: Resource) => r.type === "REPOSITORY",
       );
       setRepos(filteredRepos);
+      if (evaluate) {
+        evaluateAchievements({ resources: allData });
+      }
     } catch (error) {
       console.error("Ошибка загрузки репозиториев", error);
     }
@@ -65,7 +71,7 @@ export function GitHubCollection() {
       });
       setTitle("");
       setUrl("");
-      fetchRepos();
+      fetchRepos(true);
     } catch (error) {
       console.error("Ошибка сохранения", error);
     }
@@ -125,7 +131,7 @@ export function GitHubCollection() {
         note: noteText,
       });
       setIsNoteModalOpen(false);
-      fetchRepos();
+      fetchRepos(true);
     } catch (error) {
       console.error("Ошибка сохранения заметки", error);
     }

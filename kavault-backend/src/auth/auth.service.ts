@@ -42,6 +42,7 @@ export class AuthService implements OnModuleInit {
         data: {
           email: CREATOR_EMAIL,
           password: hashedPassword,
+          unlockedAchievements: {},
         },
       });
       console.log(`[KAVAULT] Creator account initialized: ${CREATOR_EMAIL}`);
@@ -63,6 +64,7 @@ export class AuthService implements OnModuleInit {
       data: {
         email: dto.email,
         password: hashedPassword,
+        unlockedAchievements: {},
       },
     });
 
@@ -83,6 +85,7 @@ export class AuthService implements OnModuleInit {
         data: {
           email: CREATOR_EMAIL,
           password: hashedPassword,
+          unlockedAchievements: {},
         },
       });
     }
@@ -161,5 +164,143 @@ export class AuthService implements OnModuleInit {
 
     await this.prisma.user.delete({ where: { id: userId } });
     return { success: true, message: 'Аккаунт и все связанные данные успешно удалены' };
+  }
+
+  async getAchievements(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        email: true,
+        unlockedAchievements: true,
+        resources: {
+          select: { type: true, tags: true, note: true, createdAt: true },
+        },
+        japaneseCards: {
+          select: { word: true, type: true, level: true, createdAt: true, updatedAt: true },
+        },
+      },
+    });
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    // Первичная тихая инициализация для существующих аккаунтов до этой миграции:
+    // фиксируем в базе уже достигнутые по данным БД ачивки, чтобы они не всплывали заново.
+    if (user.unlockedAchievements === null) {
+      const now = new Date().toISOString();
+      const backfill: Record<string, { unlockedAt: string }> = {};
+      const mark = (id: string) => {
+        backfill[id] = { unlockedAt: now };
+      };
+
+      const cards = user.japaneseCards || [];
+      const res = user.resources || [];
+
+      if (cards.length >= 1) mark('jap_first_word');
+      if (cards.length >= 25) mark('jap_words_25');
+      if (cards.length >= 100) mark('jap_words_100');
+
+      const kanaCards = cards.filter(
+        (c) =>
+          c.type === 'KANA' ||
+          (!c.type &&
+            /[\u3040-\u309F\u30A0-\u30FF]/.test(c.word || '') &&
+            !/[\u4E00-\u9FAF]/.test(c.word || '')),
+      );
+      if (kanaCards.length >= 10) mark('jap_kana_10');
+
+      const kanjiCards = cards.filter(
+        (c) => c.type === 'KANJI' || /[\u4E00-\u9FAF]/.test(c.word || ''),
+      );
+      if (kanjiCards.length >= 10) mark('jap_kanji_10');
+      if (kanjiCards.length >= 25) mark('jap_kanji_25');
+      if (cards.some((c) => (c.level || 0) > 0)) mark('jap_first_review');
+
+      const devItems = res.filter((r) => r.type !== 'REPOSITORY');
+      if (devItems.length >= 1) mark('dev_first_resource');
+      if (devItems.length >= 10) mark('dev_resources_10');
+      if (devItems.length >= 25) mark('dev_resources_25');
+      if (new Set(devItems.map((r) => r.type)).size >= 3) mark('dev_categories_3');
+      if (devItems.some((r) => Boolean(r.note && r.note.trim().length > 0))) {
+        mark('dev_with_notes');
+      }
+      if (devItems.filter((r) => Array.isArray(r.tags) && r.tags.length > 0).length >= 3) {
+        mark('dev_with_tags');
+      }
+
+      const gitRepos = res.filter((r) => r.type === 'REPOSITORY');
+      if (gitRepos.length >= 1) mark('git_first_repo');
+      if (gitRepos.length >= 5) mark('git_repos_5');
+      if (gitRepos.length >= 15) mark('git_repos_15');
+      if (new Set(gitRepos.flatMap((r) => r.tags || [])).size >= 3) {
+        mark('git_multilang');
+      }
+
+      const totalNodes = res.length + cards.length;
+      if (totalNodes >= 20) mark('graph_nodes_20');
+      if (totalNodes >= 50) {
+        mark('graph_nodes_50');
+        mark('sys_total_50');
+      }
+
+      const emailLower = (user.email || '').toLowerCase();
+      if (
+        emailLower.includes('zerkalovandrey') ||
+        emailLower.includes('andrey') ||
+        emailLower.includes('андрей')
+      ) {
+        mark('secret_mr_a');
+      }
+
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { unlockedAchievements: backfill },
+      });
+
+      return {
+        initialized: true,
+        justBackfilled: true,
+        achievements: backfill,
+      };
+    }
+
+    return {
+      initialized: true,
+      justBackfilled: false,
+      achievements:
+        (user.unlockedAchievements as Record<string, { unlockedAt: string }>) || {},
+    };
+  }
+
+  async unlockAchievements(userId: string, ids: string[]) {
+    const cleanIds = Array.isArray(ids)
+      ? [...new Set(ids.filter((id) => typeof id === 'string' && id.trim().length > 0))]
+      : [];
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { unlockedAchievements: true },
+    });
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    const existing =
+      (user.unlockedAchievements as Record<string, { unlockedAt: string }> | null) || {};
+    const updated: Record<string, { unlockedAt: string }> = { ...existing };
+    const now = new Date().toISOString();
+    let changed = user.unlockedAchievements === null;
+
+    for (const id of cleanIds) {
+      if (!updated[id]) {
+        updated[id] = { unlockedAt: now };
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { unlockedAchievements: updated },
+      });
+    }
+
+    return { achievements: updated };
   }
 }

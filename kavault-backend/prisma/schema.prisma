@@ -37,15 +37,16 @@ enum CardType {
 // =======================
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  password      String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id                   String         @id @default(uuid())
+  email                String         @unique
+  password             String
+  unlockedAchievements Json?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
   
   // Связи с другими таблицами
-  resources     Resource[]
-  japaneseCards JapaneseCard[]
+  resources            Resource[]
+  japaneseCards        JapaneseCard[]
 }
 
 model Resource {

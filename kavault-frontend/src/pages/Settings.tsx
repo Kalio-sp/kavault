@@ -190,6 +190,7 @@ export function Settings() {
     setAccentColor(color);
     document.documentElement.style.setProperty("--accent", color);
     localStorage.setItem("kavault_accent", color);
+    evaluateAchievements({ themeSwitched: true });
     showToast(`${t.settings.toasts.accentUpdated} ${color}`);
   };
 
@@ -206,6 +207,7 @@ export function Settings() {
     evaluateAchievements({
       username,
       userEmail,
+      goalsConfigured: true,
     });
 
     showToast(t.settings.toasts.savedGeneral);
@@ -416,6 +418,7 @@ export function Settings() {
       setIsDeleting(true);
       await api.delete("/auth/account");
       localStorage.clear();
+      window.dispatchEvent(new Event("kavault-auth-changed"));
       navigate("/login");
     } catch (e: any) {
       showToast(e.response?.data?.message || t.settings.toasts.deleteError, "error");
@@ -455,7 +458,7 @@ export function Settings() {
         cardsCount: cardsList.length,
         totalNotes: notesCount,
       });
-      evaluateAchievements();
+      evaluateAchievements({ resources: resourcesList, cards: cardsList });
     } catch (e: any) {
       showToast(e.response?.data?.message || t.settings.toasts.starterError, "error");
     } finally {
@@ -465,6 +468,7 @@ export function Settings() {
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
+    window.dispatchEvent(new Event("kavault-auth-changed"));
     navigate("/login");
   };
 
@@ -629,7 +633,10 @@ export function Settings() {
             >
               {/* Темная тема */}
               <div
-                onClick={() => setTheme("dark")}
+                onClick={() => {
+                  setTheme("dark");
+                  evaluateAchievements({ themeSwitched: true });
+                }}
                 style={{
                   border: `2px solid ${theme === "dark" ? "var(--accent)" : "var(--border)"}`,
                   borderRadius: "var(--radius-lg)",
@@ -656,7 +663,10 @@ export function Settings() {
 
               {/* Светлая тема */}
               <div
-                onClick={() => setTheme("light")}
+                onClick={() => {
+                  setTheme("light");
+                  evaluateAchievements({ themeSwitched: true });
+                }}
                 style={{
                   border: `2px solid ${theme === "light" ? "var(--accent)" : "var(--border)"}`,
                   borderRadius: "var(--radius-lg)",

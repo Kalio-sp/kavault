@@ -58,9 +58,11 @@ export function Login() {
         // После успешной регистрации — сразу логиним
         const response = await api.post("/auth/login", { email, password });
         localStorage.setItem("access_token", response.data.access_token);
+        window.dispatchEvent(new Event("kavault-auth-changed"));
       } else {
         const response = await api.post("/auth/login", { email, password });
         localStorage.setItem("access_token", response.data.access_token);
+        window.dispatchEvent(new Event("kavault-auth-changed"));
       }
 
       navigate("/dashboard");

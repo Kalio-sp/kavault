@@ -92,6 +92,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     checkUserRole();
+    const handleAuthChanged = () => {
+      checkUserRole();
+    };
+    window.addEventListener("kavault-auth-changed", handleAuthChanged);
+    return () => {
+      window.removeEventListener("kavault-auth-changed", handleAuthChanged);
+    };
   }, []);
 
   // Установка темы на самый высокий уровень (HTML)

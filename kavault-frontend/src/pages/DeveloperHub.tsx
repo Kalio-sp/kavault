@@ -19,6 +19,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
+import { useAchievements } from "../context/AchievementContext";
 import { confirmModal } from "../context/DialogContext";
 import {
   STARTER_DEVELOPER_RESOURCES,
@@ -39,6 +40,7 @@ interface Resource {
 
 export function DeveloperHub() {
   const { t } = useApp();
+  const { evaluateAchievements } = useAchievements();
   const [resources, setResources] = useState<Resource[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [title, setTitle] = useState("");
@@ -50,13 +52,17 @@ export function DeveloperHub() {
   const [noteText, setNoteText] = useState("");
   const [isImporting, setIsImporting] = useState(false);
 
-  const fetchResources = async () => {
+  const fetchResources = async (evaluate = false) => {
     try {
       const response = await api.get("/resources");
-      const filtered = response.data.filter(
+      const allData = response.data || [];
+      const filtered = allData.filter(
         (r: Resource) => r.type === "ARTICLE" || r.type === "VIDEO",
       );
       setResources(filtered);
+      if (evaluate) {
+        evaluateAchievements({ resources: allData });
+      }
     } catch (error) {
       console.error("Ошибка загрузки ресурсов", error);
     }
@@ -72,7 +78,7 @@ export function DeveloperHub() {
       setIsImporting(true);
       await api.post("/resources/bulk", { items: STARTER_DEVELOPER_RESOURCES });
       markPackClaimed("developer");
-      await fetchResources();
+      await fetchResources(true);
     } catch (err) {
       console.error("Ошибка загрузки стартового набора", err);
     } finally {
@@ -96,7 +102,7 @@ export function DeveloperHub() {
       });
       setTitle("");
       setUrl("");
-      fetchResources();
+      fetchResources(true);
     } catch (error) {
       console.error("Ошибка сохранения", error);
     }
@@ -178,7 +184,7 @@ export function DeveloperHub() {
         note: noteText,
       });
       setIsNoteModalOpen(false);
-      fetchResources();
+      fetchResources(true);
     } catch (error) {
       console.error("Ошибка сохранения заметки", error);
     }

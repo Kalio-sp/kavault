@@ -35,6 +35,21 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @Get('achievements')
+  getAchievements(@Request() req) {
+    return this.authService.getAchievements(req.user.userId);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('achievements/unlock')
+  unlockAchievements(
+    @Request() req,
+    @Body('ids') ids: string[],
+  ) {
+    return this.authService.unlockAchievements(req.user.userId, ids);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
   @Patch('password')
   changePassword(
     @Request() req,

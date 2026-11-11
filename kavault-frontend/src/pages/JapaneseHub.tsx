@@ -17,6 +17,7 @@ import {
   Scroll,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
+import { useAchievements } from "../context/AchievementContext";
 import { confirmModal } from "../context/DialogContext";
 import {
   STARTER_JAPANESE_CARDS,
@@ -232,6 +233,7 @@ function FlashcardItem({
 export function JapaneseHub() {
   const navigate = useNavigate();
   const { t } = useApp();
+  const { evaluateAchievements } = useAchievements();
 
   // Раздел: по умолчанию открываем КАНА (Хирагана и Катакана), если не сохранено иное,
   // так как пользователь начинает с азбуки и пока не знает кандзи
@@ -248,10 +250,14 @@ export function JapaneseHub() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isImporting, setIsImporting] = useState(false);
 
-  const fetchCards = async () => {
+  const fetchCards = async (evaluate = false) => {
     try {
       const response = await api.get("/japanese");
-      setCards(response.data || []);
+      const list = response.data || [];
+      setCards(list);
+      if (evaluate) {
+        evaluateAchievements({ cards: list });
+      }
     } catch (error) {
       console.error("Ошибка загрузки карточек", error);
     }
@@ -267,7 +273,7 @@ export function JapaneseHub() {
       setIsImporting(true);
       await api.post("/japanese/bulk", { items: STARTER_JAPANESE_CARDS });
       markPackClaimed("japanese");
-      await fetchCards();
+      await fetchCards(true);
     } catch (err) {
       console.error("Ошибка загрузки стартового набора", err);
     } finally {
@@ -333,7 +339,7 @@ export function JapaneseHub() {
       setWord("");
       setReading("");
       setMeaning("");
-      fetchCards();
+      fetchCards(true);
     } catch (error) {
       console.error("Ошибка сохранения карточки", error);
     }
