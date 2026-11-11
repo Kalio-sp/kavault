@@ -25,6 +25,7 @@ export class JapaneseController {
       word: string;
       reading?: string;
       meaning: string;
+      example?: string;
       type?: any;
       language?: string;
     },
@@ -40,6 +41,7 @@ export class JapaneseController {
       word: string;
       reading?: string;
       meaning: string;
+      example?: string;
       type?: any;
       language?: string;
     }>,
@@ -51,6 +53,37 @@ export class JapaneseController {
   @Get()
   findAll(@Request() req, @Query('language') language?: string) {
     return this.japaneseService.findAll(req.user.userId, language);
+  }
+
+  @Get('passages')
+  listPassages(
+    @Request() req,
+    @Query('language') language?: string,
+    @Query('kind') kind?: string,
+  ) {
+    return this.japaneseService.listPassages(req.user.userId, language, kind);
+  }
+
+  @Post('passages')
+  createPassage(
+    @Request() req,
+    @Body()
+    body: {
+      language?: string;
+      kind?: string;
+      level?: string;
+      title: string;
+      content: string;
+      translation: string;
+      notes?: string;
+    },
+  ) {
+    return this.japaneseService.createPassage(req.user.userId, body);
+  }
+
+  @Delete('passages/:id')
+  removePassage(@Request() req, @Param('id') id: string) {
+    return this.japaneseService.removePassage(id, req.user.userId);
   }
 
   @Post(':id/review')

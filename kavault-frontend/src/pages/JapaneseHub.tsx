@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/axios";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -16,6 +16,9 @@ import {
   BookA,
   Scroll,
   Volume2,
+  GraduationCap,
+  Headphones,
+  Layers,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
@@ -28,6 +31,20 @@ import {
   unmarkPackClaimed,
 } from "../data/starterPacks";
 import { getGermanArticleStyle } from "../data/studyVibes";
+import {
+  CulturalAmbientOverlay,
+  CulturalHeroScene,
+} from "../components/CulturalAtmosphere";
+import {
+  SKILL_STUDIO_TEXTS,
+  type StudySkillTab,
+} from "../data/languageCurriculum";
+import {
+  GrammarStudio,
+  ReadingStudio,
+  ListeningStudio,
+  type StudyPassageRecord,
+} from "../components/StudySkillsModules";
 
 type HubSlot = "S1" | "S2";
 
@@ -36,6 +53,7 @@ interface StudyCard {
   word: string;
   reading?: string;
   meaning: string;
+  example?: string;
   type: string;
   language?: string;
   level: number;
@@ -312,6 +330,17 @@ function FlashcardItem({
           >
             {item.meaning}
           </span>
+          {item.example && (
+            <span
+              style={{
+                fontSize: "12px",
+                color: "var(--text-secondary)",
+                lineHeight: 1.35,
+              }}
+            >
+              «{item.example}»
+            </span>
+          )}
           <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
             {studyText.clickToHide}
           </span>
@@ -323,6 +352,7 @@ function FlashcardItem({
 
 export function JapaneseHub() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     t,
     language,
@@ -331,6 +361,39 @@ export function JapaneseHub() {
     studyPalette,
   } = useApp();
   const { evaluateAchievements } = useAchievements();
+
+  const studioText = SKILL_STUDIO_TEXTS[language];
+
+  const resolveInitialTab = (): StudySkillTab => {
+    const q = searchParams.get("tab");
+    if (q === "grammar" || q === "reading" || q === "listening" || q === "vocabulary") {
+      return q;
+    }
+    return "vocabulary";
+  };
+
+  const [skillTab, setSkillTab] = useState<StudySkillTab>(resolveInitialTab);
+  const [ambientEnabled, setAmbientEnabled] = useState<boolean>(() => {
+    return localStorage.getItem("kavault_ambient_vibe") !== "false";
+  });
+
+  useEffect(() => {
+    const q = searchParams.get("tab");
+    if (q === "grammar" || q === "reading" || q === "listening" || q === "vocabulary") {
+      setSkillTab(q);
+    }
+  }, [searchParams]);
+
+  const handleSelectSkillTab = (tab: StudySkillTab) => {
+    setSkillTab(tab);
+    setSearchParams(tab === "vocabulary" ? {} : { tab });
+  };
+
+  const toggleAmbient = () => {
+    const next = !ambientEnabled;
+    setAmbientEnabled(next);
+    localStorage.setItem("kavault_ambient_vibe", String(next));
+  };
 
   const defaultSlotForLang = (lang: string): HubSlot => {
     const saved = localStorage.getItem(`kavault_lang_slot_${lang}`);
@@ -343,6 +406,7 @@ export function JapaneseHub() {
   );
 
   const [cards, setCards] = useState<StudyCard[]>([]);
+  const [passages, setPassages] = useState<StudyPassageRecord[]>([]);
   const [word, setWord] = useState("");
   const [reading, setReading] = useState("");
   const [meaning, setMeaning] = useState("");
@@ -356,17 +420,56 @@ export function JapaneseHub() {
     setSearchQuery("");
   }, [studyLanguage]);
 
-  const fetchCards = async (evaluate = false) => {
-    try {
-      const response = await api.get(`/japanese?language=${studyLanguage}`);
-      const list = response.data || [];
-      setCards(list);
-      if (evaluate) {
-        evaluateAchievements({ cards: list });
+  const fetchCards = useCallback(
+    async (evaluate = false) => {
+      try {
+        const [cardsResp, passResp] = await Promise.all([
+          api.get(`/japanese?language=${studyLanguage}`),
+          api
+            .get<StudyPassageRecord[]>(`/japanese/passages?language=${studyLanguage}`)
+            .catch(() => ({ data: [] as StudyPassageRecord[] })),
+        ]);
+        const list = cardsResp.data || [];
+        setCards(list);
+        setPassages(passResp.data || []);
+        if (evaluate) {
+          evaluateAchievements({ cards: list });
+        }
+      } catch (error) {
+        console.error("Ошибка загрузки карточек", error);
       }
-    } catch (error) {
-      console.error("Ошибка загрузки карточек", error);
+    },
+    [studyLanguage, evaluateAchievements],
+  );
+
+  const fetchPassagesOnly = useCallback(async () => {
+    try {
+      const resp = await api.get<StudyPassageRecord[]>(
+        `/japanese/passages?language=${studyLanguage}`,
+      );
+      setPassages(resp.data || []);
+    } catch {
+      // опционально
     }
+  }, [studyLanguage]);
+
+  const existingWords = useMemo(
+    () => new Set(cards.map((c) => c.word)),
+    [cards],
+  );
+
+  const handleAddCardFromStudio = async (card: {
+    word: string;
+    reading?: string;
+    meaning: string;
+    example?: string;
+    type: "VOCABULARY" | "KANJI" | "GRAMMAR" | "KANA";
+  }) => {
+    await api.post("/japanese", {
+      ...card,
+      language: studyLanguage,
+    });
+    await fetchCards(true);
   };
 
   const isStarterClaimed = useMemo(
@@ -532,15 +635,22 @@ export function JapaneseHub() {
   return (
     <div
       style={{
+        position: "relative",
         display: "flex",
         flexDirection: "column",
-        gap: "var(--space-8)",
+        gap: "var(--space-6)",
       }}
     >
-      {/* Верхний заголовок с культурным вайбом */}
+      <CulturalAmbientOverlay
+        studyLanguage={studyLanguage}
+        enabled={ambientEnabled}
+      />
+
+      {/* Верхний Hero-баннер с богатой культурной архитектурой */}
       <div
         style={{
           position: "relative",
+          zIndex: 2,
           overflow: "hidden",
           display: "flex",
           justifyContent: "space-between",
@@ -551,48 +661,53 @@ export function JapaneseHub() {
           borderRadius: "var(--radius-lg)",
           background: "var(--vibe-banner-bg)",
           border: "1px solid var(--vibe-banner-border)",
+          boxShadow: `0 12px 32px -18px var(--vibe-glow, rgba(0,0,0,0.4))`,
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            right: "18px",
-            top: "-8px",
-            fontSize: "74px",
-            fontWeight: 800,
-            opacity: 0.06,
-            pointerEvents: "none",
-            userSelect: "none",
-            color: studyPalette.accentHex,
-            lineHeight: 1,
-          }}
-        >
-          {studyPalette.watermark}
-        </div>
+        <CulturalHeroScene studyLanguage={studyLanguage} />
 
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "4px 10px",
-              borderRadius: "999px",
-              backgroundColor: "var(--vibe-soft)",
-              border: "1px solid var(--vibe-banner-border)",
-              color: "var(--vibe-accent)",
-              fontSize: "12px",
-              fontWeight: 600,
-              marginBottom: "8px",
-            }}
-          >
-            <span>{studyPalette.flag}</span>
-            <span>{studyText.vibeBadge}</span>
+        <div style={{ position: "relative", zIndex: 2, maxWidth: "640px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "4px 10px",
+                borderRadius: "999px",
+                backgroundColor: "var(--vibe-soft)",
+                border: "1px solid var(--vibe-banner-border)",
+                color: "var(--vibe-accent)",
+                fontSize: "12px",
+                fontWeight: 700,
+              }}
+            >
+              <span>{studyPalette.flag}</span>
+              <span>{studyText.vibeBadge}</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={toggleAmbient}
+              style={{
+                padding: "4px 10px",
+                borderRadius: "999px",
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--surface)",
+                color: ambientEnabled ? studyPalette.accentHex : "var(--text-muted)",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              {ambientEnabled ? `✨ ${studioText.atmosphereOn}` : studioText.atmosphereOff}
+            </button>
           </div>
+
           <h2
             style={{
               fontSize: "28px",
-              fontWeight: 600,
+              fontWeight: 700,
               margin: "0 0 var(--space-1) 0",
               color: "var(--text-primary)",
             }}
@@ -600,22 +715,27 @@ export function JapaneseHub() {
             {studyText.hubTitle}
           </h2>
           <p style={{ color: "var(--text-secondary)", margin: "0 0 4px 0", fontSize: "14px" }}>
-            {isS1 ? studyText.subtitleS1 : studyText.subtitleS2}
+            {skillTab === "vocabulary"
+              ? isS1
+                ? studyText.subtitleS1
+                : studyText.subtitleS2
+              : studioText.tabs[skillTab].shortDesc}
           </p>
           <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "12px" }}>
             {studyText.vibeQuote}
           </p>
         </div>
 
-        {/* Кнопка запуска сессии повторения с передачей режима */}
+        {/* Кнопка запуска сессии SRS */}
         <Button
           onClick={() => navigate(`/review?mode=${currentSecText.id.toLowerCase()}`)}
           style={{
             position: "relative",
-            zIndex: 1,
+            zIndex: 2,
             gap: "8px",
             backgroundColor: activeColor,
             color: "#ffffff",
+            boxShadow: `0 6px 20px -6px ${activeColor}`,
           }}
         >
           <Sparkles size={16} /> {currentSecText.repeatBtn} (
@@ -623,6 +743,108 @@ export function JapaneseHub() {
         </Button>
       </div>
 
+      {/* ── ПАНЕЛЬ 4-Х ЯЗЫКОВЫХ МОДУЛЕЙ: ЛЕКСИКА · ГРАММАТИКА · ЧТЕНИЕ · АУДИРОВАНИЕ ── */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 2,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(195px, 1fr))",
+          gap: "var(--space-3)",
+        }}
+      >
+        {(
+          [
+            { id: "vocabulary", icon: Layers, count: cards.length },
+            { id: "grammar", icon: GraduationCap },
+            { id: "reading", icon: BookOpen },
+            { id: "listening", icon: Headphones },
+          ] as const
+        ).map((tab) => {
+          const Icon = tab.icon;
+          const active = skillTab === tab.id;
+          const info = studioText.tabs[tab.id];
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => handleSelectSkillTab(tab.id)}
+              style={{
+                textAlign: "left",
+                padding: "12px 14px",
+                borderRadius: "var(--radius-lg)",
+                border: active
+                  ? `2px solid ${studyPalette.accentHex}`
+                  : "1px solid var(--border)",
+                backgroundColor: active ? "var(--vibe-soft)" : "var(--surface)",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+              }}
+            >
+              <div
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "10px",
+                  backgroundColor: active ? studyPalette.accentHex : "var(--surface-raised)",
+                  color: active ? "#ffffff" : "var(--text-muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Icon size={18} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <span>{info.label}</span>
+                  {"count" in tab && (
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        padding: "1px 6px",
+                        borderRadius: "999px",
+                        backgroundColor: "var(--surface-raised)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--text-muted)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {info.shortDesc}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── МОДУЛЬ 1: ЛЕКСИКА И КАРТОЧКИ ── */}
+      {skillTab === "vocabulary" && (
+        <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
       {/* ── 2 ГЛАВНЫХ РАЗДЕЛА ДЛЯ ИЗУЧАЕМОГО ЯЗЫКА ── */}
       <div
         style={{
@@ -968,6 +1190,56 @@ export function JapaneseHub() {
           </div>
         )}
       </div>
+        </div>
+      )}
+
+      {/* ── МОДУЛЬ 2: ГРАММАТИКА ── */}
+      {skillTab === "grammar" && (
+        <div style={{ position: "relative", zIndex: 2 }}>
+          <GrammarStudio
+            studyLanguage={studyLanguage}
+            uiLang={language}
+            ttsLang={studyPalette.ttsLang}
+            accentColor={studyPalette.accentHex}
+            secondaryColor={studyPalette.secondaryHex}
+            existingWords={existingWords}
+            onAddCard={handleAddCardFromStudio}
+            customPassages={passages}
+            onRefreshPassages={fetchPassagesOnly}
+          />
+        </div>
+      )}
+
+      {/* ── МОДУЛЬ 3: ЧТЕНИЕ ── */}
+      {skillTab === "reading" && (
+        <div style={{ position: "relative", zIndex: 2 }}>
+          <ReadingStudio
+            studyLanguage={studyLanguage}
+            uiLang={language}
+            ttsLang={studyPalette.ttsLang}
+            accentColor={studyPalette.accentHex}
+            secondaryColor={studyPalette.secondaryHex}
+            existingWords={existingWords}
+            onAddCard={handleAddCardFromStudio}
+            customPassages={passages}
+            onRefreshPassages={fetchPassagesOnly}
+          />
+        </div>
+      )}
+
+      {/* ── МОДУЛЬ 4: АУДИРОВАНИЕ ── */}
+      {skillTab === "listening" && (
+        <div style={{ position: "relative", zIndex: 2 }}>
+          <ListeningStudio
+            studyLanguage={studyLanguage}
+            uiLang={language}
+            ttsLang={studyPalette.ttsLang}
+            accentColor={studyPalette.accentHex}
+            secondaryColor={studyPalette.secondaryHex}
+            userCards={cards}
+          />
+        </div>
+      )}
     </div>
   );
 }

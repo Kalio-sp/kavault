@@ -30,6 +30,8 @@ import {
   markPackClaimed,
 } from "../data/starterPacks";
 import { getGermanArticleStyle } from "../data/studyVibes";
+import { CulturalHeroScene } from "../components/CulturalAtmosphere";
+import { SKILL_STUDIO_TEXTS, type StudySkillTab } from "../data/languageCurriculum";
 
 interface Resource {
   id: string;
@@ -319,22 +321,7 @@ export function Dashboard() {
           border: "1px solid var(--vibe-banner-border)",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            right: "18px",
-            top: "-6px",
-            fontSize: "78px",
-            fontWeight: 800,
-            opacity: 0.06,
-            pointerEvents: "none",
-            userSelect: "none",
-            color: studyPalette.accentHex,
-            lineHeight: 1,
-          }}
-        >
-          {studyPalette.watermark}
-        </div>
+        <CulturalHeroScene studyLanguage={studyLanguage} compact />
 
         <div style={{ position: "relative", zIndex: 1 }}>
           <div
@@ -393,6 +380,75 @@ export function Dashboard() {
             {t.dash.logout}
           </Button>
         </div>
+      </div>
+
+      {/* Быстрый старт по 4 модулям изучения языка */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(175px, 1fr))",
+          gap: "var(--space-3)",
+        }}
+      >
+        {(
+          [
+            { id: "vocabulary", emoji: "🗂️" },
+            { id: "grammar", emoji: "📐" },
+            { id: "reading", emoji: "📖" },
+            { id: "listening", emoji: "🎧" },
+          ] as { id: StudySkillTab; emoji: string }[]
+        ).map((sk) => {
+          const info = SKILL_STUDIO_TEXTS[language].tabs[sk.id];
+          return (
+            <Card
+              key={sk.id}
+              onClick={() => navigate(`/japanese?tab=${sk.id}`)}
+              style={{
+                padding: "12px 14px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                background: "var(--vibe-banner-bg)",
+                borderColor: "var(--vibe-banner-border)",
+                transition: "transform 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              <span style={{ fontSize: "20px", lineHeight: 1 }}>{sk.emoji}</span>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {info.label}
+                </div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--text-muted)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {info.shortDesc}
+                </div>
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
       {/* KPI Метрики (Реальные данные) */}

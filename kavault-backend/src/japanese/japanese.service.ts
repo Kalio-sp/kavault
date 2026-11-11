@@ -11,6 +11,7 @@ export class JapaneseService {
       word: string;
       reading?: string;
       meaning: string;
+      example?: string;
       type?: any;
       language?: string;
     },
@@ -20,6 +21,7 @@ export class JapaneseService {
         word: data.word,
         reading: data.reading,
         meaning: data.meaning,
+        example: data.example,
         type: data.type,
         language: data.language || 'ja',
         userId,
@@ -33,6 +35,7 @@ export class JapaneseService {
       word: string;
       reading?: string;
       meaning: string;
+      example?: string;
       type?: any;
       language?: string;
     }>,
@@ -62,6 +65,7 @@ export class JapaneseService {
       word: item.word,
       reading: item.reading,
       meaning: item.meaning,
+      example: item.example,
       type: item.type,
       language: item.language || targetLang,
       userId,
@@ -155,6 +159,49 @@ export class JapaneseService {
 
     return this.prisma.japaneseCard.deleteMany({
       where: baseWhere,
+    });
+  }
+
+  async listPassages(userId: string, language?: string, kind?: string) {
+    return this.prisma.studyPassage.findMany({
+      where: {
+        userId,
+        ...(language ? { language } : {}),
+        ...(kind ? { kind } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createPassage(
+    userId: string,
+    data: {
+      language?: string;
+      kind?: string;
+      level?: string;
+      title: string;
+      content: string;
+      translation: string;
+      notes?: string;
+    },
+  ) {
+    return this.prisma.studyPassage.create({
+      data: {
+        userId,
+        language: data.language || 'ja',
+        kind: data.kind || 'READING',
+        level: data.level || 'A1',
+        title: data.title,
+        content: data.content,
+        translation: data.translation,
+        notes: data.notes,
+      },
+    });
+  }
+
+  async removePassage(id: string, userId: string) {
+    return this.prisma.studyPassage.deleteMany({
+      where: { id, userId },
     });
   }
 }

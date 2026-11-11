@@ -7,6 +7,7 @@ import { api } from "../api/axios";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
 import { getGermanArticleStyle } from "../data/studyVibes";
+import { CulturalAmbientOverlay } from "../components/CulturalAtmosphere";
 import {
   CheckCircle2,
   Sparkles,
@@ -24,6 +25,7 @@ interface StudyCard {
   word: string;
   reading?: string;
   meaning: string;
+  example?: string;
   type?: string;
   language?: string;
   level: number;
@@ -635,6 +637,8 @@ export function ReviewSession() {
   return (
     <div
       style={{
+        position: "relative",
+        zIndex: 2,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -644,6 +648,11 @@ export function ReviewSession() {
         paddingTop: "var(--space-4)",
       }}
     >
+      <CulturalAmbientOverlay
+        studyLanguage={studyLanguage}
+        subtle
+        enabled={localStorage.getItem("kavault_ambient_vibe") !== "false"}
+      />
       {/* Верхний статус-бар сессии */}
       <div
         style={{
@@ -996,6 +1005,18 @@ export function ReviewSession() {
               >
                 {currentCard.meaning}
               </span>
+              {currentCard.example && (
+                <span
+                  style={{
+                    fontSize: "14px",
+                    color: "var(--text-secondary)",
+                    maxWidth: "90%",
+                    lineHeight: 1.45,
+                  }}
+                >
+                  «{currentCard.example}»
+                </span>
+              )}
             </div>
           )}
         </Card>

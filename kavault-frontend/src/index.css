@@ -71,42 +71,57 @@
 
 /* 2.1. ВАЙБЫ ИЗУЧАЕМОГО ЯЗЫКА (Японский, Английский, Немецкий) */
 [data-vibe="ja"] {
-  --vibe-accent: #ec4899;
-  --vibe-secondary: #a855f7;
-  --vibe-soft: rgba(236, 72, 153, 0.14);
-  --vibe-banner-bg: linear-gradient(135deg, rgba(236, 72, 153, 0.12) 0%, rgba(168, 85, 247, 0.1) 100%);
-  --vibe-banner-border: rgba(236, 72, 153, 0.3);
-  --vibe-page-bg: radial-gradient(circle at 90% 8%, rgba(236, 72, 153, 0.08) 0%, transparent 42%), radial-gradient(circle at 12% 88%, rgba(168, 85, 247, 0.07) 0%, transparent 42%);
+  --vibe-accent: #f472b6;
+  --vibe-secondary: #c084fc;
+  --vibe-soft: rgba(244, 114, 182, 0.16);
+  --vibe-glow: rgba(244, 114, 182, 0.35);
+  --vibe-banner-bg: linear-gradient(135deg, rgba(244, 114, 182, 0.18) 0%, rgba(168, 85, 247, 0.14) 55%, rgba(251, 113, 133, 0.12) 100%);
+  --vibe-banner-border: rgba(244, 114, 182, 0.38);
+  --vibe-page-bg: radial-gradient(circle at 92% 6%, rgba(244, 114, 182, 0.13) 0%, transparent 44%), radial-gradient(circle at 8% 88%, rgba(168, 85, 247, 0.11) 0%, transparent 45%), radial-gradient(circle at 50% 45%, rgba(251, 113, 133, 0.04) 0%, transparent 60%);
 }
 
 [data-vibe="en"] {
   --vibe-accent: #3b82f6;
-  --vibe-secondary: #e11d48;
-  --vibe-soft: rgba(59, 130, 246, 0.14);
-  --vibe-banner-bg: linear-gradient(135deg, rgba(37, 99, 235, 0.14) 0%, rgba(225, 29, 72, 0.1) 100%);
-  --vibe-banner-border: rgba(59, 130, 246, 0.34);
-  --vibe-page-bg: radial-gradient(circle at 88% 10%, rgba(59, 130, 246, 0.09) 0%, transparent 42%), radial-gradient(circle at 10% 85%, rgba(225, 29, 72, 0.07) 0%, transparent 40%);
+  --vibe-secondary: #f43f5e;
+  --vibe-soft: rgba(59, 130, 246, 0.16);
+  --vibe-glow: rgba(59, 130, 246, 0.34);
+  --vibe-banner-bg: linear-gradient(135deg, rgba(37, 99, 235, 0.18) 0%, rgba(30, 58, 138, 0.14) 55%, rgba(225, 29, 72, 0.13) 100%);
+  --vibe-banner-border: rgba(59, 130, 246, 0.38);
+  --vibe-page-bg: radial-gradient(circle at 88% 8%, rgba(59, 130, 246, 0.13) 0%, transparent 44%), radial-gradient(circle at 10% 85%, rgba(225, 29, 72, 0.11) 0%, transparent 42%), radial-gradient(circle at 55% 40%, rgba(234, 179, 8, 0.04) 0%, transparent 55%);
 }
 
 [data-vibe="de"] {
   --vibe-accent: #f59e0b;
-  --vibe-secondary: #dc2626;
-  --vibe-soft: rgba(245, 158, 11, 0.14);
-  --vibe-banner-bg: linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(220, 38, 38, 0.1) 100%);
-  --vibe-banner-border: rgba(245, 158, 11, 0.35);
-  --vibe-page-bg: radial-gradient(circle at 90% 10%, rgba(245, 158, 11, 0.09) 0%, transparent 42%), radial-gradient(circle at 10% 88%, rgba(220, 38, 38, 0.06) 0%, transparent 40%);
+  --vibe-secondary: #ef4444;
+  --vibe-soft: rgba(245, 158, 11, 0.16);
+  --vibe-glow: rgba(245, 158, 11, 0.34);
+  --vibe-banner-bg: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(239, 68, 68, 0.12) 55%, rgba(59, 130, 246, 0.1) 100%);
+  --vibe-banner-border: rgba(245, 158, 11, 0.4);
+  --vibe-page-bg: radial-gradient(circle at 90% 8%, rgba(245, 158, 11, 0.13) 0%, transparent 44%), radial-gradient(circle at 10% 88%, rgba(220, 38, 38, 0.1) 0%, transparent 42%), radial-gradient(circle at 48% 50%, rgba(59, 130, 246, 0.04) 0%, transparent 55%);
 }
 
 [data-theme="light"][data-vibe="ja"] {
-  --vibe-page-bg: radial-gradient(circle at 90% 8%, rgba(236, 72, 153, 0.08) 0%, transparent 45%), radial-gradient(circle at 10% 90%, rgba(168, 85, 247, 0.06) 0%, transparent 45%);
+  --vibe-accent: #db2777;
+  --vibe-secondary: #9333ea;
+  --vibe-soft: rgba(219, 39, 119, 0.12);
+  --vibe-banner-bg: linear-gradient(135deg, rgba(244, 114, 182, 0.16) 0%, rgba(192, 132, 252, 0.12) 60%, rgba(251, 113, 133, 0.1) 100%);
+  --vibe-page-bg: radial-gradient(circle at 90% 8%, rgba(244, 114, 182, 0.14) 0%, transparent 46%), radial-gradient(circle at 10% 90%, rgba(168, 85, 247, 0.09) 0%, transparent 45%);
 }
 
 [data-theme="light"][data-vibe="en"] {
-  --vibe-page-bg: radial-gradient(circle at 88% 10%, rgba(37, 99, 235, 0.08) 0%, transparent 45%), radial-gradient(circle at 10% 85%, rgba(225, 29, 72, 0.05) 0%, transparent 42%);
+  --vibe-accent: #1d4ed8;
+  --vibe-secondary: #be123c;
+  --vibe-soft: rgba(29, 78, 216, 0.12);
+  --vibe-banner-bg: linear-gradient(135deg, rgba(37, 99, 235, 0.14) 0%, rgba(225, 29, 72, 0.09) 100%);
+  --vibe-page-bg: radial-gradient(circle at 88% 10%, rgba(37, 99, 235, 0.11) 0%, transparent 46%), radial-gradient(circle at 10% 85%, rgba(225, 29, 72, 0.08) 0%, transparent 42%);
 }
 
 [data-theme="light"][data-vibe="de"] {
-  --vibe-page-bg: radial-gradient(circle at 90% 10%, rgba(245, 158, 11, 0.1) 0%, transparent 45%), radial-gradient(circle at 10% 88%, rgba(220, 38, 38, 0.05) 0%, transparent 42%);
+  --vibe-accent: #d97706;
+  --vibe-secondary: #dc2626;
+  --vibe-soft: rgba(217, 119, 6, 0.13);
+  --vibe-banner-bg: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(239, 68, 68, 0.1) 100%);
+  --vibe-page-bg: radial-gradient(circle at 90% 10%, rgba(245, 158, 11, 0.13) 0%, transparent 46%), radial-gradient(circle at 10% 88%, rgba(220, 38, 38, 0.08) 0%, transparent 42%);
 }
 
 /* 3. НАСТРОЙКИ BODY И КОРНЯ */
@@ -175,6 +190,68 @@ h4 {
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
+  }
+}
+
+/* 6. АНИМАЦИИ КУЛЬТУРНОЙ АТМОСФЕРЫ ЯЗЫКОВ (Сакура / Оксфорд / Баухаус) */
+@keyframes kavaultSakuraFall {
+  0% {
+    transform: translate3d(0, -12vh, 0) rotate(0deg) scale(var(--petal-scale, 1));
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--petal-opacity, 0.72);
+  }
+  50% {
+    transform: translate3d(var(--sway-x, 48px), 48vh, 0) rotate(185deg) scale(var(--petal-scale, 1));
+    opacity: var(--petal-opacity, 0.72);
+  }
+  90% {
+    opacity: var(--petal-opacity, 0.6);
+  }
+  100% {
+    transform: translate3d(calc(var(--sway-x, 48px) * 1.45), 112vh, 0) rotate(360deg) scale(var(--petal-scale, 1));
+    opacity: 0;
+  }
+}
+
+@keyframes kavaultMoteFloat {
+  0% {
+    transform: translate3d(0, 108vh, 0) scale(var(--petal-scale, 1));
+    opacity: 0;
+  }
+  15% {
+    opacity: var(--petal-opacity, 0.5);
+  }
+  50% {
+    transform: translate3d(var(--sway-x, 22px), 48vh, 0) rotate(90deg) scale(var(--petal-scale, 1));
+    opacity: var(--petal-opacity, 0.55);
+  }
+  85% {
+    opacity: var(--petal-opacity, 0.4);
+  }
+  100% {
+    transform: translate3d(calc(var(--sway-x, 22px) * -0.5), -10vh, 0) rotate(180deg) scale(var(--petal-scale, 1));
+    opacity: 0;
+  }
+}
+
+@keyframes kavaultHeroFloat {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kavault-ambient-particle {
+    display: none !important;
+  }
+  .kavault-hero-float {
+    animation: none !important;
   }
 }
 
