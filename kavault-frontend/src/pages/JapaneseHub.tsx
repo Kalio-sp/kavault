@@ -25,6 +25,7 @@ import { useAchievements } from "../context/AchievementContext";
 import { confirmModal } from "../context/DialogContext";
 import {
   getStarterCardsForStudy,
+  getMissingStarterCount,
   studyLanguageToPackType,
   isPackClaimed,
   markPackClaimed,
@@ -507,6 +508,11 @@ export function JapaneseHub() {
     });
     await fetchCards(true);
   };
+
+  const missingStarterCount = useMemo(
+    () => getMissingStarterCount(activeLangPack, cards),
+    [activeLangPack, cards],
+  );
 
   const isStarterClaimed = useMemo(
     () => isPackClaimed(activeLangPack, cards),
@@ -1301,7 +1307,12 @@ export function JapaneseHub() {
                 }}
                 title={studyText.starterFullBtn}
               >
-                <Sparkles size={13} /> {isImporting ? t.jap.loadingBtn : studyText.starterBtn}
+                <Sparkles size={13} />{" "}
+                {isImporting
+                  ? t.jap.loadingBtn
+                  : cards.length > 0 && missingStarterCount > 0
+                    ? `${studyText.starterBtn} (+${missingStarterCount})`
+                    : studyText.starterBtn}
               </Button>
             )}
 

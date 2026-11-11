@@ -13,8 +13,11 @@
 :root {
   --bg: #09090b;
   --surface: #18181b;
+  --bg-surface: #18181b;
   --surface-raised: #27272a;
+  --bg-elevated: #27272a;
   --border: #3f3f46;
+  --border-subtle: rgba(63, 63, 70, 0.72);
   --text-primary: #f4f4f5;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
@@ -53,8 +56,11 @@
 [data-theme="light"] {
   --bg: #f8fafc;
   --surface: #ffffff;
+  --bg-surface: #ffffff;
   --surface-raised: #f1f5f9;
+  --bg-elevated: #f1f5f9;
   --border: #cbd5e1;
+  --border-subtle: rgba(148, 163, 184, 0.45);
   --text-primary: #09090b;
   --text-secondary: #475569;
   --text-muted: #64748b;
@@ -243,6 +249,15 @@ h4 {
   }
   50% {
     transform: translateY(-5px);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

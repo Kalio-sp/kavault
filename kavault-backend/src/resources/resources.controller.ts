@@ -25,6 +25,8 @@ export class ResourcesController {
     body: {
       title: string;
       url: string;
+      description?: string;
+      note?: string;
       type: any;
       status?: any;
       tags?: string[];
