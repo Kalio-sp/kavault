@@ -31,8 +31,8 @@ export const getApiBaseURL = (): string => {
   }
 
   // 5. По умолчанию для скомпилированного KAVAULT.exe, Android APK и iOS:
-  // подключаемся к новому серверу в Yandex Cloud!
-  return "http://51.250.64.21:4000";
+  // подключаемся к серверу в Yandex Cloud!
+  return "http://51.250.76.48:4000";
 };
 
 export const api = axios.create({

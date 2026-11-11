@@ -54,7 +54,7 @@ $DOCKER_CMD -f docker-compose.production.yml up -d --build
 echo ""
 echo "=========================================================="
 echo "   Успешно! KAVAULT запущен 24/7 на сервере Yandex Cloud! "
-echo "   - Веб-версия (iPhone/ПК):  http://51.250.64.21"
-echo "   - Бэкенд API:              http://51.250.64.21:4000"
+echo "   - Веб-версия (iPhone/ПК):  http://51.250.76.48"
+echo "   - Бэкенд API:              http://51.250.76.48:4000"
 echo "=========================================================="
 $DOCKER_CMD -f docker-compose.production.yml ps
