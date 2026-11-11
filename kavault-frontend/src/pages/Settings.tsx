@@ -79,7 +79,6 @@ export function Settings() {
     setLanguage,
     t,
     isCreator,
-    activateCreatorMode,
     studyLanguage,
     showProgramming,
     studyText,
@@ -94,7 +93,6 @@ export function Settings() {
 
   // Профиль
   const [userEmail, setUserEmail] = useState("");
-  const [creatorPass, setCreatorPass] = useState("");
   const [username, setUsername] = useState(() => {
     return localStorage.getItem("kavault_username") || "";
   });
@@ -263,20 +261,6 @@ export function Settings() {
     });
 
     showToast(t.settings.toasts.savedGeneral);
-  };
-
-  /* Активация режима Создателя */
-  const handleActivateCreator = () => {
-    if (!creatorPass.trim()) {
-      showToast(t.settings.toasts.creatorPassRequired, "error");
-      return;
-    }
-    if (activateCreatorMode(creatorPass)) {
-      showToast(t.settings.toasts.creatorActivated);
-      setCreatorPass("");
-    } else {
-      showToast(t.settings.toasts.creatorInvalid, "error");
-    }
   };
 
   /* Смена пароля */
@@ -1119,32 +1103,32 @@ export function Settings() {
             </div>
           </Card>
 
-          {/* Режим Создателя (Root Access) */}
-          <Card
-            style={{
-              padding: "var(--space-6)",
-              border: isCreator ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid var(--border)",
-              backgroundColor: isCreator ? "rgba(245, 158, 11, 0.04)" : "var(--surface)",
-            }}
-          >
-            <h3
+          {/* Режим Создателя — отображается строго для zerkalovandrey@kavoult.dev */}
+          {isCreator && (
+            <Card
               style={{
-                margin: "0 0 6px 0",
-                fontSize: "16px",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                color: isCreator ? "#f59e0b" : "var(--text-primary)",
+                padding: "var(--space-6)",
+                border: "1px solid rgba(245, 158, 11, 0.4)",
+                backgroundColor: "rgba(245, 158, 11, 0.04)",
               }}
             >
-              <Crown size={18} color="#f59e0b" /> {t.settings.creatorCardTitle}
-            </h3>
-            <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "0 0 16px 0" }}>
-              {t.settings.creatorCardDesc}
-            </p>
+              <h3
+                style={{
+                  margin: "0 0 6px 0",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: "#f59e0b",
+                }}
+              >
+                <Crown size={18} color="#f59e0b" /> {t.settings.creatorCardTitle}
+              </h3>
+              <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "0 0 16px 0" }}>
+                {t.settings.creatorCardDesc}
+              </p>
 
-            {isCreator ? (
               <div
                 style={{
                   display: "flex",
@@ -1170,22 +1154,8 @@ export function Settings() {
                   {t.settings.openCreatorPanelBtn}
                 </Button>
               </div>
-            ) : (
-              <div style={{ display: "flex", gap: "10px", alignItems: "flex-end", flexWrap: "wrap" }}>
-                <div style={{ flex: 1, minWidth: "220px", maxWidth: "340px" }}>
-                  <Input
-                    type="password"
-                    placeholder={t.settings.creatorPassPlaceholder}
-                    value={creatorPass}
-                    onChange={(e) => setCreatorPass(e.target.value)}
-                  />
-                </div>
-                <Button variant="secondary" onClick={handleActivateCreator}>
-                  {t.settings.activateRightsBtn}
-                </Button>
-              </div>
-            )}
-          </Card>
+            </Card>
+          )}
 
           {/* Смена пароля */}
           <Card style={{ padding: "var(--space-6)" }}>

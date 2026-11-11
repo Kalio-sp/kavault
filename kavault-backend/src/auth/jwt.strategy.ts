@@ -1,10 +1,12 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { isCreatorEmail } from './creator.constants';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor() {
+  constructor(private readonly prisma: PrismaService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -12,15 +14,26 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: any) {
-    const emailLower = (payload.email || '').toLowerCase();
-    const isCreator =
-      emailLower === 'zerkalovandrey@kavoult.dev' ||
-      emailLower === 'zerkalovandrey@kavault.dev' ||
-      emailLower.includes('zerkalovandrey');
+  async validate(payload: { sub?: string; email?: string }) {
+    if (!payload?.sub) {
+      throw new UnauthorizedException('Недействительный токен авторизации');
+    }
+
+    // Проверяем живое наличие пользователя в БД — удалённые пользователи мгновенно теряют доступ на сервере
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, email: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Аккаунт был удалён или не найден');
+    }
+
+    const isCreator = isCreatorEmail(user.email);
+
     return {
-      userId: payload.sub,
-      email: payload.email,
+      userId: user.id,
+      email: user.email,
       role: isCreator ? 'CREATOR' : 'USER',
       isCreator,
     };

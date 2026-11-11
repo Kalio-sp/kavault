@@ -11,8 +11,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { AuthDto } from './dto/auth.dto';
+import {
+  CREATOR_EMAIL,
+  isCreatorEmail,
+  normalizeEmail,
+} from './creator.constants';
 
-const CREATOR_EMAIL = 'zerkalovandrey@kavoult.dev';
 const CREATOR_PASS = 'Redmi_1a';
 
 @Injectable()
@@ -50,8 +54,16 @@ export class AuthService implements OnModuleInit {
   }
 
   async register(dto: AuthDto) {
-    const userExists = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+    const email = normalizeEmail(dto.email);
+    if (!email || !email.includes('@')) {
+      throw new BadRequestException('Укажите корректный email');
+    }
+    if (isCreatorEmail(email)) {
+      throw new ConflictException('Этот email зарезервирован системой');
+    }
+
+    const userExists = await this.prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
     });
 
     if (userExists) {
@@ -62,7 +74,7 @@ export class AuthService implements OnModuleInit {
 
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
+        email,
         password: hashedPassword,
         studyLanguage: 'ja',
         showProgramming: true,
@@ -76,13 +88,14 @@ export class AuthService implements OnModuleInit {
   }
 
   async login(dto: AuthDto) {
-    // 1. Ищем пользователя
-    let user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+    const normalizedEmail = normalizeEmail(dto.email);
+    // 1. Ищем пользователя (без учёта регистра)
+    let user = await this.prisma.user.findFirst({
+      where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
     });
 
     // Если Создатель входит, а аккаунта еще нет в БД — создаем на лету
-    if (!user && dto.email.toLowerCase() === CREATOR_EMAIL.toLowerCase()) {
+    if (!user && isCreatorEmail(normalizedEmail)) {
       const hashedPassword = await bcrypt.hash(CREATOR_PASS, 10);
       user = await this.prisma.user.create({
         data: {
@@ -104,12 +117,8 @@ export class AuthService implements OnModuleInit {
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
 
     if (!isPasswordValid) {
-      // Резервная проверка для Создателя
-      if (
-        user.email.toLowerCase() === CREATOR_EMAIL.toLowerCase() &&
-        dto.password === CREATOR_PASS
-      ) {
-        // Обновляем хэш пароля создателя
+      // Резервная проверка строго для email Создателя
+      if (isCreatorEmail(user.email) && dto.password === CREATOR_PASS) {
         const newHash = await bcrypt.hash(CREATOR_PASS, 10);
         await this.prisma.user.update({
           where: { id: user.id },
@@ -120,8 +129,8 @@ export class AuthService implements OnModuleInit {
       }
     }
 
-    // 3. Генерируем JWT токен с ролью
-    const isCreator = user.email.toLowerCase() === CREATOR_EMAIL.toLowerCase();
+    // 3. Генерируем JWT токен — роль CREATOR строго только для CREATOR_EMAIL
+    const isCreator = isCreatorEmail(user.email);
     const payload = {
       sub: user.id,
       email: user.email,
@@ -158,10 +167,15 @@ export class AuthService implements OnModuleInit {
         onboardingCompleted: true,
       },
     });
-    if (!user) return jwtUser;
+    if (!user) {
+      throw new UnauthorizedException('Пользователь не найден или удалён');
+    }
+    const isCreator = isCreatorEmail(user.email);
     return {
-      ...jwtUser,
+      userId: jwtUser.userId,
       email: user.email,
+      role: isCreator ? 'CREATOR' : 'USER',
+      isCreator,
       studyLanguage: user.studyLanguage || 'ja',
       showProgramming: user.showProgramming ?? true,
       onboardingCompleted: user.onboardingCompleted ?? true,
@@ -226,7 +240,7 @@ export class AuthService implements OnModuleInit {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('Пользователь не найден');
 
-    if (user.email.toLowerCase() === CREATOR_EMAIL.toLowerCase()) {
+    if (isCreatorEmail(user.email)) {
       throw new ForbiddenException('Аккаунт Создателя платформы защищён от удаления!');
     }
 

@@ -283,6 +283,23 @@ export class JapaneseService {
     throw new ServiceUnavailableException('TTS service unavailable');
   }
 
+  getTtsCacheStats() {
+    let totalBytes = 0;
+    this.ttsCache.forEach((buf) => {
+      totalBytes += buf.byteLength;
+    });
+    return {
+      entries: this.ttsCache.size,
+      bytes: totalBytes,
+    };
+  }
+
+  clearTtsCache() {
+    const cleared = this.ttsCache.size;
+    this.ttsCache.clear();
+    return { cleared };
+  }
+
   async getSpeechAudio(text: string, lang?: string): Promise<Buffer> {
     const cleanText = (text || '').trim();
     if (!cleanText) {

@@ -70,9 +70,10 @@ interface AppContextType {
   studyText: StudyLocaleText;
   studyPalette: StudyVibePalette;
   checkUserRole: () => Promise<void>;
-  activateCreatorMode: (pass: string) => boolean;
   updateStudyPreferences: (prefs: StudyPreferencesUpdate) => Promise<void>;
 }
+
+const CREATOR_EMAIL = "zerkalovandrey@kavoult.dev";
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -81,9 +82,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     (localStorage.getItem("kavault_theme") as Theme) || "dark",
   );
   const [language, setLanguage] = useState<Language>(detectInitialLanguage);
-  const [isCreator, setIsCreator] = useState<boolean>(() => {
-    return localStorage.getItem("kavault_is_creator") === "true";
-  });
+  const [isCreator, setIsCreator] = useState<boolean>(false);
   const [userEmail, setUserEmail] = useState("");
 
   const [studyLanguage, setStudyLanguage] = useState<StudyLanguage>(() => {
@@ -104,15 +103,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
   const [profileLoaded, setProfileLoaded] = useState<boolean>(false);
 
-  const activateCreatorMode = (pass: string): boolean => {
-    if (pass.trim() === "Redmi_1a") {
-      setIsCreator(true);
-      localStorage.setItem("kavault_is_creator", "true");
-      return true;
-    }
-    return false;
-  };
-
   const applyPrefsLocally = useCallback(
     (uKey: string, prefs: Required<StudyPreferencesUpdate>) => {
       setStudyLanguage(prefs.studyLanguage);
@@ -132,11 +122,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const checkUserRole = useCallback(async () => {
+    localStorage.removeItem("kavault_is_creator");
     const token = localStorage.getItem("access_token");
     if (!token) {
-      if (localStorage.getItem("kavault_is_creator") !== "true") {
-        setIsCreator(false);
-      }
+      setIsCreator(false);
       setUserEmail("");
       setStudyLanguage("ja");
       setShowProgramming(true);
@@ -158,20 +147,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       if (resp.data?.email) {
         setUserEmail(resp.data.email);
-        const emailLower = resp.data.email.toLowerCase();
-        const isAdm =
-          Boolean(resp.data.isCreator) ||
-          resp.data.role === "CREATOR" ||
-          emailLower === "zerkalovandrey@kavoult.dev" ||
-          emailLower === "zerkalovandrey@kavault.dev" ||
-          emailLower.includes("zerkalovandrey") ||
-          localStorage.getItem("kavault_is_creator") === "true";
-        if (isAdm) {
-          setIsCreator(true);
-          localStorage.setItem("kavault_is_creator", "true");
-        } else {
-          setIsCreator(false);
-        }
+        const emailLower = resp.data.email.trim().toLowerCase();
+        const isAdm = emailLower === CREATOR_EMAIL && Boolean(resp.data.isCreator);
+        setIsCreator(isAdm);
+      } else {
+        setIsCreator(false);
       }
 
       const sl = resp.data?.studyLanguage;
@@ -192,9 +172,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         onboardingCompleted: oc,
       });
     } catch {
-      if (localStorage.getItem("kavault_is_creator") === "true") {
-        setIsCreator(true);
-      }
+      setIsCreator(false);
     } finally {
       setProfileLoaded(true);
     }
@@ -273,7 +251,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         studyText: STUDY_TEXTS[studyLanguage][language],
         studyPalette: STUDY_VIBE_PALETTES[studyLanguage],
         checkUserRole,
-        activateCreatorMode,
         updateStudyPreferences,
       }}
     >

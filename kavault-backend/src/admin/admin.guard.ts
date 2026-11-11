@@ -4,6 +4,7 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
+import { isCreatorEmail } from '../auth/creator.constants';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
@@ -11,15 +12,12 @@ export class AdminGuard implements CanActivate {
     const req = context.switchToHttp().getRequest();
     const user = req.user;
 
-    const isCreator =
-      user &&
-      (user.isCreator ||
-        user.role === 'CREATOR' ||
-        user.email === 'zerkalovandrey@kavoult.dev');
+    // Права Создателя строго привязаны только к подтверждённому email создателя в БД
+    const isAllowed = Boolean(user && isCreatorEmail(user.email));
 
-    if (!isCreator) {
+    if (!isAllowed) {
       throw new ForbiddenException(
-        'Доступ запрещен: требуется статус Создателя / Администратора KAVAULT',
+        'Доступ запрещён: панель Создателя привязана исключительно к zerkalovandrey@kavoult.dev',
       );
     }
 

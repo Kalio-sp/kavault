@@ -21,50 +21,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const {
     t,
     isCreator,
-    activateCreatorMode,
     showProgramming,
     studyText,
     studyPalette,
   } = useApp();
   const { trackPageVisit, openModal, unlockedCount, totalCount } = useAchievements();
-
-  const [logoClicks, setLogoClicks] = useState(0);
-
-  const handleLogoClick = () => {
-    if (isCreator) return;
-    const next = logoClicks + 1;
-    if (next >= 5) {
-      setLogoClicks(0);
-      const pass = window.prompt(t.nav.creatorPrompt);
-      if (pass) {
-        if (activateCreatorMode(pass)) {
-          window.alert(t.nav.creatorSuccess);
-        } else {
-          window.alert(t.nav.creatorInvalid);
-        }
-      }
-    } else {
-      setLogoClicks(next);
-    }
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && (e.key === "C" || e.key === "c" || e.key === "С" || e.key === "с")) {
-        e.preventDefault();
-        const pass = window.prompt(t.nav.creatorPrompt);
-        if (pass) {
-          if (activateCreatorMode(pass)) {
-            window.alert(t.nav.creatorSuccess);
-          } else {
-            window.alert(t.nav.creatorInvalid);
-          }
-        }
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activateCreatorMode, t.nav.creatorPrompt, t.nav.creatorSuccess, t.nav.creatorInvalid]);
 
   useEffect(() => {
     trackPageVisit(location.pathname);
@@ -152,15 +113,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
             }}
           >
             <div
-              onClick={handleLogoClick}
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                cursor: isCreator ? "default" : "pointer",
+                cursor: "default",
                 userSelect: "none",
               }}
-              title={isCreator ? "KAVAULT Root Active" : "KAVAULT"}
+              title={isCreator ? "KAVAULT Creator Active" : "KAVAULT"}
             >
               <div
                 style={{

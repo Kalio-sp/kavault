@@ -49,20 +49,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Перехватчик ответов: если сессия истекла (401), очищаем токен и редиректим на логин
+// Перехватчик ответов: если сессия истекла или пользователь удалён (401), очищаем токен и редиректим на логин
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("access_token");
+      localStorage.removeItem("kavault_is_creator");
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("kavault-auth-changed"));
-      }
-      if (
-        typeof window !== "undefined" &&
-        window.location.pathname !== "/login"
-      ) {
-        window.location.href = "/login";
+        if (!window.location.hash.includes("/login")) {
+          window.location.hash = "#/login";
+        }
       }
     }
     return Promise.reject(error);

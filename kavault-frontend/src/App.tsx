@@ -54,6 +54,17 @@ function ProgrammingGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function CreatorGuard({ children }: { children: React.ReactNode }) {
+  const { isCreator, profileLoaded } = useApp();
+  if (!profileLoaded) {
+    return <RouteLoadingFallback />;
+  }
+  if (!isCreator) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <AppProvider>
@@ -165,9 +176,11 @@ export default function App() {
             path="/admin"
             element={
               <ProtectedRoute>
-                <Layout>
-                  <AdminPanel />
-                </Layout>
+                <CreatorGuard>
+                  <Layout>
+                    <AdminPanel />
+                  </Layout>
+                </CreatorGuard>
               </ProtectedRoute>
             }
           />
