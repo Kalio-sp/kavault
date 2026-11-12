@@ -16,7 +16,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    icon: path.join(__dirname, "../public/favicon.svg"),
+    icon: path.join(__dirname, "../public/icon.png"),
   });
 
   // Открытие окна только когда готов контент

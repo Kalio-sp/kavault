@@ -24,6 +24,7 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "public/icon.png",
       "package.json",
       "!node_modules/**/*"
     ],
@@ -32,13 +33,15 @@
         "dir",
         "nsis"
       ],
-      "signAndEditExecutable": false
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": true,
       "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
       "artifactName": "KAVAULT-Setup.exe"
     }
   },

@@ -63,7 +63,7 @@ interface MySocialSummary {
   nickname: string;
   mmr: number;
   rankTier: RankTierInfo;
-  globalRank: number;
+  globalRank: number | null;
   studyLanguage: string;
   friendsCount: number;
   pendingIncomingCount: number;
@@ -849,7 +849,7 @@ export function SocialHub({ publicOnly = false }: { publicOnly?: boolean }) {
                     {txt.globalPlace}
                   </div>
                   <div style={{ fontSize: "26px", fontWeight: 800 }}>
-                    #{summary.globalRank}
+                    {summary.globalRank ? `#${summary.globalRank}` : "—"}
                   </div>
                 </div>
                 <div>

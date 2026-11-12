@@ -12,9 +12,14 @@ import {
   sanitizeNickname,
   TASK_RANK_TIERS,
 } from './mmr.utils';
+import { CREATOR_EMAIL, isCreatorEmail } from '../auth/creator.constants';
 
 @Injectable()
 export class SocialService {
+  private readonly leaderboardExcludeCreatorWhere = {
+    NOT: { email: { equals: CREATOR_EMAIL, mode: 'insensitive' as const } },
+  };
+
   constructor(private readonly prisma: PrismaService) {}
 
   async generateUniqueNickname(baseRaw: string, excludeUserId?: string): Promise<string> {
@@ -272,11 +277,13 @@ export class SocialService {
   async getMySocialSummary(userId: string) {
     const ready = await this.ensureUserProfileReady(userId);
     if (!ready) throw new NotFoundException('Пользователь не найден');
+    const isCreator = isCreatorEmail(ready.email);
 
     const [higherCount, recentLogs, friendsCount, pendingIncomingCount] =
       await Promise.all([
         this.prisma.user.count({
           where: {
+            ...this.leaderboardExcludeCreatorWhere,
             OR: [
               { mmr: { gt: ready.mmr } },
               { mmr: ready.mmr, id: { lt: userId } },
@@ -311,7 +318,7 @@ export class SocialService {
       nickname: ready.nickname,
       mmr: ready.mmr,
       rankTier: ready.rankTier,
-      globalRank: higherCount + 1,
+      globalRank: isCreator ? null : higherCount + 1,
       studyLanguage: ready.studyLanguage,
       friendsCount,
       pendingIncomingCount,
@@ -329,6 +336,7 @@ export class SocialService {
 
     const users = await this.prisma.user.findMany({
       where: {
+        ...this.leaderboardExcludeCreatorWhere,
         ...(cleanSearch
           ? { nickname: { contains: cleanSearch, mode: 'insensitive' } }
           : {}),
@@ -352,7 +360,9 @@ export class SocialService {
       },
     });
 
-    const totalPlayers = await this.prisma.user.count();
+    const totalPlayers = await this.prisma.user.count({
+      where: this.leaderboardExcludeCreatorWhere,
+    });
 
     return {
       systemName: 'Task-System',
@@ -391,7 +401,10 @@ export class SocialService {
     });
 
     const users = await this.prisma.user.findMany({
-      where: { id: { in: [...ids] } },
+      where: {
+        id: { in: [...ids] },
+        ...this.leaderboardExcludeCreatorWhere,
+      },
       orderBy: [{ mmr: 'desc' }, { createdAt: 'asc' }],
       select: {
         id: true,
