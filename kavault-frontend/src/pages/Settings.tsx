@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
-import { api } from "../api/axios";
+import { api, getApiBaseURL } from "../api/axios";
 import { confirmModal } from "../context/DialogContext";
 import {
   STARTER_DEVELOPER_RESOURCES,
@@ -146,15 +146,16 @@ export function Settings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [serverUrl, setServerUrl] = useState(() => {
-    return localStorage.getItem("kavault_api_url") || "http://localhost:4000";
+    return localStorage.getItem("kavault_api_url") || getApiBaseURL();
   });
 
   const handleSaveServerUrl = () => {
     const trimmed = serverUrl.trim();
     if (!trimmed) {
       localStorage.removeItem("kavault_api_url");
-      setServerUrl("http://localhost:4000");
-      showToast(`${t.settings.toasts.serverResetDefault} http://localhost:4000`);
+      const current = getApiBaseURL();
+      setServerUrl(current);
+      showToast(`${t.settings.toasts.serverResetDefault} ${current}`);
       return;
     }
     localStorage.setItem("kavault_api_url", trimmed);

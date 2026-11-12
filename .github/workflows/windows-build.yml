@@ -1,0 +1,59 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - 'kavault-frontend/**'
+      - '.github/workflows/windows-build.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build Windows NSIS Installer
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: kavault-frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        shell: bash
+        run: |
+          cd kavault-frontend
+          npm ci
+
+      - name: Build Frontend Web Assets
+        shell: bash
+        run: |
+          cd kavault-frontend
+          npm run build
+
+      - name: Build Windows Installer EXE
+        shell: pwsh
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          cd kavault-frontend
+          ./node_modules/.bin/electron-builder.cmd --win nsis --config.npmRebuild=false
+
+      - name: Publish KAVAULT EXE to GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp kavault-frontend/release/KAVAULT-Setup.exe KAVAULT-Setup.exe
+          if gh release view latest >/dev/null 2>&1; then
+            gh release upload latest KAVAULT-Setup.exe --clobber
+          else
+            gh release create latest KAVAULT-Setup.exe --title "KAVAULT Latest" --notes "Automated KAVAULT build"
+          fi
