@@ -27,8 +27,18 @@
       "package.json"
     ],
     "win": {
-      "target": "dir",
+      "target": [
+        "dir",
+        "nsis"
+      ],
       "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "KAVAULT-Setup.exe"
     }
   },
   "dependencies": {

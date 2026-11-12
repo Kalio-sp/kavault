@@ -5,6 +5,9 @@ on:
   push:
     branches: [main, master]
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     name: Build Native Android APK
@@ -47,8 +50,13 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
-      - name: Upload KAVAULT APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: KAVAULT-Android-APK
-          path: kavault-frontend/android/app/build/outputs/apk/debug/*.apk
+      - name: Publish KAVAULT APK to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp kavault-frontend/android/app/build/outputs/apk/debug/app-debug.apk KAVAULT.apk
+          if gh release view latest >/dev/null 2>&1; then
+            gh release upload latest KAVAULT.apk --clobber
+          else
+            gh release create latest KAVAULT.apk --title "KAVAULT Latest" --notes "Automated KAVAULT build"
+          fi

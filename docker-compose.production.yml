@@ -44,6 +44,8 @@ services:
     restart: always
     ports:
       - "80:80"
+    volumes:
+      - ./downloads:/usr/share/nginx/downloads:ro
     depends_on:
       - backend
     networks:
