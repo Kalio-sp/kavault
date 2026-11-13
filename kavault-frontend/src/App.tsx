@@ -21,6 +21,7 @@ const GitHubCollection = lazyNamed(() => import("./pages/GitHubCollection"), "Gi
 const LearningTracker = lazyNamed(() => import("./pages/LearningTracker"), "LearningTracker");
 const KnowledgeGraph = lazyNamed(() => import("./pages/KnowledgeGraph"), "KnowledgeGraph");
 const Settings = lazyNamed(() => import("./pages/Settings"), "Settings");
+const UserProfileCabinet = lazyNamed(() => import("./pages/UserProfileCabinet"), "UserProfileCabinet");
 const AdminPanel = lazyNamed(() => import("./pages/AdminPanel"), "AdminPanel");
 const SocialHub = lazyNamed(() => import("./pages/SocialHub"), "SocialHub");
 const ThoughtsHub = lazyNamed(() => import("./pages/ThoughtsHub"), "ThoughtsHub");
@@ -193,6 +194,16 @@ export default function App() {
               <ProtectedRoute>
                 <Layout>
                   <Settings />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <UserProfileCabinet />
                 </Layout>
               </ProtectedRoute>
             }

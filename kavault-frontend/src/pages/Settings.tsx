@@ -2,14 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
-import { Badge } from "../components/ui/Badge";
 import { Modal } from "../components/ui/Modal";
 import {
   User,
   Palette,
   Target,
   Database,
-  Lock,
   Moon,
   Sun,
   Save,
@@ -19,26 +17,21 @@ import {
   TriangleAlert,
   Trash2,
   CheckCircle2,
-  LogOut,
   Bell,
   Sparkles,
   Volume2,
   VolumeX,
-  ShieldCheck,
-  Eye,
-  EyeOff,
   Globe,
-  Crown,
   Code2,
   Check,
   Sliders,
-  KeyRound,
   RefreshCw,
   BookOpen,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
 import { api, getApiBaseURL } from "../api/axios";
+import { UserProfileCabinet } from "./UserProfileCabinet";
 import { confirmModal } from "../context/DialogContext";
 import {
   STARTER_DEVELOPER_RESOURCES,
@@ -97,13 +90,6 @@ export function Settings() {
   const [username, setUsername] = useState(() => {
     return localStorage.getItem("kavault_username") || "";
   });
-
-  // Пароль
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [passwordLoading, setPasswordLoading] = useState(false);
 
   // Акцентный цвет
   const [accentColor, setAccentColor] = useState(() => {
@@ -262,39 +248,6 @@ export function Settings() {
     });
 
     showToast(t.settings.toasts.savedGeneral);
-  };
-
-  /* Смена пароля */
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentPassword) {
-      showToast(t.settings.toasts.passCurrentRequired, "error");
-      return;
-    }
-    if (newPassword.length < 6) {
-      showToast(t.settings.toasts.passTooShort, "error");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      showToast(t.settings.toasts.passMismatch, "error");
-      return;
-    }
-
-    try {
-      setPasswordLoading(true);
-      await api.patch("/auth/password", {
-        currentPass: currentPassword,
-        newPass: newPassword,
-      });
-      showToast(t.settings.toasts.passUpdated);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (err: any) {
-      showToast(err.response?.data?.message || t.settings.toasts.passError, "error");
-    } finally {
-      setPasswordLoading(false);
-    }
   };
 
   /* Экспорт данных в JSON */
@@ -515,16 +468,10 @@ export function Settings() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    window.dispatchEvent(new Event("kavault-auth-changed"));
-    navigate("/login");
-  };
-
   // Компактные подписи для мобильных + полные для ПК
   const tabsConfig = [
     { id: "appearance", shortLabel: "Тема", fullLabel: "Внешний вид", icon: Palette },
-    { id: "account", shortLabel: "Профиль", fullLabel: "Профиль и Защита", icon: User },
+    { id: "account", shortLabel: "Кабинет", fullLabel: "Личный кабинет", icon: User },
     { id: "learning", shortLabel: "Обучение", fullLabel: "Цели и Обучение", icon: Target },
     { id: "vault", shortLabel: "Сервер", fullLabel: "Данные и Хранилище", icon: Database },
   ];
@@ -1333,222 +1280,10 @@ export function Settings() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════
-          ТАБ 2: ПРОФИЛЬ И БЕЗОПАСНОСТЬ (ACCOUNT)
+          ТАБ 2: ЛИЧНЫЙ КАБИНЕТ И ПРОФИЛЬ (ACCOUNT)
       ══════════════════════════════════════════════════════════════════ */}
       {activeTab === "account" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%" }}>
-          {/* Профиль */}
-          <div className="kv-card">
-            <div className="kv-group-header">
-              <div className="kv-group-icon">
-                <ShieldCheck size={18} />
-              </div>
-              <div className="kv-group-text">
-                <h3 className="kv-group-title">{t.settings.accountCardTitle}</h3>
-                <p className="kv-group-desc">Ваш профиль и статус в системе KAVAULT</p>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "12px",
-                backgroundColor: "var(--surface-raised)",
-                borderRadius: "12px",
-                marginBottom: "14px",
-                border: "1px solid var(--border)",
-                width: "100%",
-                boxSizing: "border-box",
-              }}
-            >
-              <div
-                style={{
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "10px",
-                  backgroundColor: "var(--accent)",
-                  color: "#fff",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "18px",
-                  fontWeight: 700,
-                  flexShrink: 0,
-                }}
-              >
-                {username ? username.charAt(0).toUpperCase() : "U"}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: "15px",
-                    fontWeight: 700,
-                    color: "var(--text-primary)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {username || t.settings.userDefault}
-                </div>
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "var(--text-muted)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    marginTop: "1px",
-                  }}
-                >
-                  {userEmail || t.settings.authorizedSession}
-                </div>
-              </div>
-
-              {isCreator ? (
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: "4px 8px",
-                    borderRadius: "8px",
-                    background: "rgba(245, 158, 11, 0.15)",
-                    border: "1px solid rgba(245, 158, 11, 0.3)",
-                    color: "#f59e0b",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    flexShrink: 0,
-                  }}
-                >
-                  <Crown size={12} />
-                  <span>CREATOR</span>
-                </div>
-              ) : (
-                <Badge variant="success">Онлайн</Badge>
-              )}
-            </div>
-
-            {/* Редактирование никнейма */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
-                {t.settings.displayNameLabel}
-              </label>
-              <div className="kv-field-row">
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Input
-                    icon={<User size={16} />}
-                    placeholder={t.settings.displayNamePlaceholder}
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                  />
-                </div>
-                <Button onClick={handleSaveGeneral} className="kv-action-btn">
-                  <Save size={15} /> Сохранить ник
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Смена пароля */}
-          <div className="kv-card">
-            <div className="kv-group-header">
-              <div className="kv-group-icon">
-                <KeyRound size={18} />
-              </div>
-              <div className="kv-group-text">
-                <h3 className="kv-group-title">Безопасность и пароль</h3>
-                <p className="kv-group-desc">Смена текущего пароля для входа в ваш аккаунт</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <div>
-                <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "4px" }}>
-                  Текущий пароль
-                </label>
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  icon={<Lock size={16} />}
-                  placeholder="••••••••"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                />
-              </div>
-
-              <div className="kv-grid-1-2">
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "4px" }}>
-                    Новый пароль
-                  </label>
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    icon={<Lock size={16} />}
-                    placeholder="От 6 символов"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "4px" }}>
-                    Подтвердите пароль
-                  </label>
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    icon={<Lock size={16} />}
-                    placeholder="Повтор пароля"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", marginTop: "2px" }}>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "var(--text-muted)",
-                    fontSize: "12px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "5px",
-                    cursor: "pointer",
-                    padding: "4px 0",
-                  }}
-                >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                  <span>{showPassword ? "Скрыть" : "Показать"}</span>
-                </button>
-
-                <Button type="submit" disabled={passwordLoading} className="kv-action-btn">
-                  {passwordLoading ? "Обновление..." : "🔑 Обновить пароль"}
-                </Button>
-              </div>
-            </form>
-          </div>
-
-          {/* Выход из сессии */}
-          <div className="kv-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            <div>
-              <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
-                Выход из аккаунта
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                Завершить сессию на этом устройстве
-              </div>
-            </div>
-
-            <Button variant="secondary" onClick={handleLogout} className="kv-action-btn" style={{ color: "var(--text-primary)" }}>
-              <LogOut size={15} /> {t.dash.logout}
-            </Button>
-          </div>
-        </div>
+        <UserProfileCabinet embeddedInSettings />
       )}
 
       {/* ══════════════════════════════════════════════════════════════════

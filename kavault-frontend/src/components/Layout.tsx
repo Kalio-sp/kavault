@@ -17,6 +17,11 @@ import {
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
+import { UserAvatarBadge } from "./UserAvatarBadge";
+import {
+  loadProfileCustomization,
+  type UserProfileCustomization,
+} from "../utils/profileCosmetics";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -26,8 +31,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
     showProgramming,
     studyText,
     studyPalette,
+    nickname,
   } = useApp();
   const { trackPageVisit, openModal, unlockedCount, totalCount } = useAchievements();
+
+  const [profileCustom, setProfileCustom] = useState<UserProfileCustomization>(() =>
+    loadProfileCustomization(),
+  );
+
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      setProfileCustom(loadProfileCustomization());
+    };
+    window.addEventListener("kavault_profile_updated", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("kavault_profile_updated", handleProfileUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     trackPageVisit(location.pathname);
@@ -294,6 +314,61 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </span>
             </button>
 
+            {/* Карточка профиля / Личный кабинет */}
+            <Link
+              to="/profile"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "8px 10px",
+                textDecoration: "none",
+                borderRadius: "var(--radius-md)",
+                color:
+                  location.pathname === "/profile"
+                    ? "var(--text-primary)"
+                    : "var(--text-secondary)",
+                backgroundColor:
+                  location.pathname === "/profile"
+                    ? "var(--surface-raised)"
+                    : "rgba(255, 255, 255, 0.03)",
+                border: "1px solid var(--border)",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <UserAvatarBadge
+                customization={profileCustom}
+                size={34}
+                username={nickname || "User"}
+                showOnlineDot
+              />
+              <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+                <div
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {nickname || "Мой профиль"}
+                </div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--accent, #3b82f6)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Личный кабинет →
+                </div>
+              </div>
+            </Link>
+
             <Link
               to="/settings"
               style={{
@@ -401,6 +476,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
             >
               <Trophy size={20} />
             </button>
+            <Link
+              to="/profile"
+              style={{
+                padding: "2px 4px",
+                display: "flex",
+                alignItems: "center",
+                textDecoration: "none",
+              }}
+              title="Личный кабинет"
+            >
+              <UserAvatarBadge
+                customization={profileCustom}
+                size={28}
+                username={nickname || "User"}
+              />
+            </Link>
+
             <Link
               to="/settings"
               style={{
@@ -595,6 +687,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
               }}
             >
               <Network size={18} /> {t.nav.graph}
+            </Link>
+
+            {/* Личный кабинет в мобильном меню */}
+            <Link
+              to="/profile"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "12px",
+                borderRadius: "var(--radius-md)",
+                color:
+                  location.pathname === "/profile"
+                    ? "var(--text-primary)"
+                    : "var(--text-secondary)",
+                backgroundColor:
+                  location.pathname === "/profile"
+                    ? "var(--surface-raised)"
+                    : "transparent",
+                textDecoration: "none",
+                fontSize: "15px",
+                fontWeight: 600,
+              }}
+            >
+              <UserAvatarBadge
+                customization={profileCustom}
+                size={24}
+                username={nickname || "User"}
+              />
+              <span>Личный кабинет</span>
             </Link>
 
             <Link
