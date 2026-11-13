@@ -25,6 +25,7 @@ import {
 import { api } from "../api/axios";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
+import { confirmModal } from "../context/DialogContext";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { UserAvatarBadge } from "../components/UserAvatarBadge";
@@ -70,6 +71,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
 }) => {
   const navigate = useNavigate();
   const {
+    language,
     isCreator,
     userEmail,
     nickname,
@@ -311,9 +313,26 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
   };
 
   // Выход
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const isRu = language === "ru";
+    const isJa = language === "ja";
+    const confirmed = await confirmModal({
+      title: isRu ? "Выход из аккаунта" : isJa ? "ログアウトの確認" : "Log Out",
+      message: isRu
+        ? "Вы действительно хотите завершить текущую сессию и выйти из своего аккаунта KaVault?"
+        : isJa
+          ? "このデバイスからKaVaultアカウントをログアウトしますか？"
+          : "Are you sure you want to sign out of your KaVault account on this device?",
+      confirmText: isRu ? "Выйти" : isJa ? "ログアウト" : "Log Out",
+      cancelText: isRu ? "Отмена" : isJa ? "キャンセル" : "Cancel",
+      variant: "danger",
+    });
+
+    if (!confirmed) return;
+
     localStorage.removeItem("access_token");
     localStorage.removeItem("kavault_is_creator");
+    window.dispatchEvent(new Event("kavault-auth-changed"));
     navigate("/login");
   };
 
