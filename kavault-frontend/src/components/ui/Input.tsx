@@ -16,6 +16,11 @@ export function Input({ icon, style, ...props }: InputProps) {
             transform: "translateY(-50%)",
             color: "var(--text-muted)",
             display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
+            width: "18px",
+            height: "18px",
           }}
         >
           {icon}
