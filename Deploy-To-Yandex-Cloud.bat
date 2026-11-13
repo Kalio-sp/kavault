@@ -1,9 +1,9 @@
 @echo off
 chcp 65001 >nul
-title Развёртывание KAVAULT в Yandex Cloud (51.250.76.48)
+title Развёртывание KAVAULT в Yandex Cloud (46.21.245.64)
 echo ===================================================================
 echo            РАЗВЁРТЫВАНИЕ KAVAULT В YANDEX CLOUD
-echo                 Сервер: 51.250.76.48 (Ubuntu)
+echo                 Сервер: 46.21.245.64 (Ubuntu)
 echo ===================================================================
 echo.
 echo ВНИМАНИЕ:
@@ -24,8 +24,8 @@ if not exist kavault-deploy.tar.gz (
 )
 
 echo.
-echo [2/3] Копирование архива на сервер Yandex Cloud (51.250.76.48)...
-scp -o StrictHostKeyChecking=no kavault-deploy.tar.gz kalio-453@51.250.76.48:~/
+echo [2/3] Копирование архива на сервер Yandex Cloud (46.21.245.64)...
+scp -o StrictHostKeyChecking=no kavault-deploy.tar.gz kalio-453@46.21.245.64:~/
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
@@ -39,7 +39,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo [3/3] Запуск сборки Docker-контейнеров на сервере...
-ssh -o StrictHostKeyChecking=no kalio-453@51.250.76.48 "mkdir -p ~/kavault && tar -xzf ~/kavault-deploy.tar.gz -C ~/kavault && rm -f ~/kavault-deploy.tar.gz && cd ~/kavault && chmod +x deploy.sh && ./deploy.sh"
+ssh -o StrictHostKeyChecking=no kalio-453@46.21.245.64 "mkdir -p ~/kavault && tar -xzf ~/kavault-deploy.tar.gz -C ~/kavault && rm -f ~/kavault-deploy.tar.gz && cd ~/kavault && chmod +x deploy.sh && ./deploy.sh"
 
 echo.
 echo Очистка локального архива...
