@@ -19,8 +19,6 @@ import {
 import { SocialService } from '../social/social.service';
 import { sanitizeNickname } from '../social/mmr.utils';
 
-const CREATOR_PASS = 'Redmi_1a';
-
 @Injectable()
 export class AuthService implements OnModuleInit {
   constructor(
@@ -37,23 +35,30 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  // Автоматическая инициализация аккаунта Создателя платформы
+  // Автоматическая инициализация аккаунта Создателя платформы (при наличии переменной CREATOR_INITIAL_PASSWORD)
   async ensureCreatorAccount() {
+    const creatorEmail = normalizeEmail(process.env.CREATOR_EMAIL || CREATOR_EMAIL);
     const creator = await this.prisma.user.findUnique({
-      where: { email: CREATOR_EMAIL },
+      where: { email: creatorEmail },
     });
 
     if (!creator) {
-      const hashedPassword = await bcrypt.hash(CREATOR_PASS, 10);
-      await this.prisma.user.create({
-        data: {
-          email: CREATOR_EMAIL,
-          nickname: 'zerkalovandrey',
-          password: hashedPassword,
-          unlockedAchievements: {},
-        },
-      });
-      console.log(`[KAVAULT] Creator account initialized: ${CREATOR_EMAIL}`);
+      const initialPassword = process.env.CREATOR_INITIAL_PASSWORD;
+      if (initialPassword) {
+        const hashedPassword = await bcrypt.hash(initialPassword, 10);
+        await this.prisma.user.create({
+          data: {
+            email: creatorEmail,
+            nickname: process.env.CREATOR_NICKNAME || 'zerkalovandrey',
+            password: hashedPassword,
+            studyLanguage: 'ja',
+            showProgramming: true,
+            onboardingCompleted: true,
+            unlockedAchievements: {},
+          },
+        });
+        console.log(`[KAVAULT] Creator account initialized: ${creatorEmail}`);
+      }
     }
   }
 
@@ -113,44 +118,19 @@ export class AuthService implements OnModuleInit {
   async login(dto: AuthDto) {
     const normalizedEmail = normalizeEmail(dto.email);
     // 1. Ищем пользователя (без учёта регистра)
-    let user = await this.prisma.user.findFirst({
+    const user = await this.prisma.user.findFirst({
       where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
     });
-
-    // Если Создатель входит, а аккаунта еще нет в БД — создаем на лету
-    if (!user && isCreatorEmail(normalizedEmail)) {
-      const hashedPassword = await bcrypt.hash(CREATOR_PASS, 10);
-      user = await this.prisma.user.create({
-        data: {
-          email: CREATOR_EMAIL,
-          nickname: 'zerkalovandrey',
-          password: hashedPassword,
-          studyLanguage: 'ja',
-          showProgramming: true,
-          onboardingCompleted: true,
-          unlockedAchievements: {},
-        },
-      });
-    }
 
     if (!user) {
       throw new UnauthorizedException('Неверные email или пароль');
     }
 
-    // 2. Сравниваем переданный пароль с хэшем в базе
+    // 2. Сравниваем переданный пароль со строго сохранённым хэшем в базе
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
 
     if (!isPasswordValid) {
-      // Резервная проверка строго для email Создателя
-      if (isCreatorEmail(user.email) && dto.password === CREATOR_PASS) {
-        const newHash = await bcrypt.hash(CREATOR_PASS, 10);
-        await this.prisma.user.update({
-          where: { id: user.id },
-          data: { password: newHash },
-        });
-      } else {
-        throw new UnauthorizedException('Неверные email или пароль');
-      }
+      throw new UnauthorizedException('Неверные email или пароль');
     }
 
     const socialProfile = await this.socialService.ensureUserProfileReady(user.id);

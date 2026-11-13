@@ -5,10 +5,10 @@ echo "=========================================================="
 echo "          Развёртывание KAVAULT на сервере Yandex Cloud    "
 echo "=========================================================="
 
-# 1. Проверка swap (на машинах с 2 ГБ RAM создаем swap на 2 ГБ, чтобы сборка Docker не вылетала)
+# 1. Проверка swap (на машинах с 2 ГБ RAM создаем swap на 2 ГБ)
 SWAP_TOTAL=$(free -m | awk '/^Swap:/ {print $2}')
 if [ "$SWAP_TOTAL" -eq 0 ]; then
-    echo "Создаем swapfile 2 ГБ для стабильной сборки и работы..."
+    echo "Создаем swapfile 2 ГБ для стабильной работы..."
     sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
     sudo chmod 600 /swapfile
     sudo mkswap /swapfile
@@ -32,7 +32,7 @@ if ! command -v docker &> /dev/null; then
     echo "Docker установлен."
 fi
 
-# 3. Разрешаем трафик в локальном firewall UFW (если он активен)
+# 3. Разрешаем трафик в UFW (если активен)
 if command -v ufw &> /dev/null; then
     if sudo ufw status | grep -q "Status: active"; then
         echo "Настройка UFW: открываем порты 80, 4000, 22..."
@@ -42,8 +42,8 @@ if command -v ufw &> /dev/null; then
     fi
 fi
 
-# 4. Сборка и запуск контейнеров в фоне
-echo "Собираем образы и запускаем KAVAULT..."
+# 4. Сборка и перезапуск контейнеров
+echo "Сборка и запуск контейнеров KAVAULT..."
 DOCKER_CMD="docker compose"
 if ! docker info &> /dev/null; then
     DOCKER_CMD="sudo docker compose"
@@ -51,10 +51,8 @@ fi
 
 $DOCKER_CMD -f docker-compose.production.yml up -d --build
 
-echo ""
 echo "=========================================================="
-echo "   Успешно! KAVAULT запущен 24/7 на сервере Yandex Cloud! "
-echo "   - Веб-версия (iPhone/ПК):  http://51.250.76.48"
-echo "   - Бэкенд API:              http://51.250.76.48:4000"
+echo "  KAVAULT успешно запущен!"
+echo "  Порт 80   -> Веб-приложение (Nginx)"
+echo "  Порт 4000 -> Backend API (NestJS)"
 echo "=========================================================="
-$DOCKER_CMD -f docker-compose.production.yml ps

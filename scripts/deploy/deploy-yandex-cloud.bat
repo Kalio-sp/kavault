@@ -6,16 +6,18 @@ echo            РАЗВЁРТЫВАНИЕ KAVAULT В YANDEX CLOUD
 echo                 Сервер: 46.21.245.64 (Ubuntu)
 echo ===================================================================
 echo.
+set "ROOT_DIR=%~dp0..\.."
+cd /d "%ROOT_DIR%"
+
 echo ВНИМАНИЕ:
 echo 1. Убедитесь, что виртуальная машина ЗАПУЩЕНА в консоли Yandex Cloud!
-echo 2. В группе безопасности (default-sg-enpj2bhcj825qbvqrn2pi)
-echo    открыты входящие порты: 80 (HTTP) и 4000 (API).
+echo 2. В группе безопасности открыты входящие порты: 80 (HTTP) и 4000 (API).
 echo.
 pause
 
 echo.
 echo [1/3] Создание чистого архива проекта (без node_modules и лишних файлов)...
-tar.exe --exclude="node_modules" --exclude="release" --exclude=".git" --exclude="*.tar.gz" --exclude="*.zip" --exclude="ios" --exclude="android" --exclude="dist" --exclude=".github" -czf kavault-deploy.tar.gz .
+tar.exe --exclude="node_modules" --exclude="release" --exclude=".git" --exclude="*.zip" --exclude="*.tar.gz" --exclude="ios" --exclude="android" --exclude="dist" --exclude=".github" -czf kavault-deploy.tar.gz .
 
 if not exist kavault-deploy.tar.gz (
     echo Ошибка архивации!
@@ -39,7 +41,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo [3/3] Запуск сборки Docker-контейнеров на сервере...
-ssh -o StrictHostKeyChecking=no kalio-453@46.21.245.64 "mkdir -p ~/kavault && tar -xzf ~/kavault-deploy.tar.gz -C ~/kavault && rm -f ~/kavault-deploy.tar.gz && cd ~/kavault && chmod +x deploy.sh && ./deploy.sh"
+ssh -o StrictHostKeyChecking=no kalio-453@46.21.245.64 "mkdir -p ~/kavault && tar -xzf ~/kavault-deploy.tar.gz -C ~/kavault && rm -f ~/kavault-deploy.tar.gz && cd ~/kavault && chmod +x scripts/deploy/deploy-server.sh 2>/dev/null || chmod +x deploy.sh && (./scripts/deploy/deploy-server.sh 2>/dev/null || ./deploy.sh)"
 
 echo.
 echo Очистка локального архива...
@@ -48,7 +50,6 @@ del kavault-deploy.tar.gz 2>nul
 echo.
 echo ===================================================================
 echo    ДЕПЛОЙ УСПЕШНО ЗАВЕРШЕН!
-echo    Веб-версия KAVAULT доступна по ссылке:
-echo    http://51.250.76.48
+echo    Веб-версия: http://46.21.245.64
 echo ===================================================================
 pause
