@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
@@ -28,10 +27,14 @@ import {
   ShieldCheck,
   Eye,
   EyeOff,
-  Smartphone,
   Globe,
   Crown,
   Code2,
+  Check,
+  Sliders,
+  KeyRound,
+  RefreshCw,
+  BookOpen,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
@@ -81,7 +84,6 @@ export function Settings() {
     isCreator,
     studyLanguage,
     showProgramming,
-    studyText,
     studyPalette,
     updateStudyPreferences,
   } = useApp();
@@ -135,7 +137,7 @@ export function Settings() {
     totalNotes: 0,
   });
   const [userResources, setUserResources] = useState<Array<{ url: string }>>([]);
-  const [userCards, setUserCards] = useState<Array<{ word: string }>>([]);
+  const [, setUserCards] = useState<Array<{ word: string }>>([]);
 
   // Модальные окна подтверждения
   const [isResetSRSModalOpen, setIsResetSRSModalOpen] = useState(false);
@@ -166,7 +168,7 @@ export function Settings() {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, text, type }]);
     setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
+      setToasts((prev) => prev.filter((item) => item.id !== id));
     }, 3500);
   };
 
@@ -254,7 +256,6 @@ export function Settings() {
     localStorage.setItem("kavault_notif", String(notifications));
     localStorage.setItem("kavault_sound_fx", String(soundEffects));
 
-    // Мгновенная проверка ачивок (включая секретную "Некий мистер А" при вводе никнейма)
     evaluateAchievements({
       username,
       userEmail,
@@ -358,7 +359,6 @@ export function Settings() {
       let importedResources = 0;
       let importedCards = 0;
 
-      // Восстанавливаем ресурсы
       if (Array.isArray(parsed.resources)) {
         for (const item of parsed.resources) {
           try {
@@ -371,12 +371,11 @@ export function Settings() {
             });
             importedResources++;
           } catch {
-            // дубликаты или ошибки пропускаем
+            // ignore duplicates
           }
         }
       }
 
-      // Восстанавливаем карточки
       if (Array.isArray(parsed.japaneseCards)) {
         for (const card of parsed.japaneseCards) {
           try {
@@ -389,7 +388,7 @@ export function Settings() {
             });
             importedCards++;
           } catch {
-            // пропускаем
+            // ignore duplicates
           }
         }
       }
@@ -403,7 +402,7 @@ export function Settings() {
     }
   };
 
-  /* Сброс прогресса SRS (возврат уровней в 0) */
+  /* Сброс прогресса SRS */
   const handleResetSRS = async () => {
     try {
       const resp = await api.get<any[]>(`/japanese?language=${studyLanguage}`);
@@ -418,7 +417,7 @@ export function Settings() {
     }
   };
 
-  /* Очистка всех учебных материалов без удаления аккаунта */
+  /* Очистка всех учебных материалов */
   const handleClearAllData = async () => {
     const confirmed = await confirmModal({
       title: t.settings.clearAllConfirmTitle,
@@ -494,7 +493,9 @@ export function Settings() {
       }
       showToast(t.settings.toasts.starterLoaded);
       const [resResp, japResp] = await Promise.all([
-        showProgramming ? api.get("/resources").catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+        showProgramming
+          ? api.get("/resources").catch(() => ({ data: [] }))
+          : Promise.resolve({ data: [] }),
         api.get(`/japanese?language=${studyLanguage}`).catch(() => ({ data: [] })),
       ]);
       const resourcesList = resResp.data || [];
@@ -521,33 +522,285 @@ export function Settings() {
     navigate("/login");
   };
 
+  const tabsConfig = [
+    { id: "appearance", label: t.settings.tabs.appearance, icon: Palette, hint: "Тема, цвета, язык" },
+    { id: "account", label: t.settings.tabs.account, icon: User, hint: "Профиль, пароль" },
+    { id: "learning", label: t.settings.tabs.learning, icon: Target, hint: "Языки, цели, наборы" },
+    { id: "vault", label: t.settings.tabs.vault, icon: Database, hint: "Сервер, бэкапы" },
+  ];
+
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-6)",
-        maxWidth: "960px",
-        margin: "0 auto",
-      }}
-    >
-      {/* Toast-уведомления */}
+    <div className="kv-settings-root">
+      {/* Стили для идеальной мобильной адаптации и тач-контролов */}
+      <style>{`
+        .kv-settings-root {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          max-width: 900px;
+          margin: 0 auto;
+          padding: 8px 12px 64px 12px;
+          width: 100%;
+        }
+
+        @media (min-width: 640px) {
+          .kv-settings-root {
+            gap: 24px;
+            padding: 16px 20px 48px 20px;
+          }
+        }
+
+        /* Навигационная панель табов на мобильных */
+        .kv-settings-tabs-bar {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 6px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          padding: 6px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+          position: sticky;
+          top: 12px;
+          z-index: 40;
+          backdrop-filter: blur(12px);
+        }
+
+        .kv-settings-tab-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justifyContent: center;
+          gap: 4px;
+          padding: 8px 4px;
+          min-height: 52px;
+          border-radius: 12px;
+          border: 1px solid transparent;
+          background: transparent;
+          color: var(--text-muted);
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .kv-settings-tab-btn:active {
+          transform: scale(0.96);
+        }
+
+        .kv-settings-tab-btn.active {
+          background: var(--surface-raised);
+          color: var(--text-primary);
+          border-color: var(--border);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+
+        .kv-settings-tab-title {
+          font-size: 11px;
+          font-weight: 600;
+          line-height: 1.1;
+          text-align: center;
+        }
+
+        @media (min-width: 640px) {
+          .kv-settings-tab-btn {
+            flex-direction: row;
+            gap: 8px;
+            padding: 10px 16px;
+            min-height: 44px;
+          }
+          .kv-settings-tab-title {
+            font-size: 13px;
+          }
+        }
+
+        /* Карточка настроек */
+        .kv-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          padding: 16px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        @media (min-width: 640px) {
+          .kv-card {
+            padding: 24px;
+            border-radius: 18px;
+          }
+        }
+
+        /* Заголовок группы настроек */
+        .kv-group-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 14px;
+        }
+
+        .kv-group-icon {
+          width: 38px;
+          height: 38px;
+          border-radius: 12px;
+          background: var(--accent-soft);
+          color: var(--accent);
+          display: flex;
+          align-items: center;
+          justifyContent: center;
+          flex-shrink: 0;
+        }
+
+        .kv-group-title {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .kv-group-desc {
+          margin: 2px 0 0 0;
+          font-size: 13px;
+          color: var(--text-muted);
+          line-height: 1.4;
+        }
+
+        /* Большие кликабельные карточки опций */
+        .kv-touch-card {
+          border: 2px solid var(--border);
+          background: var(--surface-raised);
+          border-radius: 14px;
+          padding: 14px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justifyContent: space-between;
+          gap: 12px;
+          transition: all 0.2s ease;
+          -webkit-tap-highlight-color: transparent;
+          min-height: 56px;
+        }
+
+        .kv-touch-card:hover {
+          border-color: var(--accent);
+        }
+
+        .kv-touch-card:active {
+          transform: scale(0.98);
+        }
+
+        .kv-touch-card.selected {
+          border-color: var(--accent);
+          background: var(--accent-soft);
+          box-shadow: 0 0 16px rgba(59, 130, 246, 0.15);
+        }
+
+        /* Кнопка-переключатель в стиле iOS */
+        .kv-toggle-row {
+          display: flex;
+          align-items: center;
+          justifyContent: space-between;
+          gap: 14px;
+          padding: 14px;
+          background: var(--surface-raised);
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .kv-toggle-row:active {
+          transform: scale(0.99);
+        }
+
+        .kv-switch {
+          width: 48px;
+          height: 28px;
+          background: var(--border);
+          border-radius: 20px;
+          padding: 3px;
+          display: flex;
+          align-items: center;
+          transition: background 0.25s ease;
+          flex-shrink: 0;
+        }
+
+        .kv-switch.on {
+          background: var(--success);
+        }
+
+        .kv-switch-handle {
+          width: 22px;
+          height: 22px;
+          background: #ffffff;
+          border-radius: 50%;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+          transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .kv-switch.on .kv-switch-handle {
+          transform: translateX(20px);
+        }
+
+        /* Мобильные сетки */
+        .kv-grid-2 {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+
+        @media (min-width: 600px) {
+          .kv-grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+        }
+
+        .kv-grid-3 {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+
+        @media (min-width: 600px) {
+          .kv-grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+          }
+        }
+
+        /* Touch-кнопки */
+        .kv-action-btn {
+          min-height: 46px;
+          font-size: 14px;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          justifyContent: center;
+          gap: 8px;
+          padding: 10px 18px;
+          border-radius: 12px;
+        }
+      `}</style>
+
+      {/* Всплывающие Toast-уведомления */}
       <div
         style={{
           position: "fixed",
-          bottom: "24px",
-          right: "24px",
+          bottom: "20px",
+          left: "16px",
+          right: "16px",
           display: "flex",
           flexDirection: "column",
           gap: "8px",
           zIndex: 1000,
+          pointerEvents: "none",
         }}
       >
         {toasts.map((toast) => (
           <div
             key={toast.id}
             style={{
-              padding: "10px 16px",
+              padding: "12px 18px",
               backgroundColor: "var(--tooltip-bg)",
               border: `1px solid ${
                 toast.type === "error"
@@ -556,158 +809,147 @@ export function Settings() {
                     ? "var(--accent)"
                     : "var(--success)"
               }`,
-              borderRadius: "var(--radius-md)",
+              borderRadius: "14px",
               color: "var(--text-primary)",
               fontSize: "14px",
+              fontWeight: 500,
               display: "flex",
               alignItems: "center",
               gap: "10px",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
-              backdropFilter: "blur(8px)",
-              animation: "fadeIn 0.2s ease",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
+              backdropFilter: "blur(12px)",
+              pointerEvents: "auto",
+              margin: "0 auto",
+              maxWidth: "420px",
+              width: "100%",
             }}
           >
             {toast.type === "error" ? (
-              <TriangleAlert size={16} color="var(--error)" />
+              <TriangleAlert size={18} color="var(--error)" style={{ flexShrink: 0 }} />
             ) : toast.type === "info" ? (
-              <Sparkles size={16} color="var(--accent)" />
+              <Sparkles size={18} color="var(--accent)" style={{ flexShrink: 0 }} />
             ) : (
-              <CheckCircle2 size={16} color="var(--success)" />
+              <CheckCircle2 size={18} color="var(--success)" style={{ flexShrink: 0 }} />
             )}
-            <span>{toast.text}</span>
+            <span style={{ flex: 1 }}>{toast.text}</span>
           </div>
         ))}
       </div>
 
-      {/* Верхний заголовок и кнопка Сохранить */}
+      {/* Верхняя шапка: Заголовок и быстрая кнопка Сохранить */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "var(--space-4)",
+          gap: "12px",
         }}
       >
         <div>
           <h2
             style={{
-              fontSize: "28px",
-              fontWeight: 600,
-              margin: "0 0 6px 0",
+              fontSize: "24px",
+              fontWeight: 700,
+              margin: 0,
               color: "var(--text-primary)",
+              letterSpacing: "-0.02em",
             }}
           >
             {t.settings.pageTitle}
           </h2>
-          <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "14px" }}>
+          <p style={{ color: "var(--text-muted)", margin: "4px 0 0 0", fontSize: "13px" }}>
             {t.settings.pageSubtitle}
           </p>
         </div>
 
-        <Button onClick={handleSaveGeneral} style={{ gap: "8px" }}>
+        <Button onClick={handleSaveGeneral} className="kv-action-btn">
           <Save size={16} /> {t.settings.saveChanges}
         </Button>
       </div>
 
-      {/* Горизонтальный Segmented Tabs Bar */}
-      <div
-        style={{
-          display: "flex",
-          gap: "8px",
-          borderBottom: "1px solid var(--border)",
-          paddingBottom: "8px",
-          overflowX: "auto",
-        }}
-      >
-        {[
-          { id: "appearance", label: t.settings.tabs.appearance, icon: Palette },
-          { id: "account", label: t.settings.tabs.account, icon: User },
-          { id: "learning", label: t.settings.tabs.learning, icon: Target },
-          { id: "vault", label: t.settings.tabs.vault, icon: Database },
-        ].map((tab) => {
+      {/* Навигационная панель разделов (Адаптирована под большие пальцы на телефоне) */}
+      <div className="kv-settings-tabs-bar">
+        {tabsConfig.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as SettingsTab)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "8px 16px",
-                borderRadius: "var(--radius-md)",
-                border: "none",
-                backgroundColor: isActive ? "var(--surface-raised)" : "transparent",
-                color: isActive ? "var(--text-primary)" : "var(--text-muted)",
-                fontSize: "14px",
-                fontWeight: isActive ? 600 : 500,
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-                whiteSpace: "nowrap",
-              }}
+              className={`kv-settings-tab-btn ${isActive ? "active" : ""}`}
             >
-              <Icon size={16} color={isActive ? "var(--accent)" : "currentColor"} />
-              {tab.label}
+              <Icon
+                size={18}
+                color={isActive ? "var(--accent)" : "currentColor"}
+                style={{ flexShrink: 0 }}
+              />
+              <span className="kv-settings-tab-title">{tab.label}</span>
             </button>
           );
         })}
       </div>
 
-      {/* ── ТАБ 1: ВНЕШНИЙ ВИД ── */}
+      {/* ══════════════════════════════════════════════════════════════════
+          ТАБ 1: ВНЕШНИЙ ВИД (APPEARANCE)
+      ══════════════════════════════════════════════════════════════════ */}
       {activeTab === "appearance" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          {/* Тема оформления */}
-          <Card style={{ padding: "var(--space-6)" }}>
-            <h3
-              style={{
-                margin: "0 0 var(--space-4) 0",
-                fontSize: "16px",
-                fontWeight: 600,
-              }}
-            >
-              {t.settings.themeCardTitle}
-            </h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 16px 0" }}>
-              {t.settings.themeCardDesc}
-            </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* Тема оформления (Большие наглядные карточки) */}
+          <div className="kv-card">
+            <div className="kv-group-header">
+              <div className="kv-group-icon">
+                <Palette size={20} />
+              </div>
+              <div>
+                <h3 className="kv-group-title">{t.settings.themeCardTitle}</h3>
+                <p className="kv-group-desc">{t.settings.themeCardDesc}</p>
+              </div>
+            </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                gap: "var(--space-4)",
-              }}
-            >
+            <div className="kv-grid-2">
               {/* Темная тема */}
               <div
                 onClick={() => {
                   setTheme("dark");
                   evaluateAchievements({ themeSwitched: true });
+                  showToast("🌙 Тёмная тема активирована");
                 }}
+                className={`kv-touch-card ${theme === "dark" ? "selected" : ""}`}
                 style={{
-                  border: `2px solid ${theme === "dark" ? "var(--accent)" : "var(--border)"}`,
-                  borderRadius: "var(--radius-lg)",
-                  padding: "16px",
-                  cursor: "pointer",
-                  backgroundColor: "#0f1115",
-                  transition: "all 0.2s ease",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "10px",
+                  background: theme === "dark" ? "rgba(59, 130, 246, 0.12)" : "#131519",
+                  borderColor: theme === "dark" ? "var(--accent)" : "var(--border)",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Moon size={18} color="#60a5fa" />
-                    <span style={{ fontWeight: 600, color: "#f3f5f8" }}>{t.settings.darkTitle}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "10px",
+                      background: "#09090b",
+                      border: "1px solid #3f3f46",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#60a5fa",
+                    }}
+                  >
+                    <Moon size={20} />
                   </div>
-                  {theme === "dark" && <CheckCircle2 size={18} color="var(--accent)" />}
+                  <div>
+                    <div style={{ fontWeight: 600, color: "#f4f4f5", fontSize: "15px" }}>
+                      {t.settings.darkTitle}
+                    </div>
+                    <div style={{ fontSize: "12px", color: "#a1a1aa" }}>Cyber-Obsidian</div>
+                  </div>
                 </div>
-                <div style={{ fontSize: "12px", color: "#a0a7b4" }}>
-                  {t.settings.darkDesc}
-                </div>
+
+                {theme === "dark" ? (
+                  <Badge variant="accent">✓ Выбрано</Badge>
+                ) : (
+                  <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Нажмите</span>
+                )}
               </div>
 
               {/* Светлая тема */}
@@ -715,248 +957,532 @@ export function Settings() {
                 onClick={() => {
                   setTheme("light");
                   evaluateAchievements({ themeSwitched: true });
+                  showToast("☀️ Светлая тема активирована");
                 }}
+                className={`kv-touch-card ${theme === "light" ? "selected" : ""}`}
                 style={{
-                  border: `2px solid ${theme === "light" ? "var(--accent)" : "var(--border)"}`,
-                  borderRadius: "var(--radius-lg)",
-                  padding: "16px",
-                  cursor: "pointer",
-                  backgroundColor: "#ffffff",
-                  transition: "all 0.2s ease",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "10px",
+                  background: theme === "light" ? "rgba(59, 130, 246, 0.12)" : "var(--surface-raised)",
+                  borderColor: theme === "light" ? "var(--accent)" : "var(--border)",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Sun size={18} color="#f59e0b" />
-                    <span style={{ fontWeight: 600, color: "#09090b" }}>{t.settings.lightTitle}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "10px",
+                      background: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#f59e0b",
+                    }}
+                  >
+                    <Sun size={20} />
                   </div>
-                  {theme === "light" && <CheckCircle2 size={18} color="var(--accent)" />}
+                  <div>
+                    <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: "15px" }}>
+                      {t.settings.lightTitle}
+                    </div>
+                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>Editorial Light</div>
+                  </div>
                 </div>
-                <div style={{ fontSize: "12px", color: "#52525b" }}>
-                  {t.settings.lightDesc}
-                </div>
+
+                {theme === "light" ? (
+                  <Badge variant="accent">✓ Выбрано</Badge>
+                ) : (
+                  <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Нажмите</span>
+                )}
               </div>
             </div>
-          </Card>
+          </div>
 
-          {/* Акцентный цвет */}
-          <Card style={{ padding: "var(--space-6)" }}>
-            <h3
+          {/* Акцентный цвет (Крупные круглые кнопки с галочкой) */}
+          <div className="kv-card">
+            <div className="kv-group-header">
+              <div className="kv-group-icon">
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <h3 className="kv-group-title">{t.settings.accentCardTitle}</h3>
+                <p className="kv-group-desc">{t.settings.accentCardDesc}</p>
+              </div>
+            </div>
+
+            <div
               style={{
-                margin: "0 0 var(--space-2) 0",
-                fontSize: "16px",
-                fontWeight: 600,
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
+                gap: "10px",
               }}
             >
-              {t.settings.accentCardTitle}
-            </h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 16px 0" }}>
-              {t.settings.accentCardDesc}
-            </p>
-
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               {ACCENT_COLORS.map((col) => {
                 const isSelected = accentColor.toLowerCase() === col.value.toLowerCase();
                 return (
                   <button
                     key={col.value}
+                    type="button"
                     onClick={() => handleSelectAccent(col.value)}
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: "8px",
-                      padding: "8px 14px",
-                      borderRadius: "var(--radius-md)",
-                      border: isSelected
-                        ? `2px solid ${col.value}`
-                        : "1px solid var(--border)",
-                      backgroundColor: isSelected
-                        ? "var(--surface-raised)"
-                        : "var(--surface)",
+                      gap: "10px",
+                      padding: "10px 14px",
+                      minHeight: "48px",
+                      borderRadius: "12px",
+                      border: isSelected ? `2px solid ${col.value}` : "1px solid var(--border)",
+                      backgroundColor: isSelected ? "var(--surface-raised)" : "var(--surface)",
                       color: "var(--text-primary)",
-                      fontSize: "13px",
                       cursor: "pointer",
                       transition: "all 0.15s ease",
+                      textAlign: "left",
                     }}
                   >
                     <div
                       style={{
-                        width: "14px",
-                        height: "14px",
+                        width: "22px",
+                        height: "22px",
                         borderRadius: "50%",
                         backgroundColor: col.value,
-                        boxShadow: isSelected ? `0 0 8px ${col.value}` : "none",
-                      }}
-                    />
-                    {t.settings.accentNames[col.key]}
-                  </button>
-                );
-              })}
-            </div>
-          </Card>
-
-          {/* Язык интерфейса */}
-          <Card style={{ padding: "var(--space-6)" }}>
-            <h3
-              style={{
-                margin: "0 0 var(--space-2) 0",
-                fontSize: "16px",
-                fontWeight: 600,
-              }}
-            >
-              {t.settings.langCardTitle}
-            </h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 16px 0" }}>
-              {t.settings.langCardDesc}
-            </p>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                gap: "var(--space-3)",
-              }}
-            >
-              {[
-                { code: "ru", label: "Русский (RU)", flag: "🇷🇺" },
-                { code: "en", label: "English (US)", flag: "🇺🇸" },
-                { code: "ja", label: "日本語 (JP)", flag: "🇯🇵" },
-              ].map((langItem) => {
-                const isCurrent = language === langItem.code;
-                return (
-                  <div
-                    key={langItem.code}
-                    onClick={() => setLanguage(langItem.code as any)}
-                    style={{
-                      border: `1px solid ${isCurrent ? "var(--accent)" : "var(--border)"}`,
-                      backgroundColor: isCurrent
-                        ? "var(--surface-raised)"
-                        : "var(--surface)",
-                      borderRadius: "var(--radius-md)",
-                      padding: "12px 14px",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontSize: "18px" }}>{langItem.flag}</span>
-                      <span style={{ fontSize: "14px", fontWeight: 500 }}>
-                        {langItem.label}
-                      </span>
-                    </div>
-                    {isCurrent && <CheckCircle2 size={16} color="var(--accent)" />}
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-
-          {/* Изучаемый язык, культурный вайб и режим программирования */}
-          <Card
-            style={{
-              padding: "var(--space-6)",
-              background: "var(--vibe-banner-bg)",
-              border: "1px solid var(--vibe-banner-border)",
-            }}
-          >
-            <h3
-              style={{
-                margin: "0 0 var(--space-2) 0",
-                fontSize: "16px",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <span>{studyPalette.flag}</span>
-              <span>{ONBOARDING_TEXTS[language].step1Title}</span>
-            </h3>
-            <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "0 0 16px 0" }}>
-              {ONBOARDING_TEXTS[language].step1Subtitle}
-            </p>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                gap: "var(--space-3)",
-                marginBottom: "var(--space-5)",
-              }}
-            >
-              {(["en", "de", "ja"] as StudyLanguage[]).map((code) => {
-                const pal = STUDY_VIBE_PALETTES[code];
-                const txt = STUDY_TEXTS[code][language];
-                const isSelected = studyLanguage === code;
-                return (
-                  <button
-                    key={code}
-                    type="button"
-                    disabled={updatingPrefs}
-                    onClick={() => handleChangeStudyLanguage(code)}
-                    style={{
-                      textAlign: "left",
-                      padding: "12px 14px",
-                      borderRadius: "var(--radius-md)",
-                      border: isSelected
-                        ? `2px solid ${pal.accentHex}`
-                        : "1px solid var(--border)",
-                      backgroundColor: isSelected
-                        ? "var(--surface-raised)"
-                        : "var(--surface)",
-                      cursor: updatingPrefs ? "wait" : "pointer",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px",
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    <div
-                      style={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "space-between",
-                        width: "100%",
+                        justifyContent: "center",
+                        color: "#fff",
+                        boxShadow: isSelected ? `0 0 10px ${col.value}` : "none",
+                        flexShrink: 0,
                       }}
                     >
-                      <span style={{ fontSize: "15px", fontWeight: 700 }}>
-                        {pal.flag} {txt.name}
-                      </span>
-                      {isSelected && <CheckCircle2 size={16} color={pal.accentHex} />}
+                      {isSelected && <Check size={14} strokeWidth={3} />}
                     </div>
-                    <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                      {txt.vibeBadge}
+                    <span style={{ fontSize: "13px", fontWeight: isSelected ? 600 : 500 }}>
+                      {t.settings.accentNames[col.key]}
                     </span>
                   </button>
                 );
               })}
             </div>
+          </div>
 
+          {/* Язык интерфейса приложения */}
+          <div className="kv-card">
+            <div className="kv-group-header">
+              <div className="kv-group-icon">
+                <Globe size={20} />
+              </div>
+              <div>
+                <h3 className="kv-group-title">{t.settings.langCardTitle}</h3>
+                <p className="kv-group-desc">{t.settings.langCardDesc}</p>
+              </div>
+            </div>
+
+            <div className="kv-grid-3">
+              {[
+                { code: "ru", label: "Русский (RU)", flag: "🇷🇺", sub: "Основной язык" },
+                { code: "en", label: "English (US)", flag: "🇬🇧", sub: "International" },
+                { code: "ja", label: "日本語 (JP)", flag: "🇯🇵", sub: "ネイティブ表示" },
+              ].map((langItem) => {
+                const isCurrent = language === langItem.code;
+                return (
+                  <div
+                    key={langItem.code}
+                    onClick={() => {
+                      setLanguage(langItem.code as any);
+                      showToast(`Язык изменён: ${langItem.label}`);
+                    }}
+                    className={`kv-touch-card ${isCurrent ? "selected" : ""}`}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ fontSize: "24px" }}>{langItem.flag}</span>
+                      <div>
+                        <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
+                          {langItem.label}
+                        </div>
+                        <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                          {langItem.sub}
+                        </div>
+                      </div>
+                    </div>
+                    {isCurrent ? (
+                      <CheckCircle2 size={18} color="var(--accent)" />
+                    ) : (
+                      <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Выбрать</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Звуковые эффекты и уведомления (iOS-стиль переключателей) */}
+          <div className="kv-card">
+            <div className="kv-group-header">
+              <div className="kv-group-icon">
+                <Sliders size={20} />
+              </div>
+              <div>
+                <h3 className="kv-group-title">Эффекты и Уведомления</h3>
+                <p className="kv-group-desc">Настройте звуки интерфейса и напоминания об уроках</p>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {/* Звук */}
+              <div
+                className="kv-toggle-row"
+                onClick={() => {
+                  const nextVal = !soundEffects;
+                  setSoundEffects(nextVal);
+                  localStorage.setItem("kavault_sound_fx", String(nextVal));
+                  showToast(nextVal ? "Звуковые эффекты включены 🔊" : "Звук отключен 🔇");
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ color: soundEffects ? "var(--accent)" : "var(--text-muted)" }}>
+                    {soundEffects ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
+                      Звуковые эффекты (SFX)
+                    </div>
+                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                      Звуки карточек, квизов и получения наград
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`kv-switch ${soundEffects ? "on" : ""}`}>
+                  <div className="kv-switch-handle" />
+                </div>
+              </div>
+
+              {/* Уведомления */}
+              <div
+                className="kv-toggle-row"
+                onClick={() => {
+                  const nextVal = !notifications;
+                  setNotifications(nextVal);
+                  localStorage.setItem("kavault_notif", String(nextVal));
+                  showToast(nextVal ? "Уведомления включены 🔔" : "Уведомления выключены 🔕");
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ color: notifications ? "var(--accent)" : "var(--text-muted)" }}>
+                    <Bell size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
+                      Напоминания об обучении
+                    </div>
+                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                      Ежедневные уведомления для сохранения ударного режима
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`kv-switch ${notifications ? "on" : ""}`}>
+                  <div className="kv-switch-handle" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          ТАБ 2: ПРОФИЛЬ И БЕЗОПАСНОСТЬ (ACCOUNT)
+      ══════════════════════════════════════════════════════════════════ */}
+      {activeTab === "account" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* Карточка профиля */}
+          <div className="kv-card">
+            <div className="kv-group-header">
+              <div className="kv-group-icon">
+                <ShieldCheck size={20} />
+              </div>
+              <div>
+                <h3 className="kv-group-title">{t.settings.accountCardTitle}</h3>
+                <p className="kv-group-desc">Ваш профиль и статус в системе KAVAULT</p>
+              </div>
+            </div>
+
+            {/* Блок пользователя с аватаром */}
             <div
               style={{
-                paddingTop: "var(--space-4)",
-                borderTop: "1px solid var(--border)",
                 display: "flex",
-                justifyContent: "space-between",
                 alignItems: "center",
-                gap: "12px",
-                flexWrap: "wrap",
+                gap: "14px",
+                padding: "14px",
+                backgroundColor: "var(--surface-raised)",
+                borderRadius: "14px",
+                marginBottom: "16px",
+                border: "1px solid var(--border)",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: "1 1 240px" }}>
+              <div
+                style={{
+                  width: "52px",
+                  height: "52px",
+                  borderRadius: "14px",
+                  backgroundColor: "var(--accent)",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "22px",
+                  fontWeight: 700,
+                  boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                  flexShrink: 0,
+                }}
+              >
+                {username ? username.charAt(0).toUpperCase() : "U"}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
-                    width: "36px",
-                    height: "36px",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {username || t.settings.userDefault}
+                </div>
+                <div
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--text-muted)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {userEmail || t.settings.authorizedSession}
+                </div>
+              </div>
+
+              {isCreator ? (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 10px",
                     borderRadius: "10px",
-                    backgroundColor: showProgramming
-                      ? "rgba(59, 130, 246, 0.15)"
-                      : "var(--surface-raised)",
+                    background: "rgba(245, 158, 11, 0.15)",
+                    border: "1px solid rgba(245, 158, 11, 0.3)",
+                    color: "#f59e0b",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  <Crown size={14} />
+                  <span>CREATOR</span>
+                </div>
+              ) : (
+                <Badge variant="success">Онлайн</Badge>
+              )}
+            </div>
+
+            {/* Редактирование никнейма */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
+                {t.settings.displayNameLabel}
+              </label>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <div style={{ flex: "1 1 200px" }}>
+                  <Input
+                    icon={<User size={16} />}
+                    placeholder={t.settings.displayNamePlaceholder}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </div>
+                <Button onClick={handleSaveGeneral} className="kv-action-btn">
+                  <Save size={16} /> Сохранить ник
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Смена пароля */}
+          <div className="kv-card">
+            <div className="kv-group-header">
+              <div className="kv-group-icon">
+                <KeyRound size={20} />
+              </div>
+              <div>
+                <h3 className="kv-group-title">Безопасность и пароль</h3>
+                <p className="kv-group-desc">Смена текущего пароля для входа в ваш аккаунт</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "6px" }}>
+                  Текущий пароль
+                </label>
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  icon={<Lock size={16} />}
+                  placeholder="••••••••"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                />
+              </div>
+
+              <div className="kv-grid-2">
+                <div>
+                  <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "6px" }}>
+                    Новый пароль
+                  </label>
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    icon={<Lock size={16} />}
+                    placeholder="Минимум 6 символов"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "6px" }}>
+                    Подтвердите пароль
+                  </label>
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    icon={<Lock size={16} />}
+                    placeholder="Повторите пароль"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginTop: "4px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "var(--text-muted)",
+                    fontSize: "13px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    cursor: "pointer",
+                    padding: "6px 0",
+                  }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  <span>{showPassword ? "Скрыть символы" : "Показать пароль"}</span>
+                </button>
+
+                <Button type="submit" disabled={passwordLoading} className="kv-action-btn">
+                  {passwordLoading ? "Обновление..." : "🔑 Обновить пароль"}
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          {/* Выход из сессии */}
+          <div className="kv-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>
+                Выход из аккаунта
+              </div>
+              <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                Завершить текущую сессию на этом устройстве
+              </div>
+            </div>
+
+            <Button variant="secondary" onClick={handleLogout} className="kv-action-btn" style={{ color: "var(--text-primary)" }}>
+              <LogOut size={16} /> {t.dash.logout}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          ТАБ 3: ОБУЧЕНИЕ И ЦЕЛИ (LEARNING)
+      ══════════════════════════════════════════════════════════════════ */}
+      {activeTab === "learning" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* Выбор изучаемого языка */}
+          <div className="kv-card">
+            <div className="kv-group-header">
+              <div className="kv-group-icon">
+                <BookOpen size={20} />
+              </div>
+              <div>
+                <h3 className="kv-group-title">Изучаемый язык платформы</h3>
+                <p className="kv-group-desc">Переключает колоды слов, аудирование, грамматику и культурную тему</p>
+              </div>
+            </div>
+
+            <div className="kv-grid-3">
+              {(["ja", "en", "de"] as StudyLanguage[]).map((code) => {
+                const pal = STUDY_VIBE_PALETTES[code];
+                const txt = STUDY_TEXTS[code][language];
+                const isSelected = studyLanguage === code;
+                return (
+                  <div
+                    key={code}
+                    onClick={() => handleChangeStudyLanguage(code)}
+                    className={`kv-touch-card ${isSelected ? "selected" : ""}`}
+                    style={{
+                      borderColor: isSelected ? pal.accentHex : "var(--border)",
+                      flexDirection: "column",
+                      alignItems: "stretch",
+                      gap: "8px",
+                      padding: "16px",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "28px" }}>{pal.flag}</span>
+                      {isSelected ? (
+                        <Badge variant="accent">✓ Активен</Badge>
+                      ) : (
+                        <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Нажмите для выбора</span>
+                      )}
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--text-primary)" }}>
+                        {txt.name}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                        {txt.vibeBadge}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Режим Разработчика и программирования */}
+          <div className="kv-card">
+            <div
+              className="kv-toggle-row"
+              onClick={() => handleToggleProgramming(!showProgramming)}
+              style={{
+                border: "none",
+                padding: 0,
+                background: "transparent",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "12px",
+                    backgroundColor: showProgramming ? "var(--accent-soft)" : "var(--surface-raised)",
                     color: showProgramming ? "var(--accent)" : "var(--text-muted)",
                     display: "flex",
                     alignItems: "center",
@@ -964,633 +1490,282 @@ export function Settings() {
                     flexShrink: 0,
                   }}
                 >
-                  <Code2 size={18} />
+                  <Code2 size={22} />
                 </div>
                 <div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
-                    {ONBOARDING_TEXTS[language].step2Title}
+                  <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
+                    Хаб программирования и репозиториев
                   </div>
-                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
                     {showProgramming
-                      ? ONBOARDING_TEXTS[language].optionProgYesDesc
-                      : ONBOARDING_TEXTS[language].optionProgNoDesc}
+                      ? "Разделы Dev Hub и GitHub открыты в меню"
+                      : "Разделы кода скрыты (только языковое обучение)"}
                   </div>
                 </div>
               </div>
 
-              <Button
-                type="button"
-                variant={showProgramming ? "secondary" : "primary"}
-                disabled={updatingPrefs}
-                onClick={() => handleToggleProgramming(!showProgramming)}
-                style={{ fontSize: "13px" }}
-              >
-                {showProgramming
-                  ? ONBOARDING_TEXTS[language].optionProgYesTitle
-                  : ONBOARDING_TEXTS[language].optionProgNoTitle}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* ── ТАБ 2: ПРОФИЛЬ И БЕЗОПАСНОСТЬ ── */}
-      {activeTab === "account" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          {/* Информация об аккаунте */}
-          <Card style={{ padding: "var(--space-6)" }}>
-            <h3
-              style={{
-                margin: "0 0 var(--space-4) 0",
-                fontSize: "16px",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <ShieldCheck size={18} color="var(--accent)" /> {t.settings.accountCardTitle}
-            </h3>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-                padding: "16px",
-                backgroundColor: "var(--surface-raised)",
-                borderRadius: "var(--radius-md)",
-                marginBottom: "var(--space-4)",
-              }}
-            >
-              <div
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--accent)",
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "20px",
-                  fontWeight: 700,
-                }}
-              >
-                {username ? username.charAt(0).toUpperCase() : "U"}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)" }}>
-                  {username || t.settings.userDefault}
-                </div>
-                <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                  {userEmail || t.settings.authorizedSession}
-                </div>
-              </div>
-              {isCreator ? (
-                <span
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 800,
-                    padding: "3px 8px",
-                    borderRadius: "4px",
-                    backgroundColor: "rgba(245, 158, 11, 0.15)",
-                    color: "#f59e0b",
-                    border: "1px solid rgba(245, 158, 11, 0.3)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                  }}
-                >
-                  👑 CREATOR
-                </span>
-              ) : (
-                <Badge variant="accent">{t.settings.activeBadge}</Badge>
-              )}
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "13px",
-                    color: "var(--text-secondary)",
-                    marginBottom: "6px",
-                  }}
-                >
-                  {t.settings.displayNameLabel}
-                </label>
-                <Input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder={t.settings.displayNamePlaceholder}
-                />
-              </div>
-
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "13px",
-                    color: "var(--text-secondary)",
-                    marginBottom: "6px",
-                  }}
-                >
-                  {t.settings.emailLabel}
-                </label>
-                <Input value={userEmail} disabled style={{ opacity: 0.6 }} />
+              <div className={`kv-switch ${showProgramming ? "on" : ""}`}>
+                <div className="kv-switch-handle" />
               </div>
             </div>
-          </Card>
+          </div>
 
-          {/* Режим Создателя — отображается строго для zerkalovandrey@kavoult.dev */}
-          {isCreator && (
-            <Card
-              style={{
-                padding: "var(--space-6)",
-                border: "1px solid rgba(245, 158, 11, 0.4)",
-                backgroundColor: "rgba(245, 158, 11, 0.04)",
-              }}
-            >
-              <h3
-                style={{
-                  margin: "0 0 6px 0",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  color: "#f59e0b",
-                }}
-              >
-                <Crown size={18} color="#f59e0b" /> {t.settings.creatorCardTitle}
-              </h3>
-              <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "0 0 16px 0" }}>
-                {t.settings.creatorCardDesc}
-              </p>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: "12px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    color: "#10b981",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                  }}
-                >
-                  <CheckCircle2 size={16} /> {t.settings.creatorActiveMsg}
-                </div>
-                <Button variant="primary" onClick={() => navigate("/admin")}>
-                  {t.settings.openCreatorPanelBtn}
-                </Button>
+          {/* Ежедневные цели (Daily Goals) */}
+          <div className="kv-card">
+            <div className="kv-group-header">
+              <div className="kv-group-icon">
+                <Target size={20} />
               </div>
-            </Card>
-          )}
-
-          {/* Смена пароля */}
-          <Card style={{ padding: "var(--space-6)" }}>
-            <h3
-              style={{
-                margin: "0 0 var(--space-4) 0",
-                fontSize: "16px",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <Lock size={18} color="var(--accent)" /> {t.settings.passwordCardTitle}
-            </h3>
-
-            <form
-              onSubmit={handleChangePassword}
-              style={{ display: "flex", flexDirection: "column", gap: "14px" }}
-            >
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "13px",
-                    color: "var(--text-secondary)",
-                    marginBottom: "6px",
-                  }}
-                >
-                  {t.settings.currentPassLabel}
-                </label>
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "var(--space-4)",
-                }}
-              >
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "13px",
-                      color: "var(--text-secondary)",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    {t.settings.newPassLabel}
-                  </label>
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder={t.settings.newPassPlaceholder}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "13px",
-                      color: "var(--text-secondary)",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    {t.settings.confirmPassLabel}
-                  </label>
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginTop: "6px",
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--text-muted)",
-                    cursor: "pointer",
-                    fontSize: "13px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                  {showPassword ? t.settings.hidePasswords : t.settings.showPasswords}
-                </button>
-
-                <Button type="submit" disabled={passwordLoading}>
-                  {passwordLoading ? t.settings.updatingPassBtn : t.settings.updatePassBtn}
-                </Button>
-              </div>
-            </form>
-          </Card>
-
-          {/* Завершение сессии */}
-          <Card
-            style={{
-              padding: "var(--space-5)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <div style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-                {t.settings.logoutCardTitle}
-              </div>
-              <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                {t.settings.logoutCardDesc}
+                <h3 className="kv-group-title">Дневные цели обучения</h3>
+                <p className="kv-group-desc">Сколько карточек и материалов вы планируете проходить за день</p>
               </div>
             </div>
-            <Button variant="secondary" onClick={handleLogout} style={{ gap: "6px" }}>
-              <LogOut size={16} /> {t.settings.logoutBtn}
-            </Button>
-          </Card>
-        </div>
-      )}
 
-      {/* ── ТАБ 3: ЦЕЛИ И ОБУЧЕНИЕ ── */}
-      {activeTab === "learning" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          <Card style={{ padding: "var(--space-6)" }}>
-            <h3
-              style={{
-                margin: "0 0 var(--space-2) 0",
-                fontSize: "16px",
-                fontWeight: 600,
-              }}
-            >
-              {t.settings.goalsCardTitle}
-            </h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 20px 0" }}>
-              {t.settings.goalsCardDesc}
-            </p>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: "var(--space-5)",
-              }}
-            >
-              {showProgramming && (
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      color: "var(--text-secondary)",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    {t.settings.weeklyResLabel}
-                  </label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={goalResources}
-                    onChange={(e) => setGoalResources(e.target.value)}
-                  />
-                </div>
-              )}
-
+            <div className="kv-grid-3">
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "var(--text-secondary)",
-                    marginBottom: "8px",
-                  }}
-                >
-                  {studyPalette.flag} {studyText.trackerGoalLabel}
+                <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "6px" }}>
+                  Новых слов в день
                 </label>
                 <Input
                   type="number"
-                  min="5"
-                  max="500"
                   value={goalCards}
                   onChange={(e) => setGoalCards(e.target.value)}
+                  placeholder="50"
                 />
               </div>
 
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "var(--text-secondary)",
-                    marginBottom: "8px",
-                  }}
-                >
-                  {t.settings.dailyLimitLabel}
+                <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "6px" }}>
+                  Лимит повторений SRS
                 </label>
                 <Input
                   type="number"
-                  min="5"
-                  max="100"
                   value={dailyCardsLimit}
                   onChange={(e) => setDailyCardsLimit(e.target.value)}
+                  placeholder="20"
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "6px" }}>
+                  Статей / ресурсов
+                </label>
+                <Input
+                  type="number"
+                  value={goalResources}
+                  onChange={(e) => setGoalResources(e.target.value)}
+                  placeholder="5"
                 />
               </div>
             </div>
-          </Card>
 
-          {/* Дополнительные параметры обучения */}
-          <Card style={{ padding: "var(--space-6)" }}>
-            <h3
-              style={{
-                margin: "0 0 var(--space-4) 0",
-                fontSize: "16px",
-                fontWeight: 600,
-              }}
-            >
-              {t.settings.sessionCardTitle}
-            </h3>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {/* Звуковые эффекты */}
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  cursor: "pointer",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div
-                    style={{
-                      padding: "8px",
-                      borderRadius: "50%",
-                      backgroundColor: "var(--surface-raised)",
-                    }}
-                  >
-                    {soundEffects ? <Volume2 size={16} /> : <VolumeX size={16} />}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {t.settings.soundFxLabel}
-                    </div>
-                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                      {t.settings.soundFxDesc}
-                    </div>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={soundEffects}
-                  onChange={(e) => setSoundEffects(e.target.checked)}
-                  style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                />
-              </label>
-
-              {/* Уведомления */}
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  cursor: "pointer",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div
-                    style={{
-                      padding: "8px",
-                      borderRadius: "50%",
-                      backgroundColor: "var(--surface-raised)",
-                    }}
-                  >
-                    <Bell size={16} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {t.settings.notifLabel}
-                    </div>
-                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                      {t.settings.notifDesc}
-                    </div>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={notifications}
-                  onChange={(e) => setNotifications(e.target.checked)}
-                  style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                />
-              </label>
+            <div style={{ marginTop: "14px", display: "flex", justifyContent: "flex-end" }}>
+              <Button onClick={handleSaveGeneral} className="kv-action-btn">
+                <Save size={16} /> Сохранить цели
+              </Button>
             </div>
-          </Card>
+          </div>
+
+          {/* Стартовые наборы карточек (Starter Packs) */}
+          <div className="kv-card">
+            <div className="kv-group-header">
+              <div className="kv-group-icon">
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <h3 className="kv-group-title">Стартовые наборы материалов</h3>
+                <p className="kv-group-desc">Загрузите готовые колоды слов и материалы в один клик</p>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {/* Языковой набор */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "12px 14px",
+                  background: "var(--surface-raised)",
+                  borderRadius: "12px",
+                  gap: "10px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
+                    {studyPalette.flag} Базовая колода ({STUDY_TEXTS[studyLanguage][language].name})
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    Базовые слова, иероглифы и фразы начального уровня
+                  </div>
+                </div>
+
+                <Button
+                  variant={isPackClaimed(studyLanguageToPackType(studyLanguage)) ? "secondary" : "primary"}
+                  disabled={importingStarter === "language"}
+                  onClick={() => handleLoadStarterPack("language")}
+                  style={{ padding: "6px 14px", fontSize: "13px" }}
+                >
+                  {isPackClaimed(studyLanguageToPackType(studyLanguage))
+                    ? "✓ Загружено"
+                    : importingStarter === "language"
+                      ? "Загрузка..."
+                      : "📥 Загрузить"}
+                </Button>
+              </div>
+
+              {/* Набор для программирования (если включен) */}
+              {showProgramming && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "12px 14px",
+                    background: "var(--surface-raised)",
+                    borderRadius: "12px",
+                    gap: "10px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
+                      💻 Набор статей разработчика и GitHub
+                    </div>
+                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                      Подборка лучших инструментов, архитектурных статей и библиотек
+                    </div>
+                  </div>
+
+                  <Button
+                    variant={isPackClaimed("developer") ? "secondary" : "primary"}
+                    disabled={importingStarter === "developer"}
+                    onClick={() => handleLoadStarterPack("developer")}
+                    style={{ padding: "6px 14px", fontSize: "13px" }}
+                  >
+                    {isPackClaimed("developer")
+                      ? "✓ Загружено"
+                      : importingStarter === "developer"
+                        ? "Загрузка..."
+                        : "📥 Загрузить"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* ── ТАБ 4: ДАННЫЕ И ХРАНИЛИЩЕ ── */}
+      {/* ══════════════════════════════════════════════════════════════════
+          ТАБ 4: БАЗА ДАННЫХ И СЕРВЕР (VAULT)
+      ══════════════════════════════════════════════════════════════════ */}
       {activeTab === "vault" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          {/* Статистика базы */}
-          <Card style={{ padding: "var(--space-6)" }}>
-            <h3
-              style={{
-                margin: "0 0 var(--space-4) 0",
-                fontSize: "16px",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <Database size={18} color="var(--accent)" /> {t.settings.vaultStatsTitle}
-            </h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* Сетевой адрес сервера API */}
+          <div className="kv-card">
+            <div className="kv-group-header">
+              <div className="kv-group-icon">
+                <Globe size={20} />
+              </div>
+              <div>
+                <h3 className="kv-group-title">Сетевой адрес сервера (API)</h3>
+                <p className="kv-group-desc">
+                  Адрес бэкенда для синхронизации мобильного приложения и браузера
+                </p>
+              </div>
+            </div>
 
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <Input
+                icon={<Globe size={16} />}
+                placeholder="http://46.21.245.64:4000"
+                value={serverUrl}
+                onChange={(e) => setServerUrl(e.target.value)}
+              />
+
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <Button onClick={handleSaveServerUrl} className="kv-action-btn">
+                  <Save size={16} /> Сохранить адрес
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    localStorage.removeItem("kavault_api_url");
+                    const def = getApiBaseURL();
+                    setServerUrl(def);
+                    showToast(`Адрес сброшен: ${def}`);
+                  }}
+                  className="kv-action-btn"
+                >
+                  <RefreshCw size={16} /> Сбросить по умолчанию
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Статистика и резервное копирование */}
+          <div className="kv-card">
+            <div className="kv-group-header">
+              <div className="kv-group-icon">
+                <Database size={20} />
+              </div>
+              <div>
+                <h3 className="kv-group-title">Резервные копии и статистика</h3>
+                <p className="kv-group-desc">Выгружайте и восстанавливайте свои карточки и заметки в JSON</p>
+              </div>
+            </div>
+
+            {/* Метрики хранилища */}
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                gap: "var(--space-4)",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: "10px",
+                marginBottom: "16px",
               }}
             >
-              {showProgramming && (
-                <div
-                  style={{
-                    padding: "14px",
-                    backgroundColor: "var(--surface-raised)",
-                    borderRadius: "var(--radius-md)",
-                  }}
-                >
-                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                    {t.settings.statsResources}
-                  </div>
-                  <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
-                    {vaultStats.resourcesCount}
-                  </div>
-                </div>
-              )}
-
-              <div
-                style={{
-                  padding: "14px",
-                  backgroundColor: "var(--surface-raised)",
-                  borderRadius: "var(--radius-md)",
-                }}
-              >
-                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {studyPalette.flag} {studyText.dashWordsCardTitle}
-                </div>
-                <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
+              <div style={{ textAlign: "center", padding: "12px", background: "var(--surface-raised)", borderRadius: "12px" }}>
+                <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--accent)" }}>
                   {vaultStats.cardsCount}
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                  Карточек слов
                 </div>
               </div>
 
-              {showProgramming && (
-                <div
-                  style={{
-                    padding: "14px",
-                    backgroundColor: "var(--surface-raised)",
-                    borderRadius: "var(--radius-md)",
-                  }}
-                >
-                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                    {t.settings.statsNotes}
-                  </div>
-                  <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
-                    {vaultStats.totalNotes}
-                  </div>
+              <div style={{ textAlign: "center", padding: "12px", background: "var(--surface-raised)", borderRadius: "12px" }}>
+                <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>
+                  {vaultStats.resourcesCount}
                 </div>
-              )}
+                <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                  Ресурсов
+                </div>
+              </div>
+
+              <div style={{ textAlign: "center", padding: "12px", background: "var(--surface-raised)", borderRadius: "12px" }}>
+                <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>
+                  {vaultStats.totalNotes}
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                  Заметок
+                </div>
+              </div>
             </div>
-          </Card>
 
-          {/* Резервное копирование и Импорт */}
-          <Card style={{ padding: "var(--space-6)" }}>
-            <h3
-              style={{
-                margin: "0 0 var(--space-2) 0",
-                fontSize: "16px",
-                fontWeight: 600,
-              }}
-            >
-              {t.settings.backupTitle}
-            </h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 16px 0" }}>
-              {t.settings.backupDesc}
-            </p>
-
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                flexWrap: "wrap",
-              }}
-            >
-              {/* Экспорт */}
-              <Button onClick={handleExportData} style={{ gap: "8px" }}>
-                <Download size={16} /> {t.settings.exportJsonBtn}
+            {/* Кнопки экспорта и импорта */}
+            <div className="kv-grid-2">
+              <Button onClick={handleExportData} className="kv-action-btn">
+                <Download size={16} /> Скачать бэкап (JSON)
               </Button>
 
-              {/* Импорт */}
               <Button
                 variant="secondary"
                 onClick={() => fileInputRef.current?.click()}
-                style={{ gap: "8px" }}
+                className="kv-action-btn"
               >
-                <Upload size={16} /> {t.settings.importJsonBtn}
+                <Upload size={16} /> Восстановить из JSON
               </Button>
               <input
                 ref={fileInputRef}
@@ -1600,296 +1775,141 @@ export function Settings() {
                 onChange={handleImportFile}
               />
             </div>
-          </Card>
+          </div>
 
-          {/* Стартовые наборы данных */}
-          <Card style={{ padding: "var(--space-6)" }}>
-            <h3
-              style={{
-                margin: "0 0 var(--space-2) 0",
-                fontSize: "16px",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <Sparkles size={18} color={studyPalette.accentHex} /> {t.settings.starterPacksTitle}
-            </h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "0 0 16px 0" }}>
-              {t.settings.starterPacksDesc}
-            </p>
-
-            {(() => {
-              const activeLangPack = studyLanguageToPackType(studyLanguage);
-              const isLangClaimed = isPackClaimed(activeLangPack, userCards);
-              const isDevClaimed = showProgramming
-                ? isPackClaimed("developer", undefined, userResources)
-                : true;
-              const isGitClaimed = showProgramming
-                ? isPackClaimed("github", undefined, userResources)
-                : true;
-              const allClaimed = isLangClaimed && isDevClaimed && isGitClaimed;
-
-              if (allClaimed) {
-                return (
-                  <div
-                    style={{
-                      padding: "16px",
-                      backgroundColor: "rgba(16, 185, 129, 0.1)",
-                      border: "1px solid rgba(16, 185, 129, 0.3)",
-                      borderRadius: "var(--radius-md)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      color: "var(--success)",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                    }}
-                  >
-                    <CheckCircle2 size={18} />
-                    <span>{t.settings.starterAllActivated}</span>
-                  </div>
-                );
-              }
-
-              return (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                    gap: "12px",
-                  }}
-                >
-                  {!isLangClaimed && (
-                    <Button
-                      variant="secondary"
-                      onClick={() => handleLoadStarterPack("language")}
-                      disabled={importingStarter !== null}
-                      style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
-                    >
-                      <span>{studyPalette.flag}</span>
-                      <span>{importingStarter === "language" ? t.settings.loadingText : studyText.starterTitle}</span>
-                    </Button>
-                  )}
-
-                  {showProgramming && !isDevClaimed && (
-                    <Button
-                      variant="secondary"
-                      onClick={() => handleLoadStarterPack("developer")}
-                      disabled={importingStarter !== null}
-                      style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
-                    >
-                      <span>💻</span>
-                      <span>{importingStarter === "developer" ? t.settings.loadingText : t.settings.starterDevBtn}</span>
-                    </Button>
-                  )}
-
-                  {showProgramming && !isGitClaimed && (
-                    <Button
-                      variant="secondary"
-                      onClick={() => handleLoadStarterPack("github")}
-                      disabled={importingStarter !== null}
-                      style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
-                    >
-                      <span>🐙</span>
-                      <span>{importingStarter === "github" ? t.settings.loadingText : t.settings.starterGitBtn}</span>
-                    </Button>
-                  )}
-
-                  {showProgramming && !isLangClaimed && !isDevClaimed && !isGitClaimed && (
-                    <Button
-                      onClick={() => handleLoadStarterPack("all")}
-                      disabled={importingStarter !== null}
-                      style={{ gap: "8px", justifyContent: "flex-start", padding: "10px 14px" }}
-                    >
-                      <span>🚀</span>
-                      <span>{importingStarter === "all" ? t.settings.loadingText : t.settings.starterAllBtn}</span>
-                    </Button>
-                  )}
-                </div>
-              );
-            })()}
-          </Card>
-
-          {/* Сервер синхронизации для iOS и ПК */}
-          <Card style={{ padding: "var(--space-6)" }}>
-            <h3
-              style={{
-                margin: "0 0 var(--space-2) 0",
-                fontSize: "16px",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <Smartphone size={18} color="var(--accent)" /> {t.settings.apiServerTitle}
-            </h3>
-            <p
-              style={{
-                color: "var(--text-muted)",
-                fontSize: "14px",
-                margin: "0 0 16px 0",
-                lineHeight: 1.5,
-              }}
-            >
-              {t.settings.apiServerDescPrefix}{" "}
-              <code>http://192.168.1.50:4000</code>
-              {t.settings.apiServerDescSuffix}
-            </p>
-
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              <div style={{ flex: "1 1 280px" }}>
-                <Input
-                  icon={<Globe size={16} />}
-                  placeholder="http://localhost:4000"
-                  value={serverUrl}
-                  onChange={(e) => setServerUrl(e.target.value)}
-                />
-              </div>
-              <Button onClick={handleSaveServerUrl} style={{ gap: "6px" }}>
-                <Save size={16} /> {t.settings.saveAddressBtn}
-              </Button>
-            </div>
-          </Card>
-
-          {/* Опасные операции */}
-          <Card
+          {/* Опасная зона (Danger Zone) */}
+          <div
+            className="kv-card"
             style={{
-              padding: "var(--space-6)",
-              border: "1px solid rgba(239, 68, 68, 0.25)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-4)",
+              borderColor: "rgba(239, 68, 68, 0.35)",
+              backgroundColor: "rgba(239, 68, 68, 0.03)",
             }}
           >
-            <h3
-              style={{
-                margin: 0,
-                fontSize: "16px",
-                fontWeight: 600,
-                color: "var(--error)",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <TriangleAlert size={18} /> {t.settings.dangerZoneTitle}
-            </h3>
-
-            {/* Сброс прогресса SRS */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "12px 0",
-                borderBottom: "1px solid var(--border)",
-              }}
-            >
-              <div>
-                <div style={{ fontWeight: 500, color: "var(--text-primary)" }}>
-                  {t.settings.resetSrsTitle}
-                </div>
-                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {t.settings.resetSrsDesc}
-                </div>
+            <div className="kv-group-header">
+              <div className="kv-group-icon" style={{ backgroundColor: "rgba(239, 68, 68, 0.15)", color: "var(--error)" }}>
+                <TriangleAlert size={20} />
               </div>
-              <Button
-                variant="secondary"
-                onClick={() => setIsResetSRSModalOpen(true)}
-                style={{ gap: "6px" }}
-              >
-                <RotateCcw size={14} /> {t.settings.resetSrsBtn}
-              </Button>
+              <div>
+                <h3 className="kv-group-title" style={{ color: "var(--error)" }}>
+                  {t.settings.dangerZoneTitle}
+                </h3>
+                <p className="kv-group-desc">Операции необратимого сброса данных</p>
+              </div>
             </div>
 
-            {/* Очистить все учебные материалы */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "12px 0",
-                borderBottom: "1px solid var(--border)",
-              }}
-            >
-              <div>
-                <div style={{ fontWeight: 500, color: "var(--text-primary)" }}>
-                  {t.settings.clearAllTitle}
-                </div>
-                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {t.settings.clearAllDesc}
-                </div>
-              </div>
-              <Button
-                variant="secondary"
-                onClick={handleClearAllData}
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {/* Сброс прогресса SRS */}
+              <div
                 style={{
-                  gap: "6px",
-                  color: "var(--text-muted)",
-                  borderColor: "var(--border)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  padding: "12px",
+                  background: "var(--surface)",
+                  borderRadius: "12px",
+                  border: "1px solid var(--border)",
+                  flexWrap: "wrap",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
               >
-                <Trash2 size={14} /> {t.settings.clearAllBtn}
-              </Button>
-            </div>
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
+                    {t.settings.resetSrsTitle}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    {t.settings.resetSrsDesc}
+                  </div>
+                </div>
 
-            {/* Безвозвратное удаление аккаунта */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingTop: "6px",
-              }}
-            >
-              <div>
-                <div style={{ fontWeight: 500, color: "var(--error)" }}>
-                  {t.settings.deleteAccTitle}
-                </div>
-                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {t.settings.deleteAccDesc}
-                </div>
-              </div>
-              {isCreator ? (
-                <span
-                  style={{
-                    fontSize: "12px",
-                    color: "#f59e0b",
-                    fontWeight: 600,
-                    padding: "6px 12px",
-                    borderRadius: "var(--radius-md)",
-                    backgroundColor: "rgba(245, 158, 11, 0.1)",
-                    border: "1px solid rgba(245, 158, 11, 0.2)",
-                  }}
-                >
-                  {t.settings.creatorProtectedBadge}
-                </span>
-              ) : (
                 <Button
-                  onClick={() => setIsDeleteAccountModalOpen(true)}
-                  style={{
-                    backgroundColor: "var(--error)",
-                    color: "#fff",
-                    border: "none",
-                  }}
+                  variant="secondary"
+                  onClick={() => setIsResetSRSModalOpen(true)}
+                  style={{ gap: "6px" }}
                 >
-                  {t.settings.deleteAccBtn}
+                  <RotateCcw size={14} /> {t.settings.resetSrsBtn}
                 </Button>
-              )}
+              </div>
+
+              {/* Очистить все учебные материалы */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  padding: "12px",
+                  background: "var(--surface)",
+                  borderRadius: "12px",
+                  border: "1px solid var(--border)",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
+                    {t.settings.clearAllTitle}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    {t.settings.clearAllDesc}
+                  </div>
+                </div>
+
+                <Button
+                  variant="secondary"
+                  onClick={handleClearAllData}
+                  style={{ gap: "6px", color: "var(--error)" }}
+                >
+                  <Trash2 size={14} /> {t.settings.clearAllBtn}
+                </Button>
+              </div>
+
+              {/* Удаление аккаунта */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  padding: "12px",
+                  background: "var(--surface)",
+                  borderRadius: "12px",
+                  border: "1px solid var(--border)",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--error)" }}>
+                    {t.settings.deleteAccTitle}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    {t.settings.deleteAccDesc}
+                  </div>
+                </div>
+
+                {isCreator ? (
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      color: "#f59e0b",
+                      fontWeight: 600,
+                      padding: "6px 12px",
+                      borderRadius: "10px",
+                      backgroundColor: "rgba(245, 158, 11, 0.1)",
+                      border: "1px solid rgba(245, 158, 11, 0.2)",
+                    }}
+                  >
+                    {t.settings.creatorProtectedBadge}
+                  </span>
+                ) : (
+                  <Button
+                    onClick={() => setIsDeleteAccountModalOpen(true)}
+                    style={{ backgroundColor: "var(--error)", color: "#fff", border: "none" }}
+                  >
+                    {t.settings.deleteAccBtn}
+                  </Button>
+                )}
+              </div>
             </div>
-          </Card>
+          </div>
         </div>
       )}
 
