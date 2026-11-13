@@ -40,8 +40,6 @@ import {
   STUDY_LEVELS,
   LEVEL_ROADMAP_LABELS,
   getDefaultStudyLevel,
-  STUDY_VIBE_PALETTES,
-  type StudyLanguage,
 } from "../data/studyVibes";
 import {
   CulturalAmbientOverlay,
@@ -57,6 +55,7 @@ import {
   ListeningStudio,
   type StudyPassageRecord,
 } from "../components/StudySkillsModules";
+import { AlphabetStudio } from "../components/AlphabetStudio";
 import { DeckImportModal } from "../components/DeckImportModal";
 import { DeckShareModal } from "../components/DeckShareModal";
 import { speakText } from "../utils/audioPlayer";
@@ -390,7 +389,6 @@ export function JapaneseHub() {
     studyLanguage,
     studyText,
     studyPalette,
-    updateStudyPreferences,
   } = useApp();
   const { evaluateAchievements } = useAchievements();
 
@@ -401,7 +399,7 @@ export function JapaneseHub() {
 
   const resolveInitialTab = (): StudySkillTab => {
     const q = searchParams.get("tab");
-    if (q === "grammar" || q === "reading" || q === "listening" || q === "vocabulary") {
+    if (q === "alphabet" || q === "grammar" || q === "reading" || q === "listening" || q === "vocabulary") {
       return q;
     }
     return "vocabulary";
@@ -433,7 +431,7 @@ export function JapaneseHub() {
 
   useEffect(() => {
     const q = searchParams.get("tab");
-    if (q === "grammar" || q === "reading" || q === "listening" || q === "vocabulary") {
+    if (q === "alphabet" || q === "grammar" || q === "reading" || q === "listening" || q === "vocabulary") {
       setSkillTab(q);
     }
   }, [searchParams]);
@@ -447,11 +445,6 @@ export function JapaneseHub() {
     const next = !ambientEnabled;
     setAmbientEnabled(next);
     localStorage.setItem("kavault_ambient_vibe", String(next));
-  };
-
-  const handleSwitchStudyLanguage = async (newLang: StudyLanguage) => {
-    if (newLang === studyLanguage) return;
-    await updateStudyPreferences({ studyLanguage: newLang });
   };
 
   const defaultSlotForLang = (lang: string): HubSlot => {
@@ -730,105 +723,7 @@ export function JapaneseHub() {
         enabled={ambientEnabled}
       />
 
-      {/* ── 0. БЫСТРЫЙ ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА (ЯПОНИЯ · АНГЛИЯ · ГЕРМАНИЯ) ── */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 3,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "8px",
-          padding: "6px 12px",
-          borderRadius: "14px",
-          backgroundColor: "var(--surface)",
-          border: "1px solid var(--border)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-            Язык обучения:
-          </span>
-          {(["ja", "en", "de"] as StudyLanguage[]).map((langKey) => {
-            const isSelected = studyLanguage === langKey;
-            const pal = STUDY_VIBE_PALETTES[langKey];
-            const labels: Record<StudyLanguage, string> = {
-              ja: "🇯🇵 Японский (日本語)",
-              en: "🇬🇧 English (Английский)",
-              de: "🇩🇪 Deutsch (Немецкий)",
-            };
-            return (
-              <button
-                key={langKey}
-                type="button"
-                onClick={() => handleSwitchStudyLanguage(langKey)}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "5px 12px",
-                  borderRadius: "999px",
-                  border: isSelected
-                    ? `1.5px solid ${pal.accentHex}`
-                    : "1px solid var(--border-subtle)",
-                  backgroundColor: isSelected ? pal.softTint : "transparent",
-                  color: isSelected ? pal.accentHex : "var(--text-secondary)",
-                  fontSize: "12px",
-                  fontWeight: isSelected ? 800 : 600,
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                  boxShadow: isSelected ? `0 2px 10px -2px ${pal.accentHex}40` : "none",
-                }}
-              >
-                <span>{labels[langKey]}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <button
-            type="button"
-            onClick={toggleAmbient}
-            style={{
-              padding: "4px 10px",
-              borderRadius: "999px",
-              border: "1px solid var(--border)",
-              backgroundColor: "var(--surface-raised)",
-              color: ambientEnabled ? studyPalette.accentHex : "var(--text-muted)",
-              fontSize: "11px",
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
-          >
-            {ambientEnabled ? `✨ Атмосфера ВКЛ` : "Атмосфера ВЫКЛ"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShareModalOpen(true)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
-              padding: "4px 10px",
-              borderRadius: "999px",
-              border: "1px solid var(--border)",
-              backgroundColor: "var(--surface-raised)",
-              color: "var(--text-secondary)",
-              fontSize: "11px",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            <Share2 size={11} />
-            Поделиться
-          </button>
-        </div>
-      </div>
-
-      {/* ── 1. ВЕРХНИЙ HERO-БАННЕР (КОМПАКТНЫЙ, АДАПТИВНЫЙ ПОД МОБИЛЬНЫЕ) ── */}
+      {/* ── 1. ВЕРХНИЙ HERO-БАННЕР ── */}
       <div
         style={{
           position: "relative",
@@ -849,7 +744,7 @@ export function JapaneseHub() {
         <CulturalHeroScene studyLanguage={studyLanguage} compact={true} />
 
         <div style={{ position: "relative", zIndex: 2, maxWidth: "560px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", marginBottom: "6px" }}>
             <span
               style={{
                 display: "inline-flex",
@@ -867,9 +762,45 @@ export function JapaneseHub() {
               <span>{studyPalette.flag}</span>
               <span>{studyText.vibeBadge}</span>
             </span>
-            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-              {selectedLevel !== "ALL" ? `Уровень: ${selectedLevel}` : "Все уровни"} · {cards.length} {studyText.wordsUnit}
-            </span>
+
+            <button
+              type="button"
+              onClick={toggleAmbient}
+              style={{
+                padding: "3px 9px",
+                borderRadius: "999px",
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--surface)",
+                color: ambientEnabled ? studyPalette.accentHex : "var(--text-muted)",
+                fontSize: "11px",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
+              {ambientEnabled ? `✨ Атмосфера` : "Без фона"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShareModalOpen(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "3px 9px",
+                borderRadius: "999px",
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--surface)",
+                color: "var(--text-secondary)",
+                fontSize: "11px",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              <Share2 size={11} />
+              Поделиться
+            </button>
           </div>
 
           <h2
@@ -911,13 +842,13 @@ export function JapaneseHub() {
         </Button>
       </div>
 
-      {/* ── 2. СТИЛЬНАЯ ПАНЕЛЬ 4-Х МОДУЛЕЙ ОБУЧЕНИЯ (СЕГМЕНТИРОВАННЫЙ ТАБ-БАР) ── */}
+      {/* ── 2. МОДУЛИ ОБУЧЕНИЯ (СЕГМЕНТИРОВАННЫЙ ТАБ-БАР БЕЗ ЛИШНИХ ЦИФР) ── */}
       <div
         style={{
           position: "relative",
           zIndex: 2,
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
           gap: "6px",
           padding: "4px",
           borderRadius: "14px",
@@ -927,7 +858,8 @@ export function JapaneseHub() {
       >
         {(
           [
-            { id: "vocabulary", icon: Layers, label: studioText.tabs.vocabulary.label, count: cards.length },
+            { id: "alphabet", icon: Languages, label: studioText.tabs.alphabet?.label || "Азбука" },
+            { id: "vocabulary", icon: Layers, label: studioText.tabs.vocabulary.label },
             { id: "grammar", icon: GraduationCap, label: studioText.tabs.grammar.label },
             { id: "reading", icon: BookOpen, label: studioText.tabs.reading.label },
             { id: "listening", icon: Headphones, label: studioText.tabs.listening.label },
@@ -944,8 +876,8 @@ export function JapaneseHub() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "8px",
-                padding: "8px 12px",
+                gap: "7px",
+                padding: "9px 10px",
                 borderRadius: "10px",
                 border: active ? `1.5px solid ${studyPalette.accentHex}` : "1px solid transparent",
                 backgroundColor: active ? "var(--vibe-soft)" : "transparent",
@@ -954,99 +886,125 @@ export function JapaneseHub() {
                 fontWeight: active ? 800 : 600,
                 cursor: "pointer",
                 transition: "all 0.15s ease",
+                whiteSpace: "nowrap",
               }}
             >
               <Icon size={16} />
               <span>{tab.label}</span>
-              {"count" in tab && (
-                <span
-                  style={{
-                    fontSize: "11px",
-                    padding: "1px 6px",
-                    borderRadius: "999px",
-                    backgroundColor: active ? `${studyPalette.accentHex}30` : "var(--surface-raised)",
-                    color: active ? studyPalette.accentHex : "var(--text-muted)",
-                    fontWeight: 700,
-                  }}
-                >
-                  {tab.count}
-                </span>
-              )}
             </button>
           );
         })}
       </div>
 
-      {/* ── 3. ПУТЬ ПО УРОВНЯМ ЯЗЫКА (КОМПАКТНЫЙ ГОРИЗОНТАЛЬНЫЙ СЕЛЕКТОР) ── */}
+      {/* ── 3. ПУТЬ ПО УРОВНЯМ ЯЗЫКА (БЕЗ СКРОЛЛА, 100% ВИДИМОСТЬ ВСЕХ УРОВНЕЙ) ── */}
       <div
         style={{
           position: "relative",
           zIndex: 2,
+          padding: "10px 14px",
+          borderRadius: "14px",
+          backgroundColor: "var(--surface)",
+          border: "1px solid var(--border)",
           display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          overflowX: "auto",
-          paddingBottom: "2px",
-          WebkitOverflowScrolling: "touch",
+          flexDirection: "column",
+          gap: "8px",
         }}
       >
-        <button
-          type="button"
-          onClick={() => handleSelectLevel("ALL")}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <GraduationCap size={15} color={activeColor} />
+            <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-primary)" }}>
+              {studyLanguage === "ja" ? "Уровни JLPT:" : "Уровни сложности:"}
+            </span>
+          </div>
+          {(() => {
+            const activeMeta = levelsMeta.find((m) => m.id === selectedLevel);
+            return activeMeta ? (
+              <span style={{ fontSize: "11px", fontWeight: 700, color: activeMeta.color }}>
+                {activeMeta.title[language]} · {activeMeta.subtitle[language]}
+              </span>
+            ) : null;
+          })()}
+        </div>
+
+        <div
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "5px",
-            padding: "5px 12px",
-            borderRadius: "999px",
-            border: `1.5px solid ${selectedLevel === "ALL" ? activeColor : "var(--border-subtle)"}`,
-            backgroundColor: selectedLevel === "ALL" ? activeColor : "var(--bg-elevated)",
-            color: selectedLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
-            fontSize: "12px",
-            fontWeight: 700,
-            cursor: "pointer",
-            flexShrink: 0,
-            transition: "all 0.15s ease",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(78px, 1fr))",
+            gap: "6px",
+            width: "100%",
           }}
         >
-          <span>{levelUi.allLevels}</span>
-          <span style={{ fontSize: "11px", opacity: 0.85 }}>({levelCounts.ALL || 0})</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => handleSelectLevel("ALL")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "4px",
+              padding: "7px 6px",
+              borderRadius: "10px",
+              border: `1.5px solid ${selectedLevel === "ALL" ? activeColor : "var(--border-subtle)"}`,
+              backgroundColor: selectedLevel === "ALL" ? activeColor : "var(--bg-elevated)",
+              color: selectedLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <span>Все</span>
+            <span style={{ fontSize: "10px", opacity: 0.85 }}>({levelCounts.ALL || 0})</span>
+          </button>
 
-        {levelsMeta.map((lvl) => {
-          const isActive = selectedLevel === lvl.id;
-          const count = levelCounts[lvl.id] || 0;
-          return (
-            <button
-              key={lvl.id}
-              type="button"
-              onClick={() => handleSelectLevel(lvl.id)}
-              title={`${lvl.title[language]} — ${lvl.subtitle[language]}`}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-                padding: "5px 12px",
-                borderRadius: "999px",
-                border: `1.5px solid ${isActive ? lvl.color : "var(--border-subtle)"}`,
-                backgroundColor: isActive ? lvl.color : "var(--bg-elevated)",
-                color: isActive ? "#ffffff" : "var(--text-primary)",
-                fontSize: "12px",
-                fontWeight: 700,
-                cursor: "pointer",
-                flexShrink: 0,
-                boxShadow: isActive ? `0 2px 10px -2px ${lvl.color}` : "none",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <span>{lvl.badge}</span>
-              <span style={{ fontSize: "11px", opacity: 0.85 }}>({count})</span>
-            </button>
-          );
-        })}
+          {levelsMeta.map((lvl) => {
+            const isActive = selectedLevel === lvl.id;
+            const count = levelCounts[lvl.id] || 0;
+            return (
+              <button
+                key={lvl.id}
+                type="button"
+                onClick={() => handleSelectLevel(lvl.id)}
+                title={`${lvl.title[language]} — ${lvl.subtitle[language]}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "4px",
+                  padding: "7px 6px",
+                  borderRadius: "10px",
+                  border: `1.5px solid ${isActive ? lvl.color : "var(--border-subtle)"}`,
+                  backgroundColor: isActive ? lvl.color : "var(--bg-elevated)",
+                  color: isActive ? "#ffffff" : "var(--text-primary)",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  boxShadow: isActive ? `0 2px 8px -2px ${lvl.color}` : "none",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span>{lvl.badge}</span>
+                <span style={{ fontSize: "10px", opacity: 0.85 }}>({count})</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* ── 4. МОДУЛЬ 1: ЛЕКСИКА И КАРТОЧКИ ── */}
+      {/* ── 4. МОДУЛЬ 0: АЗБУКА И АЛФАВИТ ── */}
+      {skillTab === "alphabet" && (
+        <div style={{ position: "relative", zIndex: 2 }}>
+          <AlphabetStudio
+            studyLanguage={studyLanguage}
+            accentColor={studyPalette.accentHex}
+            ttsLang={studyPalette.ttsLang}
+            onAddCard={handleAddCardFromStudio}
+          />
+        </div>
+      )}
+
+      {/* ── 5. МОДУЛЬ 1: ЛЕКСИКА И КАРТОЧКИ ── */}
       {skillTab === "vocabulary" && (
         <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           {/* СЕГМЕНТИРОВАННОЕ ПЕРЕКЛЮЧЕНИЕ МЕЖДУ S1 И S2 */}

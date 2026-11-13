@@ -1,7 +1,7 @@
 import type { Language } from "../i18n/translations";
 import type { StudyLanguage } from "./studyVibes";
 
-export type StudySkillTab = "vocabulary" | "grammar" | "reading" | "listening";
+export type StudySkillTab = "alphabet" | "vocabulary" | "grammar" | "reading" | "listening";
 
 export interface SkillStudioLabels {
   tabs: Record<StudySkillTab, { label: string; shortDesc: string }>;
@@ -79,7 +79,8 @@ export interface SkillStudioLabels {
 export const SKILL_STUDIO_TEXTS: Record<Language, SkillStudioLabels> = {
   ru: {
     tabs: {
-      vocabulary: { label: "Лексика и Карточки", shortDesc: "Слова, иероглифы, SRS-повторение" },
+      alphabet: { label: "Азбука", shortDesc: "Знаки, буквы, звуки и тренировка" },
+      vocabulary: { label: "Лексика", shortDesc: "Слова, карточки, SRS-повторение" },
       grammar: { label: "Грамматика", shortDesc: "Конструкции, схемы и мини-тесты" },
       reading: { label: "Чтение", shortDesc: "Тексты с озвучкой и разбором слов" },
       listening: { label: "Аудирование", shortDesc: "Диалоги, квиз и аудио-диктант" },
@@ -156,7 +157,8 @@ export const SKILL_STUDIO_TEXTS: Record<Language, SkillStudioLabels> = {
   },
   en: {
     tabs: {
-      vocabulary: { label: "Vocabulary & Cards", shortDesc: "Words, kanji/idioms & SRS deck" },
+      alphabet: { label: "Alphabet", shortDesc: "Letters, sounds, phonics & drill" },
+      vocabulary: { label: "Vocabulary", shortDesc: "Words, flashcards & SRS deck" },
       grammar: { label: "Grammar", shortDesc: "Patterns, explanations & drills" },
       reading: { label: "Reading", shortDesc: "Stories with audio & 1-click vocab" },
       listening: { label: "Listening", shortDesc: "Dialogues, audio quiz & dictation" },
@@ -233,6 +235,7 @@ export const SKILL_STUDIO_TEXTS: Record<Language, SkillStudioLabels> = {
   },
   ja: {
     tabs: {
+      alphabet: { label: "文字・五十音", shortDesc: "かな・アルファベット・発音クイズ" },
       vocabulary: { label: "語彙・単語帳", shortDesc: "単語・漢字・間隔反復(SRS)" },
       grammar: { label: "文法スタジオ", shortDesc: "文型・解説・練習問題" },
       reading: { label: "読解ルーム", shortDesc: "音声付き読み物・ワンクリック追加" },
