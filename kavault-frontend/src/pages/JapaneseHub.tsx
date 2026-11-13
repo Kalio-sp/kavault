@@ -21,6 +21,8 @@ import {
   Layers,
   Upload,
   Share2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
@@ -38,6 +40,8 @@ import {
   STUDY_LEVELS,
   LEVEL_ROADMAP_LABELS,
   getDefaultStudyLevel,
+  STUDY_VIBE_PALETTES,
+  type StudyLanguage,
 } from "../data/studyVibes";
 import {
   CulturalAmbientOverlay,
@@ -108,7 +112,7 @@ const FlashcardItem = React.memo(function FlashcardItem({
   slot: HubSlot;
   onDelete: (id: string) => void;
 }) {
-  const { t, studyLanguage, studyText, studyPalette } = useApp();
+  const { studyLanguage, studyText, studyPalette } = useApp();
   const [isFlipped, setIsFlipped] = useState(false);
 
   const handleFlip = () => {
@@ -128,18 +132,20 @@ const FlashcardItem = React.memo(function FlashcardItem({
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        minHeight: "160px",
+        minHeight: "145px",
         cursor: "pointer",
         textAlign: "center",
-        padding: "var(--space-4)",
-        transition: "all 0.2s ease",
+        padding: "12px 14px",
+        transition: "all 0.18s ease",
         backgroundColor: isFlipped ? "var(--surface-raised)" : "var(--surface)",
         border: isFlipped
-          ? `1px solid ${accentColor}`
+          ? `1.5px solid ${accentColor}`
           : deArticle?.article
-            ? `1px solid ${deArticle.color}40`
+            ? `1.5px solid ${deArticle.color}50`
             : "1px solid var(--border)",
+        boxShadow: isFlipped ? `0 6px 18px -4px ${accentColor}30` : "none",
         position: "relative",
+        userSelect: "none",
       }}
       onClick={handleFlip}
     >
@@ -152,6 +158,7 @@ const FlashcardItem = React.memo(function FlashcardItem({
           display: "flex",
           alignItems: "center",
           gap: "2px",
+          zIndex: 2,
         }}
       >
         <button
@@ -166,17 +173,17 @@ const FlashcardItem = React.memo(function FlashcardItem({
             border: "none",
             cursor: "pointer",
             color: "var(--text-muted)",
-            padding: "4px",
+            padding: "5px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            borderRadius: "4px",
-            transition: "color 0.2s ease",
+            borderRadius: "6px",
+            transition: "all 0.15s ease",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = accentColor)}
           onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
         >
-          <Volume2 size={14} />
+          <Volume2 size={15} />
         </button>
 
         <button
@@ -184,23 +191,23 @@ const FlashcardItem = React.memo(function FlashcardItem({
             e.stopPropagation();
             onDelete(item.id);
           }}
-          title={t.jap.deleteCardTitle}
+          title="Удалить карточку"
           style={{
             background: "none",
             border: "none",
             cursor: "pointer",
             color: "var(--text-muted)",
-            padding: "4px",
+            padding: "5px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            borderRadius: "4px",
-            transition: "color 0.2s ease",
+            borderRadius: "6px",
+            transition: "all 0.15s ease",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
         >
-          <Trash2 size={14} />
+          <Trash2 size={15} />
         </button>
       </div>
 
@@ -213,22 +220,25 @@ const FlashcardItem = React.memo(function FlashcardItem({
           display: "flex",
           alignItems: "center",
           gap: "4px",
+          flexWrap: "wrap",
+          maxWidth: "calc(100% - 65px)",
         }}
       >
         <div
           style={{
             fontSize: "10px",
-            fontWeight: 700,
+            fontWeight: 800,
             textTransform: "uppercase",
             padding: "2px 6px",
             borderRadius: "4px",
-            backgroundColor: `${accentColor}22`,
+            backgroundColor: `${accentColor}20`,
             color: accentColor,
+            border: `1px solid ${accentColor}35`,
           }}
         >
           {isS1
-            ? `1. ${studyText.section1.cardBadge}`
-            : `2. ${studyText.section2.cardBadge}`}
+            ? studyText.section1.cardBadge
+            : studyText.section2.cardBadge}
         </div>
         {deArticle?.article && (
           <div
@@ -269,7 +279,7 @@ const FlashcardItem = React.memo(function FlashcardItem({
             flexDirection: "column",
             alignItems: "center",
             width: "100%",
-            marginTop: "14px",
+            marginTop: "16px",
           }}
         >
           {/* Подпись / чтение / транскрипция */}
@@ -288,12 +298,13 @@ const FlashcardItem = React.memo(function FlashcardItem({
 
           <span
             style={{
-              fontSize: isJa ? (isS1 ? "32px" : "26px") : item.word.length > 22 ? "17px" : "21px",
+              fontSize: isJa ? (isS1 ? "30px" : "24px") : item.word.length > 20 ? "17px" : "20px",
               fontWeight: isJa ? 500 : 700,
               color: "var(--text-primary)",
               fontFamily: isJa ? "var(--font-jp)" : "inherit",
-              lineHeight: "1.28",
+              lineHeight: "1.25",
               letterSpacing: isJa ? (isS1 ? "2px" : "1px") : "normal",
+              wordBreak: "break-word",
             }}
           >
             {item.word}
@@ -304,14 +315,14 @@ const FlashcardItem = React.memo(function FlashcardItem({
               style={{
                 fontSize: "12px",
                 color: "var(--text-muted)",
-                marginTop: "4px",
+                marginTop: "3px",
               }}
             >
               {item.reading}
             </span>
           )}
 
-          <div style={{ marginTop: "var(--space-3)" }}>
+          <div style={{ marginTop: "10px" }}>
             <Badge variant={item.level > 0 ? "success" : "default"}>
               {studyText.levelPrefix} {item.level}
             </Badge>
@@ -322,16 +333,16 @@ const FlashcardItem = React.memo(function FlashcardItem({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "var(--space-2)",
+            gap: "6px",
             width: "100%",
             alignItems: "center",
-            marginTop: "14px",
+            marginTop: "16px",
           }}
         >
           {item.reading && (
             <span
               style={{
-                fontSize: "13px",
+                fontSize: "12px",
                 color: "var(--text-secondary)",
                 fontFamily: isJa ? "var(--font-jp)" : "inherit",
               }}
@@ -341,9 +352,10 @@ const FlashcardItem = React.memo(function FlashcardItem({
           )}
           <span
             style={{
-              fontSize: "17px",
+              fontSize: "16px",
               color: accentColor,
-              fontWeight: 600,
+              fontWeight: 700,
+              wordBreak: "break-word",
             }}
           >
             {item.meaning}
@@ -354,12 +366,13 @@ const FlashcardItem = React.memo(function FlashcardItem({
                 fontSize: "12px",
                 color: "var(--text-secondary)",
                 lineHeight: 1.35,
+                fontStyle: "italic",
               }}
             >
               «{item.example}»
             </span>
           )}
-          <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+          <span style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px" }}>
             {studyText.clickToHide}
           </span>
         </div>
@@ -377,6 +390,7 @@ export function JapaneseHub() {
     studyLanguage,
     studyText,
     studyPalette,
+    updateStudyPreferences,
   } = useApp();
   const { evaluateAchievements } = useAchievements();
 
@@ -401,6 +415,7 @@ export function JapaneseHub() {
   const [ambientEnabled, setAmbientEnabled] = useState<boolean>(() => {
     return localStorage.getItem("kavault_ambient_vibe") !== "false";
   });
+  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
 
   useEffect(() => {
     const savedLvl = localStorage.getItem(`kavault_study_level_${studyLanguage}`) || "ALL";
@@ -432,6 +447,11 @@ export function JapaneseHub() {
     const next = !ambientEnabled;
     setAmbientEnabled(next);
     localStorage.setItem("kavault_ambient_vibe", String(next));
+  };
+
+  const handleSwitchStudyLanguage = async (newLang: StudyLanguage) => {
+    if (newLang === studyLanguage) return;
+    await updateStudyPreferences({ studyLanguage: newLang });
   };
 
   const defaultSlotForLang = (lang: string): HubSlot => {
@@ -702,7 +722,7 @@ export function JapaneseHub() {
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        gap: "var(--space-6)",
+        gap: "var(--space-4)",
       }}
     >
       <CulturalAmbientOverlay
@@ -710,7 +730,105 @@ export function JapaneseHub() {
         enabled={ambientEnabled}
       />
 
-      {/* Верхний Hero-баннер с богатой культурной архитектурой */}
+      {/* ── 0. БЫСТРЫЙ ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА (ЯПОНИЯ · АНГЛИЯ · ГЕРМАНИЯ) ── */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 3,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "8px",
+          padding: "6px 12px",
+          borderRadius: "14px",
+          backgroundColor: "var(--surface)",
+          border: "1px solid var(--border)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            Язык обучения:
+          </span>
+          {(["ja", "en", "de"] as StudyLanguage[]).map((langKey) => {
+            const isSelected = studyLanguage === langKey;
+            const pal = STUDY_VIBE_PALETTES[langKey];
+            const labels: Record<StudyLanguage, string> = {
+              ja: "🇯🇵 Японский (日本語)",
+              en: "🇬🇧 English (Английский)",
+              de: "🇩🇪 Deutsch (Немецкий)",
+            };
+            return (
+              <button
+                key={langKey}
+                type="button"
+                onClick={() => handleSwitchStudyLanguage(langKey)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "5px 12px",
+                  borderRadius: "999px",
+                  border: isSelected
+                    ? `1.5px solid ${pal.accentHex}`
+                    : "1px solid var(--border-subtle)",
+                  backgroundColor: isSelected ? pal.softTint : "transparent",
+                  color: isSelected ? pal.accentHex : "var(--text-secondary)",
+                  fontSize: "12px",
+                  fontWeight: isSelected ? 800 : 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  boxShadow: isSelected ? `0 2px 10px -2px ${pal.accentHex}40` : "none",
+                }}
+              >
+                <span>{labels[langKey]}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <button
+            type="button"
+            onClick={toggleAmbient}
+            style={{
+              padding: "4px 10px",
+              borderRadius: "999px",
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--surface-raised)",
+              color: ambientEnabled ? studyPalette.accentHex : "var(--text-muted)",
+              fontSize: "11px",
+              fontWeight: 700,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            {ambientEnabled ? `✨ Атмосфера ВКЛ` : "Атмосфера ВЫКЛ"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShareModalOpen(true)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              padding: "4px 10px",
+              borderRadius: "999px",
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--surface-raised)",
+              color: "var(--text-secondary)",
+              fontSize: "11px",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            <Share2 size={11} />
+            Поделиться
+          </button>
+        </div>
+      </div>
+
+      {/* ── 1. ВЕРХНИЙ HERO-БАННЕР (КОМПАКТНЫЙ, АДАПТИВНЫЙ ПОД МОБИЛЬНЫЕ) ── */}
       <div
         style={{
           position: "relative",
@@ -720,93 +838,52 @@ export function JapaneseHub() {
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "var(--space-4)",
-          padding: "var(--space-6)",
+          gap: "var(--space-3)",
+          padding: "16px 20px",
           borderRadius: "var(--radius-lg)",
           background: "var(--vibe-banner-bg)",
           border: "1px solid var(--vibe-banner-border)",
-          boxShadow: `0 12px 32px -18px var(--vibe-glow, rgba(0,0,0,0.4))`,
+          boxShadow: `0 8px 24px -12px var(--vibe-glow, rgba(0,0,0,0.35))`,
         }}
       >
-        <CulturalHeroScene studyLanguage={studyLanguage} />
+        <CulturalHeroScene studyLanguage={studyLanguage} compact={true} />
 
-        <div style={{ position: "relative", zIndex: 2, maxWidth: "640px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
-            <div
+        <div style={{ position: "relative", zIndex: 2, maxWidth: "560px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+            <span
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "6px",
-                padding: "4px 10px",
+                gap: "5px",
+                padding: "3px 9px",
                 borderRadius: "999px",
                 backgroundColor: "var(--vibe-soft)",
                 border: "1px solid var(--vibe-banner-border)",
                 color: "var(--vibe-accent)",
-                fontSize: "12px",
+                fontSize: "11px",
                 fontWeight: 700,
               }}
             >
               <span>{studyPalette.flag}</span>
               <span>{studyText.vibeBadge}</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={toggleAmbient}
-              style={{
-                padding: "4px 10px",
-                borderRadius: "999px",
-                border: "1px solid var(--border)",
-                backgroundColor: "var(--surface)",
-                color: ambientEnabled ? studyPalette.accentHex : "var(--text-muted)",
-                fontSize: "11px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              {ambientEnabled ? `✨ ${studioText.atmosphereOn}` : studioText.atmosphereOff}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShareModalOpen(true)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-                padding: "4px 10px",
-                borderRadius: "999px",
-                border: "1px solid var(--border)",
-                backgroundColor: "var(--surface)",
-                color: "var(--text-secondary)",
-                fontSize: "11px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              <Share2 size={11} />
-              {language === "ru" ? "Поделиться" : language === "ja" ? "共有" : "Share Deck"}
-            </button>
+            </span>
+            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+              {selectedLevel !== "ALL" ? `Уровень: ${selectedLevel}` : "Все уровни"} · {cards.length} {studyText.wordsUnit}
+            </span>
           </div>
 
           <h2
             style={{
-              fontSize: "28px",
-              fontWeight: 700,
-              margin: "0 0 var(--space-1) 0",
+              fontSize: "22px",
+              fontWeight: 800,
+              margin: "0 0 2px 0",
               color: "var(--text-primary)",
+              lineHeight: "1.2",
             }}
           >
             {studyText.hubTitle}
           </h2>
-          <p style={{ color: "var(--text-secondary)", margin: "0 0 4px 0", fontSize: "14px" }}>
-            {skillTab === "vocabulary"
-              ? isS1
-                ? studyText.subtitleS1
-                : studyText.subtitleS2
-              : studioText.tabs[skillTab].shortDesc}
-          </p>
-          <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "12px" }}>
+          <p style={{ color: "var(--text-secondary)", margin: 0, fontSize: "12px", lineHeight: "1.4" }}>
             {studyText.vibeQuote}
           </p>
         </div>
@@ -821,770 +898,618 @@ export function JapaneseHub() {
           style={{
             position: "relative",
             zIndex: 2,
-            gap: "8px",
+            gap: "6px",
             backgroundColor: activeColor,
             color: "#ffffff",
-            boxShadow: `0 6px 20px -6px ${activeColor}`,
+            padding: "8px 16px",
+            fontSize: "13px",
+            fontWeight: 700,
+            boxShadow: `0 4px 14px -4px ${activeColor}`,
           }}
         >
-          <Sparkles size={16} /> {currentSecText.repeatBtn} (
-          {currentSectionCards.length}) →
+          <Sparkles size={15} /> {currentSecText.repeatBtn} ({currentSectionCards.length}) →
         </Button>
       </div>
 
-      {/* ── ПУТЬ ПО УРОВНЯМ ЯЗЫКА (N5 -> N4 -> N3 / A1 -> B2) ── */}
-      {(() => {
-        const activeMeta = levelsMeta.find((m) => m.id === selectedLevel);
-        return (
-          <Card
-            style={{
-              position: "relative",
-              zIndex: 2,
-              padding: "var(--space-3) var(--space-4)",
-              borderRadius: "16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-              border: `1px solid ${activeMeta ? `${activeMeta.color}45` : "var(--border-subtle)"}`,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: "8px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  color: "var(--text-primary)",
-                }}
-              >
-                <GraduationCap size={16} style={{ color: activeColor }} />
-                <span>{levelUi.roadmapTitle}</span>
-              </div>
-              {activeMeta && (
-                <span
-                  style={{
-                    fontSize: "12px",
-                    color: activeMeta.color,
-                    fontWeight: 600,
-                  }}
-                >
-                  {activeMeta.title[language]} · {activeMeta.subtitle[language]}
-                </span>
-              )}
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "8px",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => handleSelectLevel("ALL")}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 12px",
-                  borderRadius: "999px",
-                  border: `1px solid ${selectedLevel === "ALL" ? activeColor : "var(--border-subtle)"}`,
-                  backgroundColor:
-                    selectedLevel === "ALL" ? activeColor : "var(--bg-elevated)",
-                  color:
-                    selectedLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <span>{levelUi.allLevels}</span>
-                <span
-                  style={{
-                    fontSize: "11px",
-                    opacity: selectedLevel === "ALL" ? 0.92 : 0.75,
-                    fontWeight: 600,
-                  }}
-                >
-                  ({levelCounts.ALL || 0})
-                </span>
-              </button>
-
-              {levelsMeta.map((lvl) => {
-                const isActive = selectedLevel === lvl.id;
-                const count = levelCounts[lvl.id] || 0;
-                return (
-                  <button
-                    key={lvl.id}
-                    type="button"
-                    onClick={() => handleSelectLevel(lvl.id)}
-                    title={`${lvl.title[language]} — ${lvl.subtitle[language]}`}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "6px 12px",
-                      borderRadius: "999px",
-                      border: `1px solid ${isActive ? lvl.color : "var(--border-subtle)"}`,
-                      backgroundColor: isActive ? lvl.color : "var(--bg-elevated)",
-                      color: isActive ? "#ffffff" : "var(--text-primary)",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      boxShadow: isActive ? `0 4px 12px -4px ${lvl.color}` : "none",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    <span>{lvl.badge}</span>
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        opacity: isActive ? 0.92 : 0.68,
-                        fontWeight: 600,
-                      }}
-                    >
-                      ({count})
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </Card>
-        );
-      })()}
-
-      {/* ── ПАНЕЛЬ 4-Х ЯЗЫКОВЫХ МОДУЛЕЙ: ЛЕКСИКА · ГРАММАТИКА · ЧТЕНИЕ · АУДИРОВАНИЕ ── */}
+      {/* ── 2. СТИЛЬНАЯ ПАНЕЛЬ 4-Х МОДУЛЕЙ ОБУЧЕНИЯ (СЕГМЕНТИРОВАННЫЙ ТАБ-БАР) ── */}
       <div
         style={{
           position: "relative",
           zIndex: 2,
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(195px, 1fr))",
-          gap: "var(--space-3)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+          gap: "6px",
+          padding: "4px",
+          borderRadius: "14px",
+          backgroundColor: "var(--surface)",
+          border: "1px solid var(--border)",
         }}
       >
         {(
           [
-            { id: "vocabulary", icon: Layers, count: cards.length },
-            { id: "grammar", icon: GraduationCap },
-            { id: "reading", icon: BookOpen },
-            { id: "listening", icon: Headphones },
+            { id: "vocabulary", icon: Layers, label: studioText.tabs.vocabulary.label, count: cards.length },
+            { id: "grammar", icon: GraduationCap, label: studioText.tabs.grammar.label },
+            { id: "reading", icon: BookOpen, label: studioText.tabs.reading.label },
+            { id: "listening", icon: Headphones, label: studioText.tabs.listening.label },
           ] as const
         ).map((tab) => {
           const Icon = tab.icon;
           const active = skillTab === tab.id;
-          const info = studioText.tabs[tab.id];
           return (
             <button
               key={tab.id}
               type="button"
               onClick={() => handleSelectSkillTab(tab.id)}
               style={{
-                textAlign: "left",
-                padding: "12px 14px",
-                borderRadius: "var(--radius-lg)",
-                border: active
-                  ? `2px solid ${studyPalette.accentHex}`
-                  : "1px solid var(--border)",
-                backgroundColor: active ? "var(--vibe-soft)" : "var(--surface)",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
                 display: "flex",
                 alignItems: "center",
-                gap: "12px",
+                justifyContent: "center",
+                gap: "8px",
+                padding: "8px 12px",
+                borderRadius: "10px",
+                border: active ? `1.5px solid ${studyPalette.accentHex}` : "1px solid transparent",
+                backgroundColor: active ? "var(--vibe-soft)" : "transparent",
+                color: active ? studyPalette.accentHex : "var(--text-secondary)",
+                fontSize: "13px",
+                fontWeight: active ? 800 : 600,
+                cursor: "pointer",
+                transition: "all 0.15s ease",
               }}
             >
-              <div
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "10px",
-                  backgroundColor: active ? studyPalette.accentHex : "var(--surface-raised)",
-                  color: active ? "#ffffff" : "var(--text-muted)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <Icon size={18} />
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 700,
-                    color: "var(--text-primary)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <span>{info.label}</span>
-                  {"count" in tab && (
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        padding: "1px 6px",
-                        borderRadius: "999px",
-                        backgroundColor: "var(--surface-raised)",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      {tab.count}
-                    </span>
-                  )}
-                </div>
-                <div
+              <Icon size={16} />
+              <span>{tab.label}</span>
+              {"count" in tab && (
+                <span
                   style={{
                     fontSize: "11px",
-                    color: "var(--text-muted)",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    padding: "1px 6px",
+                    borderRadius: "999px",
+                    backgroundColor: active ? `${studyPalette.accentHex}30` : "var(--surface-raised)",
+                    color: active ? studyPalette.accentHex : "var(--text-muted)",
+                    fontWeight: 700,
                   }}
                 >
-                  {info.shortDesc}
-                </div>
-              </div>
+                  {tab.count}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
 
-      {/* ── МОДУЛЬ 1: ЛЕКСИКА И КАРТОЧКИ ── */}
-      {skillTab === "vocabulary" && (
-        <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-      {/* ── 2 ГЛАВНЫХ РАЗДЕЛА ДЛЯ ИЗУЧАЕМОГО ЯЗЫКА ── */}
+      {/* ── 3. ПУТЬ ПО УРОВНЯМ ЯЗЫКА (КОМПАКТНЫЙ ГОРИЗОНТАЛЬНЫЙ СЕЛЕКТОР) ── */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: "var(--space-4)",
+          position: "relative",
+          zIndex: 2,
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          overflowX: "auto",
+          paddingBottom: "2px",
+          WebkitOverflowScrolling: "touch",
         }}
       >
-        {/* Раздел 1 */}
-        <Card
-          onClick={() => handleSelectSlot("S1")}
+        <button
+          type="button"
+          onClick={() => handleSelectLevel("ALL")}
           style={{
-            padding: "var(--space-5)",
-            cursor: "pointer",
-            border: isS1
-              ? `2px solid ${studyPalette.accentHex}`
-              : "1px solid var(--border)",
-            backgroundColor: isS1
-              ? "var(--surface-raised)"
-              : "var(--surface)",
-            transition: "all 0.2s ease",
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
-            justifyContent: "space-between",
+            gap: "5px",
+            padding: "5px 12px",
+            borderRadius: "999px",
+            border: `1.5px solid ${selectedLevel === "ALL" ? activeColor : "var(--border-subtle)"}`,
+            backgroundColor: selectedLevel === "ALL" ? activeColor : "var(--bg-elevated)",
+            color: selectedLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
+            fontSize: "12px",
+            fontWeight: 700,
+            cursor: "pointer",
+            flexShrink: 0,
+            transition: "all 0.15s ease",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
-              style={{
-                width: "42px",
-                height: "42px",
-                borderRadius: "10px",
-                backgroundColor: isS1
-                  ? studyPalette.accentHex
-                  : "var(--surface-raised)",
-                color: isS1 ? "#fff" : "var(--text-muted)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Scroll size={22} />
-            </div>
-            <div>
-              <div
-                style={{
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  color: "var(--text-primary)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                {studyText.section1.title}
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                {studyText.section1.desc}
-              </div>
-            </div>
-          </div>
-          <Badge variant={isS1 ? "accent" : "default"}>
-            {section1Cards.length} {studyText.wordsUnit}
-          </Badge>
-        </Card>
+          <span>{levelUi.allLevels}</span>
+          <span style={{ fontSize: "11px", opacity: 0.85 }}>({levelCounts.ALL || 0})</span>
+        </button>
 
-        {/* Раздел 2 */}
-        <Card
-          onClick={() => handleSelectSlot("S2")}
-          style={{
-            padding: "var(--space-5)",
-            cursor: "pointer",
-            border: !isS1
-              ? `2px solid ${studyPalette.secondaryHex}`
-              : "1px solid var(--border)",
-            backgroundColor: !isS1
-              ? "var(--surface-raised)"
-              : "var(--surface)",
-            transition: "all 0.2s ease",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
+        {levelsMeta.map((lvl) => {
+          const isActive = selectedLevel === lvl.id;
+          const count = levelCounts[lvl.id] || 0;
+          return (
+            <button
+              key={lvl.id}
+              type="button"
+              onClick={() => handleSelectLevel(lvl.id)}
+              title={`${lvl.title[language]} — ${lvl.subtitle[language]}`}
               style={{
-                width: "42px",
-                height: "42px",
-                borderRadius: "10px",
-                backgroundColor: !isS1
-                  ? studyPalette.secondaryHex
-                  : "var(--surface-raised)",
-                color: !isS1 ? "#fff" : "var(--text-muted)",
-                display: "flex",
+                display: "inline-flex",
                 alignItems: "center",
-                justifyContent: "center",
+                gap: "5px",
+                padding: "5px 12px",
+                borderRadius: "999px",
+                border: `1.5px solid ${isActive ? lvl.color : "var(--border-subtle)"}`,
+                backgroundColor: isActive ? lvl.color : "var(--bg-elevated)",
+                color: isActive ? "#ffffff" : "var(--text-primary)",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer",
+                flexShrink: 0,
+                boxShadow: isActive ? `0 2px 10px -2px ${lvl.color}` : "none",
+                transition: "all 0.15s ease",
               }}
             >
-              <BookA size={22} />
-            </div>
-            <div>
-              <div
-                style={{
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  color: "var(--text-primary)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                {studyText.section2.title}
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                {studyText.section2.desc}
-              </div>
-            </div>
-          </div>
-          <Badge variant={!isS1 ? "accent" : "default"}>
-            {section2Cards.length} {studyText.wordsUnit}
-          </Badge>
-        </Card>
+              <span>{lvl.badge}</span>
+              <span style={{ fontSize: "11px", opacity: 0.85 }}>({count})</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* ── ФОРМА ДОБАВЛЕНИЯ СЛОВА (АДАПТИВНАЯ ПОД ЯЗЫК И РАЗДЕЛ) ── */}
-      <Card style={{ padding: "var(--space-5)" }}>
-        <h3
-          style={{
-            fontSize: "16px",
-            margin: "0 0 var(--space-4) 0",
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          {isS1 ? (
-            <>
-              <Scroll size={18} color={studyPalette.accentHex} /> {currentSecText.addTitle}
-            </>
-          ) : (
-            <>
-              <BookA size={18} color={studyPalette.secondaryHex} /> {currentSecText.addTitle}
-            </>
-          )}
-        </h3>
+      {/* ── 4. МОДУЛЬ 1: ЛЕКСИКА И КАРТОЧКИ ── */}
+      {skillTab === "vocabulary" && (
+        <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          {/* СЕГМЕНТИРОВАННОЕ ПЕРЕКЛЮЧЕНИЕ МЕЖДУ S1 И S2 */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "8px",
+            }}
+          >
+            {/* Раздел 1 */}
+            <button
+              type="button"
+              onClick={() => handleSelectSlot("S1")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px 14px",
+                borderRadius: "12px",
+                cursor: "pointer",
+                border: isS1
+                  ? `2px solid ${studyPalette.accentHex}`
+                  : "1px solid var(--border)",
+                backgroundColor: isS1
+                  ? "var(--surface-raised)"
+                  : "var(--surface)",
+                transition: "all 0.15s ease",
+                textAlign: "left",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Scroll size={16} color={studyPalette.accentHex} />
+                <span
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {studyText.section1.title}
+                </span>
+              </div>
+              <Badge variant={isS1 ? "accent" : "default"}>
+                {section1Cards.length}
+              </Badge>
+            </button>
 
-        <form
-          onSubmit={handleAddCard}
-          style={{
-            display: "flex",
-            gap: "var(--space-3)",
-            alignItems: "flex-start",
-            flexWrap: "wrap",
-          }}
-        >
-          {/* Поле 1: Слово */}
-          <div style={{ flex: "1 1 240px" }}>
-            <Input
-              icon={<Type size={16} />}
-              placeholder={currentSecText.wordPlaceholder}
-              value={word}
-              onChange={(e) => setWord(e.target.value)}
-              required
-            />
+            {/* Раздел 2 */}
+            <button
+              type="button"
+              onClick={() => handleSelectSlot("S2")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px 14px",
+                borderRadius: "12px",
+                cursor: "pointer",
+                border: !isS1
+                  ? `2px solid ${studyPalette.secondaryHex}`
+                  : "1px solid var(--border)",
+                backgroundColor: !isS1
+                  ? "var(--surface-raised)"
+                  : "var(--surface)",
+                transition: "all 0.15s ease",
+                textAlign: "left",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <BookA size={16} color={studyPalette.secondaryHex} />
+                <span
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {studyText.section2.title}
+                </span>
+              </div>
+              <Badge variant={!isS1 ? "accent" : "default"}>
+                {section2Cards.length}
+              </Badge>
+            </button>
           </div>
 
-          {/* Поле 2: Чтение / Транскрипция / Форма */}
-          {currentSecText.showReadingInput && (
-            <div style={{ flex: "1 1 200px" }}>
-              <Input
-                icon={<Languages size={16} />}
-                placeholder={currentSecText.readingPlaceholder || studyText.readingLabelPlaceholder}
-                value={reading}
-                onChange={(e) => setReading(e.target.value)}
-              />
+          {/* КОМПАКТНАЯ ПАНЕЛЬ ДОБАВЛЕНИЯ КАРТОЧКИ (СВОРАЧИВАЕМАЯ) */}
+          <Card style={{ padding: "12px 16px" }}>
+            <div
+              onClick={() => setIsAddFormOpen(!isAddFormOpen)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                cursor: "pointer",
+                userSelect: "none",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Plus size={16} color={activeColor} />
+                <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
+                  {currentSecText.addTitle}
+                </span>
+              </div>
+              <button
+                type="button"
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--text-muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  cursor: "pointer",
+                }}
+              >
+                {isAddFormOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </button>
             </div>
-          )}
 
-          {/* Поле 3: Перевод */}
-          <div style={{ flex: "1 1 200px" }}>
-            <Input
-              icon={<BookOpen size={16} />}
-              placeholder={currentSecText.meaningPlaceholder}
-              value={meaning}
-              onChange={(e) => setMeaning(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Выбор уровня карточки (N5/N4/N3 или A1-B2) */}
-          <select
-            aria-label={levelUi.cardLevelLabel}
-            title={levelUi.cardLevelLabel}
-            value={cardLevel}
-            onChange={(e) => setCardLevel(e.target.value)}
-            style={{
-              height: "40px",
-              padding: "0 12px",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--border-subtle)",
-              backgroundColor: "var(--bg-elevated)",
-              color: "var(--text-primary)",
-              fontSize: "13px",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            {levelsMeta.map((lvl) => (
-              <option key={lvl.id} value={lvl.id}>
-                {lvl.badge}
-              </option>
-            ))}
-          </select>
-
-          <Button
-            type="submit"
-            style={{
-              height: "40px",
-              backgroundColor: activeColor,
-              color: "#ffffff",
-            }}
-          >
-            <Plus size={18} /> {t.jap.addBtn}
-          </Button>
-        </form>
-      </Card>
-
-      {/* ── СПИСОК КАРТОЧЕК ВЫБРАННОГО РАЗДЕЛА ── */}
-      <div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "var(--space-4)",
-            marginBottom: "var(--space-4)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            <h3
-              style={{
-                fontSize: "16px",
-                margin: 0,
-                color: "var(--text-secondary)",
-                fontWeight: 600,
-              }}
-            >
-              {currentSecText.deckTitle} ({filteredCards.length})
-            </h3>
-
-            {!isStarterClaimed && (
-              <Button
-                variant="secondary"
-                onClick={handleLoadStarterPack}
-                disabled={isImporting}
+            {isAddFormOpen && (
+              <form
+                onSubmit={handleAddCard}
                 style={{
-                  padding: "4px 10px",
-                  fontSize: "12px",
-                  color: studyPalette.accentHex,
-                  borderColor: "var(--vibe-banner-border)",
-                  gap: "6px",
-                }}
-                title={studyText.starterFullBtn}
-              >
-                <Sparkles size={13} />{" "}
-                {isImporting
-                  ? t.jap.loadingBtn
-                  : cards.length > 0 && missingStarterCount > 0
-                    ? `${studyText.starterBtn} (+${missingStarterCount})`
-                    : studyText.starterBtn}
-              </Button>
-            )}
-
-            <Button
-              variant="secondary"
-              onClick={() => setImportModalOpen(true)}
-              style={{
-                padding: "4px 10px",
-                fontSize: "12px",
-                color: "var(--text-primary)",
-                borderColor: "var(--border)",
-                gap: "6px",
-              }}
-            >
-              <Upload size={13} />
-              {language === "ru"
-                ? "Импорт .csv / .txt"
-                : language === "ja"
-                  ? "CSV / Anki 取込"
-                  : "Import .csv / .txt"}
-            </Button>
-
-            {cards.length > 0 && (
-              <Button
-                variant="secondary"
-                onClick={() => setShareModalOpen(true)}
-                style={{
-                  padding: "4px 10px",
-                  fontSize: "12px",
-                  color: studyPalette.accentHex,
-                  borderColor: "var(--border)",
-                  gap: "6px",
+                  display: "flex",
+                  gap: "10px",
+                  alignItems: "flex-start",
+                  flexWrap: "wrap",
+                  marginTop: "12px",
+                  paddingTop: "12px",
+                  borderTop: "1px solid var(--border-subtle)",
                 }}
               >
-                <Share2 size={13} />
-                {language === "ru"
-                  ? "Поделиться набором"
-                  : language === "ja"
-                    ? "デッキを共有"
-                    : "Share Deck"}
-              </Button>
-            )}
+                {/* Поле 1: Слово */}
+                <div style={{ flex: "1 1 200px" }}>
+                  <Input
+                    icon={<Type size={15} />}
+                    placeholder={currentSecText.wordPlaceholder}
+                    value={word}
+                    onChange={(e) => setWord(e.target.value)}
+                    required
+                  />
+                </div>
 
-            {currentSectionCards.length > 0 && (
-              <Button
-                variant="secondary"
-                onClick={handleClearSection}
-                style={{
-                  padding: "4px 10px",
-                  fontSize: "12px",
-                  color: "var(--text-muted)",
-                  borderColor: "var(--border)",
-                  gap: "6px",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
-                title={currentSecText.clearBtn}
-              >
-                <Trash2 size={13} /> {currentSecText.clearBtn}
-              </Button>
-            )}
+                {/* Поле 2: Чтение / Транскрипция */}
+                {currentSecText.showReadingInput && (
+                  <div style={{ flex: "1 1 180px" }}>
+                    <Input
+                      icon={<Languages size={15} />}
+                      placeholder={currentSecText.readingPlaceholder || studyText.readingLabelPlaceholder}
+                      value={reading}
+                      onChange={(e) => setReading(e.target.value)}
+                    />
+                  </div>
+                )}
 
-            {cards.length > 0 && (
-              <Button
-                variant="secondary"
-                onClick={handleClearAllDeck}
-                style={{
-                  padding: "4px 10px",
-                  fontSize: "12px",
-                  color: "var(--text-muted)",
-                  borderColor: "var(--border)",
-                  gap: "6px",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
-                title={studyText.clearAllDeckBtn}
-              >
-                <Trash2 size={13} /> {studyText.clearAllDeckBtn} ({cards.length})
-              </Button>
-            )}
-          </div>
+                {/* Поле 3: Перевод */}
+                <div style={{ flex: "1 1 180px" }}>
+                  <Input
+                    icon={<BookOpen size={15} />}
+                    placeholder={currentSecText.meaningPlaceholder}
+                    value={meaning}
+                    onChange={(e) => setMeaning(e.target.value)}
+                    required
+                  />
+                </div>
 
-          <div style={{ width: "250px" }}>
-            <Input
-              icon={<Search size={15} />}
-              placeholder={t.jap.searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
+                {/* Выбор уровня */}
+                <select
+                  aria-label={levelUi.cardLevelLabel}
+                  title={levelUi.cardLevelLabel}
+                  value={cardLevel}
+                  onChange={(e) => setCardLevel(e.target.value)}
+                  style={{
+                    height: "40px",
+                    padding: "0 10px",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border-subtle)",
+                    backgroundColor: "var(--bg-elevated)",
+                    color: "var(--text-primary)",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  {levelsMeta.map((lvl) => (
+                    <option key={lvl.id} value={lvl.id}>
+                      {lvl.badge}
+                    </option>
+                  ))}
+                </select>
 
-        {filteredCards.length === 0 ? (
-          <Card
-            style={{
-              padding: "var(--space-8)",
-              textAlign: "center",
-              color: "var(--text-muted)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "12px",
-            }}
-          >
-            <p style={{ margin: 0, fontSize: "15px" }}>
-              {searchQuery ? studyText.notFound : currentSecText.emptyText}
-            </p>
-            {!searchQuery && !isStarterClaimed && (
-              <Button
-                onClick={handleLoadStarterPack}
-                disabled={isImporting}
-                style={{
-                  gap: "8px",
-                  marginTop: "6px",
-                  backgroundColor: studyPalette.accentHex,
-                  color: "#ffffff",
-                }}
-              >
-                <Sparkles size={16} />{" "}
-                {isImporting ? t.jap.importingCardsBtn : studyText.starterFullBtn}
-              </Button>
+                <Button
+                  type="submit"
+                  style={{
+                    height: "40px",
+                    backgroundColor: activeColor,
+                    color: "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                  }}
+                >
+                  <Plus size={16} /> Добавить
+                </Button>
+              </form>
             )}
           </Card>
-        ) : (
-          selectedLevel === "ALL" ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-              {levelsMeta.map((lvl) => {
-                const lvlCards = filteredCards.filter(
-                  (c) => (c.studyLevel || defaultLevel) === lvl.id,
-                );
-                if (lvlCards.length === 0) return null;
-                return (
-                  <div
-                    key={lvl.id}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "var(--space-3)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
-                        gap: "10px",
-                        padding: "10px 14px",
-                        borderRadius: "12px",
-                        backgroundColor: "var(--bg-surface)",
-                        border: `1px solid ${lvl.color}40`,
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                        <span
-                          style={{
-                            fontSize: "12px",
-                            padding: "3px 10px",
-                            borderRadius: "999px",
-                            backgroundColor: `${lvl.color}20`,
-                            color: lvl.color,
-                            border: `1px solid ${lvl.color}45`,
-                            fontWeight: 700,
-                          }}
-                        >
-                          {lvl.badge}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 700,
-                            color: "var(--text-primary)",
-                          }}
-                        >
-                          {lvl.title[language]}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "12px",
-                            color: "var(--text-muted)",
-                          }}
-                        >
-                          {lvl.subtitle[language]} · {lvlCards.length}
-                        </span>
-                      </div>
 
-                      <Button
-                        variant="secondary"
-                        onClick={() =>
-                          navigate(
-                            `/review?mode=${currentSecText.id.toLowerCase()}&level=${lvl.id}`,
-                          )
-                        }
-                        style={{
-                          gap: "6px",
-                          padding: "6px 12px",
-                          fontSize: "12px",
-                          borderColor: `${lvl.color}45`,
-                          color: lvl.color,
-                        }}
-                      >
-                        <Sparkles size={13} /> {levelUi.sectionReviewBtn} ({lvlCards.length})
-                      </Button>
-                    </div>
+          {/* ПОИСК И ДЕЙСТВИЯ НАД КОЛОДОЙ */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "8px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-secondary)" }}>
+                {currentSecText.deckTitle} ({filteredCards.length})
+              </span>
 
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))",
-                        gap: "var(--space-4)",
-                      }}
-                    >
-                      {lvlCards.map((item) => (
-                        <FlashcardItem
-                          key={item.id}
-                          item={item}
-                          slot={activeSlot}
-                          onDelete={handleDeleteCard}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+              {!isStarterClaimed && (
+                <Button
+                  variant="secondary"
+                  onClick={handleLoadStarterPack}
+                  disabled={isImporting}
+                  style={{
+                    padding: "4px 8px",
+                    fontSize: "11px",
+                    color: studyPalette.accentHex,
+                    borderColor: "var(--vibe-banner-border)",
+                    gap: "4px",
+                  }}
+                  title={studyText.starterFullBtn}
+                >
+                  <Sparkles size={12} />{" "}
+                  {isImporting
+                    ? t.jap.loadingBtn
+                    : cards.length > 0 && missingStarterCount > 0
+                      ? `Стартовый (+${missingStarterCount})`
+                      : "Стартовый набор"}
+                </Button>
+              )}
+
+              <Button
+                variant="secondary"
+                onClick={() => setImportModalOpen(true)}
+                style={{
+                  padding: "4px 8px",
+                  fontSize: "11px",
+                  color: "var(--text-primary)",
+                  borderColor: "var(--border)",
+                  gap: "4px",
+                }}
+              >
+                <Upload size={12} />
+                Импорт .csv
+              </Button>
+
+              {currentSectionCards.length > 0 && (
+                <Button
+                  variant="secondary"
+                  onClick={handleClearSection}
+                  style={{
+                    padding: "4px 8px",
+                    fontSize: "11px",
+                    color: "var(--text-muted)",
+                    borderColor: "var(--border)",
+                    gap: "4px",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+                  title={currentSecText.clearBtn}
+                >
+                  <Trash2 size={12} /> {currentSecText.clearBtn}
+                </Button>
+              )}
+
+              {cards.length > 0 && (
+                <Button
+                  variant="secondary"
+                  onClick={handleClearAllDeck}
+                  style={{
+                    padding: "4px 8px",
+                    fontSize: "11px",
+                    color: "var(--text-muted)",
+                    borderColor: "var(--border)",
+                    gap: "4px",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--error)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+                  title={studyText.clearAllDeckBtn}
+                >
+                  <Trash2 size={12} /> Все ({cards.length})
+                </Button>
+              )}
             </div>
-          ) : (
-            <div
+
+            <div style={{ width: "clamp(180px, 100%, 260px)" }}>
+              <Input
+                icon={<Search size={14} />}
+                placeholder="Поиск по словам..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* СПИСОК КАРТОЧЕК */}
+          {filteredCards.length === 0 ? (
+            <Card
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))",
-                gap: "var(--space-4)",
+                padding: "var(--space-6)",
+                textAlign: "center",
+                color: "var(--text-muted)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "10px",
               }}
             >
-              {filteredCards.map((item) => (
-                <FlashcardItem
-                  key={item.id}
-                  item={item}
-                  slot={activeSlot}
-                  onDelete={handleDeleteCard}
-                />
-              ))}
-            </div>
-          )
-        )}
-      </div>
+              <p style={{ margin: 0, fontSize: "14px" }}>
+                {searchQuery ? studyText.notFound : currentSecText.emptyText}
+              </p>
+              {!searchQuery && !isStarterClaimed && (
+                <Button
+                  onClick={handleLoadStarterPack}
+                  disabled={isImporting}
+                  style={{
+                    gap: "6px",
+                    backgroundColor: studyPalette.accentHex,
+                    color: "#ffffff",
+                    fontSize: "12px",
+                  }}
+                >
+                  <Sparkles size={14} />{" "}
+                  {isImporting ? t.jap.importingCardsBtn : studyText.starterFullBtn}
+                </Button>
+              )}
+            </Card>
+          ) : (
+            selectedLevel === "ALL" ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                {levelsMeta.map((lvl) => {
+                  const lvlCards = filteredCards.filter(
+                    (c) => (c.studyLevel || defaultLevel) === lvl.id,
+                  );
+                  if (lvlCards.length === 0) return null;
+                  return (
+                    <div
+                      key={lvl.id}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: "8px",
+                          padding: "8px 12px",
+                          borderRadius: "10px",
+                          backgroundColor: "var(--bg-surface)",
+                          border: `1px solid ${lvl.color}35`,
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              padding: "2px 8px",
+                              borderRadius: "999px",
+                              backgroundColor: `${lvl.color}20`,
+                              color: lvl.color,
+                              border: `1px solid ${lvl.color}45`,
+                              fontWeight: 800,
+                            }}
+                          >
+                            {lvl.badge}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: 700,
+                              color: "var(--text-primary)",
+                            }}
+                          >
+                            {lvl.title[language]}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            {lvlCards.length} {studyText.wordsUnit}
+                          </span>
+                        </div>
+
+                        <Button
+                          variant="secondary"
+                          onClick={() =>
+                            navigate(
+                              `/review?mode=${currentSecText.id.toLowerCase()}&level=${lvl.id}`,
+                            )
+                          }
+                          style={{
+                            gap: "5px",
+                            padding: "4px 10px",
+                            fontSize: "11px",
+                            borderColor: `${lvl.color}45`,
+                            color: lvl.color,
+                          }}
+                        >
+                          <Sparkles size={12} /> Повторить ({lvlCards.length})
+                        </Button>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+                          gap: "10px",
+                        }}
+                      >
+                        {lvlCards.map((item) => (
+                          <FlashcardItem
+                            key={item.id}
+                            item={item}
+                            slot={activeSlot}
+                            onDelete={handleDeleteCard}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+                  gap: "10px",
+                }}
+              >
+                {filteredCards.map((item) => (
+                  <FlashcardItem
+                    key={item.id}
+                    item={item}
+                    slot={activeSlot}
+                    onDelete={handleDeleteCard}
+                  />
+                ))}
+              </div>
+            )
+          )}
         </div>
       )}
 
