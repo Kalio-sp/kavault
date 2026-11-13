@@ -67,10 +67,10 @@ interface ToastMessage {
 const ACCENT_COLORS = [
   { key: "blue" as const, label: "Синий", value: "#3b82f6" },
   { key: "purple" as const, label: "Фиолетовый", value: "#8b5cf6" },
-  { key: "emerald" as const, label: "Изумрудный", value: "#10b981" },
+  { key: "emerald" as const, label: "Изумруд", value: "#10b981" },
   { key: "amber" as const, label: "Янтарный", value: "#f59e0b" },
   { key: "rose" as const, label: "Розовый", value: "#ec4899" },
-  { key: "cyan" as const, label: "Бирюзовый", value: "#06b6d4" },
+  { key: "cyan" as const, label: "Бирюза", value: "#06b6d4" },
 ];
 
 export function Settings() {
@@ -435,7 +435,7 @@ export function Settings() {
       await api.delete(`/japanese/clear/all?language=${studyLanguage}`);
       unmarkPackClaimed(studyLanguageToPackType(studyLanguage));
       if (showProgramming) unmarkPackClaimed("all");
-      setUserResources(showProgramming ? [] : []);
+      setUserResources([]);
       setUserCards([]);
       setVaultStats({
         resourcesCount: 0,
@@ -521,77 +521,104 @@ export function Settings() {
     navigate("/login");
   };
 
+  // Компактные подписи для мобильных + полные для ПК
   const tabsConfig = [
-    { id: "appearance", label: t.settings.tabs.appearance, icon: Palette },
-    { id: "account", label: t.settings.tabs.account, icon: User },
-    { id: "learning", label: t.settings.tabs.learning, icon: Target },
-    { id: "vault", label: t.settings.tabs.vault, icon: Database },
+    { id: "appearance", shortLabel: "Тема", fullLabel: "Внешний вид", icon: Palette },
+    { id: "account", shortLabel: "Профиль", fullLabel: "Профиль и Защита", icon: User },
+    { id: "learning", shortLabel: "Обучение", fullLabel: "Цели и Обучение", icon: Target },
+    { id: "vault", shortLabel: "Сервер", fullLabel: "Данные и Хранилище", icon: Database },
   ];
 
   return (
     <div className="kv-settings-root">
-      {/* Пиксель-перфектные стили с выверенным вертикальным центрированием иконок */}
+      {/* 100% защита от горизонтального скролла и вылезания за края на смартфонах */}
       <style>{`
         .kv-settings-root {
           display: flex;
           flex-direction: column;
-          gap: 16px;
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 8px 12px 64px 12px;
+          gap: 14px;
+          max-width: 860px;
           width: 100%;
+          margin: 0 auto;
           box-sizing: border-box;
+          overflow-x: hidden;
         }
 
         @media (min-width: 640px) {
           .kv-settings-root {
-            gap: 22px;
-            padding: 16px 20px 48px 20px;
+            gap: 20px;
           }
         }
 
-        /* ─── НАВИГАЦИОННЫЙ БЛОК ТАБОВ ─── */
-        .kv-settings-tabs-bar {
-          display: inline-flex;
+        /* ─── ВЕРХНЯЯ ШАПКА ─── */
+        .kv-header-row {
+          display: flex;
+          justifyContent: space-between;
           align-items: center;
-          gap: 6px;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 6px;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-          width: fit-content;
-          max-width: 100%;
-          backdrop-filter: blur(12px);
+          gap: 12px;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         @media (max-width: 639px) {
+          .kv-header-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+        }
+
+        /* ─── НАВИГАЦИОННЫЙ ТАБ-БАР (Никогда не вылезает за экран) ─── */
+        .kv-settings-tabs-bar {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 4px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 4px;
+          width: 100%;
+          box-sizing: border-box;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        @media (min-width: 640px) {
           .kv-settings-tabs-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            width: 100%;
-            position: sticky;
-            top: 10px;
-            z-index: 40;
+            display: inline-flex;
+            width: fit-content;
             padding: 5px;
+            gap: 6px;
+            border-radius: 14px;
           }
         }
 
         .kv-settings-tab-btn {
-          display: inline-flex;
+          display: flex;
+          flex-direction: column;
           align-items: center;
-          justify-content: center;
-          gap: 8px;
-          padding: 8px 16px;
-          min-height: 42px;
-          border-radius: 10px;
+          justifyContent: center;
+          gap: 3px;
+          padding: 8px 2px;
+          min-height: 48px;
+          border-radius: 8px;
           border: 1px solid transparent;
           background: transparent;
           color: var(--text-muted);
           cursor: pointer;
           transition: all 0.15s ease;
           -webkit-tap-highlight-color: transparent;
-          white-space: nowrap;
+          min-width: 0;
+          box-sizing: border-box;
+        }
+
+        @media (min-width: 640px) {
+          .kv-settings-tab-btn {
+            flex-direction: row;
+            gap: 8px;
+            padding: 8px 16px;
+            min-height: 40px;
+            border-radius: 10px;
+          }
         }
 
         .kv-settings-tab-btn:hover {
@@ -605,35 +632,26 @@ export function Settings() {
           box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
-        @media (max-width: 639px) {
-          .kv-settings-tab-btn {
-            flex-direction: column;
-            gap: 4px;
-            padding: 8px 2px;
-            min-height: 52px;
-            border-radius: 10px;
-          }
-        }
-
-        .kv-tab-icon-wrap {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          width: 18px;
-          height: 18px;
-        }
-
-        .kv-tab-title {
-          font-size: 13px;
+        .kv-tab-label-short {
+          font-size: 11px;
           font-weight: 600;
           line-height: 1;
+          display: block;
         }
 
-        @media (max-width: 639px) {
-          .kv-tab-title {
-            font-size: 11px;
-            text-align: center;
+        .kv-tab-label-full {
+          display: none;
+        }
+
+        @media (min-width: 640px) {
+          .kv-tab-label-short {
+            display: none;
+          }
+          .kv-tab-label-full {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
           }
         }
 
@@ -641,30 +659,33 @@ export function Settings() {
         .kv-card {
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: 16px;
-          padding: 18px;
+          border-radius: 14px;
+          padding: 14px;
           box-shadow: 0 2px 10px rgba(0,0,0,0.08);
           box-sizing: border-box;
+          width: 100%;
+          overflow: hidden;
         }
 
         @media (min-width: 640px) {
           .kv-card {
-            padding: 22px;
-            border-radius: 18px;
+            padding: 20px;
+            border-radius: 16px;
           }
         }
 
-        /* ─── ШАПКА ГРУППЫ НАСТРОЕК С ИКОНКОЙ ─── */
+        /* ─── ШАПКА ГРУППЫ НАСТРОЕК ─── */
         .kv-group-header {
           display: flex;
           align-items: center;
-          gap: 12px;
-          margin-bottom: 16px;
+          gap: 10px;
+          margin-bottom: 14px;
+          width: 100%;
         }
 
         .kv-group-icon {
-          width: 38px;
-          height: 38px;
+          width: 36px;
+          height: 36px;
           border-radius: 10px;
           background: var(--accent-soft);
           color: var(--accent);
@@ -679,6 +700,7 @@ export function Settings() {
           flex-direction: column;
           justify-content: center;
           min-width: 0;
+          flex: 1;
         }
 
         .kv-group-title {
@@ -690,25 +712,26 @@ export function Settings() {
         }
 
         .kv-group-desc {
-          margin: 3px 0 0 0;
-          font-size: 13px;
+          margin: 2px 0 0 0;
+          font-size: 12px;
           line-height: 1.35;
           color: var(--text-muted);
         }
 
-        /* ─── КЛИКАБЕЛЬНЫЕ КАРТОЧКИ ОПЦИЙ (Touch Cards) ─── */
+        /* ─── TOUCH КАРТОЧКИ ВЫБОРА ─── */
         .kv-touch-card {
           border: 2px solid var(--border);
           background: var(--surface-raised);
-          border-radius: 14px;
-          padding: 14px 16px;
+          border-radius: 12px;
+          padding: 12px 14px;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 12px;
-          min-height: 60px;
+          gap: 10px;
+          min-height: 56px;
           box-sizing: border-box;
+          width: 100%;
           transition: all 0.15s ease;
           -webkit-tap-highlight-color: transparent;
         }
@@ -723,21 +746,19 @@ export function Settings() {
           box-shadow: 0 0 16px rgba(59, 130, 246, 0.15);
         }
 
-        /* Квадратный контейнер иконки внутри карточки */
         .kv-item-icon-box {
-          width: 36px;
-          height: 36px;
-          border-radius: 9px;
+          width: 34px;
+          height: 34px;
+          border-radius: 8px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
         }
 
-        /* Симметричный радио-индикатор справа */
         .kv-radio-check {
-          width: 22px;
-          height: 22px;
+          width: 20px;
+          height: 20px;
           border-radius: 50%;
           border: 2px solid var(--border);
           background: var(--surface);
@@ -755,20 +776,22 @@ export function Settings() {
           box-shadow: 0 0 8px var(--accent);
         }
 
-        /* Кнопки акцентных цветов: одинаковая фиксированная высота */
+        /* ─── СЕТКА АКЦЕНТНЫХ ЦВЕТОВ (3 в ряд на телефоне) ─── */
         .kv-accent-grid {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 10px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+          width: 100%;
+          box-sizing: border-box;
         }
 
-        @media (min-width: 520px) {
+        @media (max-width: 360px) {
           .kv-accent-grid {
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
           }
         }
 
-        @media (min-width: 800px) {
+        @media (min-width: 680px) {
           .kv-accent-grid {
             grid-template-columns: repeat(6, 1fr);
           }
@@ -777,18 +800,19 @@ export function Settings() {
         .kv-color-btn {
           display: inline-flex;
           align-items: center;
-          gap: 10px;
-          padding: 0 12px;
-          height: 46px;
-          border-radius: 12px;
+          justifyContent: center;
+          gap: 8px;
+          padding: 0 8px;
+          height: 42px;
+          border-radius: 10px;
           border: 1px solid var(--border);
           background: var(--surface);
           color: var(--text-primary);
           cursor: pointer;
           transition: all 0.15s ease;
           box-sizing: border-box;
-          white-space: nowrap;
-          overflow: hidden;
+          min-width: 0;
+          width: 100%;
         }
 
         .kv-color-btn.active {
@@ -797,40 +821,37 @@ export function Settings() {
         }
 
         .kv-color-circle {
-          width: 18px;
-          height: 18px;
+          width: 16px;
+          height: 16px;
           border-radius: 50%;
           display: inline-flex;
           align-items: center;
-          justify-content: center;
+          justifyContent: center;
           color: #ffffff;
           flex-shrink: 0;
         }
 
-        /* Переключатели в стиле iOS */
+        /* ─── iOS СТИЛЬ ПЕРЕКЛЮЧАТЕЛЕЙ ─── */
         .kv-toggle-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 14px;
-          padding: 14px 16px;
+          gap: 12px;
+          padding: 12px 14px;
           background: var(--surface-raised);
           border: 1px solid var(--border);
-          border-radius: 14px;
+          border-radius: 12px;
           cursor: pointer;
-          min-height: 58px;
+          min-height: 54px;
           box-sizing: border-box;
+          width: 100%;
           transition: all 0.15s ease;
           -webkit-tap-highlight-color: transparent;
         }
 
-        .kv-toggle-row:hover {
-          border-color: var(--border);
-        }
-
         .kv-switch {
-          width: 46px;
-          height: 26px;
+          width: 44px;
+          height: 24px;
           background: var(--border);
           border-radius: 20px;
           padding: 2px;
@@ -845,11 +866,11 @@ export function Settings() {
         }
 
         .kv-switch-handle {
-          width: 22px;
-          height: 22px;
+          width: 20px;
+          height: 20px;
           background: #ffffff;
           border-radius: 50%;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
           transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -857,51 +878,72 @@ export function Settings() {
           transform: translateX(20px);
         }
 
-        /* Бейдж кода языка (вместо сломанных эмодзи флагов на Windows) */
         .kv-lang-chip {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 700;
           letter-spacing: 0.04em;
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
           background: var(--surface);
           border: 1px solid var(--border);
           color: var(--text-primary);
           flex-shrink: 0;
         }
 
-        /* Сетки */
-        .kv-grid-2 {
+        /* ─── МОБИЛЬНЫЕ СЕТКИ (1 колонка на телефоне, 2-3 на ПК) ─── */
+        .kv-grid-1-2 {
           display: grid;
           grid-template-columns: 1fr;
-          gap: 10px;
+          gap: 8px;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         @media (min-width: 600px) {
-          .kv-grid-2 {
+          .kv-grid-1-2 {
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
           }
         }
 
-        .kv-grid-3 {
+        .kv-grid-1-3 {
           display: grid;
           grid-template-columns: 1fr;
-          gap: 10px;
+          gap: 8px;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         @media (min-width: 600px) {
-          .kv-grid-3 {
+          .kv-grid-1-3 {
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 10px;
           }
         }
 
-        /* Кнопка действия */
+        /* ─── ПОЛЯ ВВОДА С КНОПКАМИ ─── */
+        .kv-field-row {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 540px) {
+          .kv-field-row {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .kv-field-row button {
+            width: 100%;
+          }
+        }
+
         .kv-action-btn {
           height: 42px;
           font-size: 14px;
@@ -910,9 +952,10 @@ export function Settings() {
           align-items: center;
           justify-content: center;
           gap: 8px;
-          padding: 0 18px;
+          padding: 0 16px;
           border-radius: 10px;
           flex-shrink: 0;
+          box-sizing: border-box;
         }
       `}</style>
 
@@ -921,8 +964,8 @@ export function Settings() {
         style={{
           position: "fixed",
           bottom: "20px",
-          left: "16px",
-          right: "16px",
+          left: "12px",
+          right: "12px",
           display: "flex",
           flexDirection: "column",
           gap: "8px",
@@ -934,7 +977,7 @@ export function Settings() {
           <div
             key={toast.id}
             style={{
-              padding: "12px 18px",
+              padding: "10px 14px",
               backgroundColor: "var(--tooltip-bg)",
               border: `1px solid ${
                 toast.type === "error"
@@ -943,47 +986,40 @@ export function Settings() {
                     ? "var(--accent)"
                     : "var(--success)"
               }`,
-              borderRadius: "14px",
+              borderRadius: "12px",
               color: "var(--text-primary)",
-              fontSize: "14px",
+              fontSize: "13px",
               fontWeight: 500,
               display: "flex",
               alignItems: "center",
-              gap: "10px",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
+              gap: "8px",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.4)",
               backdropFilter: "blur(12px)",
               pointerEvents: "auto",
               margin: "0 auto",
-              maxWidth: "420px",
+              maxWidth: "400px",
               width: "100%",
+              boxSizing: "border-box",
             }}
           >
             {toast.type === "error" ? (
-              <TriangleAlert size={18} color="var(--error)" style={{ flexShrink: 0 }} />
+              <TriangleAlert size={16} color="var(--error)" style={{ flexShrink: 0 }} />
             ) : toast.type === "info" ? (
-              <Sparkles size={18} color="var(--accent)" style={{ flexShrink: 0 }} />
+              <Sparkles size={16} color="var(--accent)" style={{ flexShrink: 0 }} />
             ) : (
-              <CheckCircle2 size={18} color="var(--success)" style={{ flexShrink: 0 }} />
+              <CheckCircle2 size={16} color="var(--success)" style={{ flexShrink: 0 }} />
             )}
-            <span style={{ flex: 1 }}>{toast.text}</span>
+            <span style={{ flex: 1, minWidth: 0 }}>{toast.text}</span>
           </div>
         ))}
       </div>
 
-      {/* Верхняя шапка: Заголовок и быстрая кнопка Сохранить */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "12px",
-        }}
-      >
+      {/* Верхняя шапка: Заголовок и кнопка Сохранить */}
+      <div className="kv-header-row">
         <div>
           <h2
             style={{
-              fontSize: "24px",
+              fontSize: "22px",
               fontWeight: 700,
               margin: 0,
               color: "var(--text-primary)",
@@ -992,7 +1028,7 @@ export function Settings() {
           >
             {t.settings.pageTitle}
           </h2>
-          <p style={{ color: "var(--text-muted)", margin: "4px 0 0 0", fontSize: "13px" }}>
+          <p style={{ color: "var(--text-muted)", margin: "3px 0 0 0", fontSize: "13px" }}>
             {t.settings.pageSubtitle}
           </p>
         </div>
@@ -1002,7 +1038,7 @@ export function Settings() {
         </Button>
       </div>
 
-      {/* Панель разделов (Идеально выровненная на ПК и мобильных) */}
+      {/* Панель разделов: Компактные надписи на мобильных, полные на ПК */}
       <div className="kv-settings-tabs-bar">
         {tabsConfig.map((tab) => {
           const Icon = tab.icon;
@@ -1013,13 +1049,13 @@ export function Settings() {
               onClick={() => setActiveTab(tab.id as SettingsTab)}
               className={`kv-settings-tab-btn ${isActive ? "active" : ""}`}
             >
-              <span className="kv-tab-icon-wrap">
-                <Icon
-                  size={17}
-                  color={isActive ? "var(--accent)" : "currentColor"}
-                />
-              </span>
-              <span className="kv-tab-title">{tab.label}</span>
+              <Icon
+                size={16}
+                color={isActive ? "var(--accent)" : "currentColor"}
+                style={{ flexShrink: 0 }}
+              />
+              <span className="kv-tab-label-short">{tab.shortLabel}</span>
+              <span className="kv-tab-label-full">{tab.fullLabel}</span>
             </button>
           );
         })}
@@ -1029,12 +1065,12 @@ export function Settings() {
           ТАБ 1: ВНЕШНИЙ ВИД (APPEARANCE)
       ══════════════════════════════════════════════════════════════════ */}
       {activeTab === "appearance" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%" }}>
           {/* Тема оформления */}
           <div className="kv-card">
             <div className="kv-group-header">
               <div className="kv-group-icon">
-                <Palette size={19} />
+                <Palette size={18} />
               </div>
               <div className="kv-group-text">
                 <h3 className="kv-group-title">{t.settings.themeCardTitle}</h3>
@@ -1042,7 +1078,7 @@ export function Settings() {
               </div>
             </div>
 
-            <div className="kv-grid-2">
+            <div className="kv-grid-1-2">
               {/* Темная тема */}
               <div
                 onClick={() => {
@@ -1052,7 +1088,7 @@ export function Settings() {
                 }}
                 className={`kv-touch-card ${theme === "dark" ? "selected" : ""}`}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                   <div
                     className="kv-item-icon-box"
                     style={{
@@ -1061,20 +1097,20 @@ export function Settings() {
                       color: "#60a5fa",
                     }}
                   >
-                    <Moon size={18} />
+                    <Moon size={17} />
                   </div>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: "14px" }}>
                       {t.settings.darkTitle}
                     </div>
-                    <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "1px" }}>
                       Cyber-Obsidian
                     </div>
                   </div>
                 </div>
 
                 <div className={`kv-radio-check ${theme === "dark" ? "active" : ""}`}>
-                  {theme === "dark" && <Check size={12} strokeWidth={3} />}
+                  {theme === "dark" && <Check size={11} strokeWidth={3} />}
                 </div>
               </div>
 
@@ -1087,7 +1123,7 @@ export function Settings() {
                 }}
                 className={`kv-touch-card ${theme === "light" ? "selected" : ""}`}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                   <div
                     className="kv-item-icon-box"
                     style={{
@@ -1096,30 +1132,30 @@ export function Settings() {
                       color: "#f59e0b",
                     }}
                   >
-                    <Sun size={18} />
+                    <Sun size={17} />
                   </div>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: "14px" }}>
                       {t.settings.lightTitle}
                     </div>
-                    <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "1px" }}>
                       Editorial Light
                     </div>
                   </div>
                 </div>
 
                 <div className={`kv-radio-check ${theme === "light" ? "active" : ""}`}>
-                  {theme === "light" && <Check size={12} strokeWidth={3} />}
+                  {theme === "light" && <Check size={11} strokeWidth={3} />}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Акцентный цвет (Одинаковая фиксированная высота кнопок, без съезжания) */}
+          {/* Акцентный цвет */}
           <div className="kv-card">
             <div className="kv-group-header">
               <div className="kv-group-icon">
-                <Sparkles size={19} />
+                <Sparkles size={18} />
               </div>
               <div className="kv-group-text">
                 <h3 className="kv-group-title">{t.settings.accentCardTitle}</h3>
@@ -1144,12 +1180,12 @@ export function Settings() {
                       className="kv-color-circle"
                       style={{
                         backgroundColor: col.value,
-                        boxShadow: isSelected ? `0 0 8px ${col.value}` : "none",
+                        boxShadow: isSelected ? `0 0 6px ${col.value}` : "none",
                       }}
                     >
-                      {isSelected && <Check size={12} strokeWidth={3} />}
+                      {isSelected && <Check size={11} strokeWidth={3} />}
                     </div>
-                    <span style={{ fontSize: "13px", fontWeight: isSelected ? 600 : 500 }}>
+                    <span style={{ fontSize: "12px", fontWeight: isSelected ? 600 : 500 }}>
                       {col.label}
                     </span>
                   </button>
@@ -1158,11 +1194,11 @@ export function Settings() {
             </div>
           </div>
 
-          {/* Язык интерфейса приложения (Четкие плашки без проблемных эмодзи) */}
+          {/* Язык интерфейса приложения */}
           <div className="kv-card">
             <div className="kv-group-header">
               <div className="kv-group-icon">
-                <Globe size={19} />
+                <Globe size={18} />
               </div>
               <div className="kv-group-text">
                 <h3 className="kv-group-title">{t.settings.langCardTitle}</h3>
@@ -1170,7 +1206,7 @@ export function Settings() {
               </div>
             </div>
 
-            <div className="kv-grid-3">
+            <div className="kv-grid-1-3">
               {[
                 { code: "ru", label: "Русский (RU)", codeLabel: "RU", sub: "Основной интерфейс" },
                 { code: "en", label: "English (US)", codeLabel: "EN", sub: "International" },
@@ -1182,24 +1218,24 @@ export function Settings() {
                     key={langItem.code}
                     onClick={() => {
                       setLanguage(langItem.code as any);
-                      showToast(`Язык изменён: ${langItem.label}`);
+                      showToast(`Язык: ${langItem.label}`);
                     }}
                     className={`kv-touch-card ${isCurrent ? "selected" : ""}`}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                       <div className="kv-lang-chip">{langItem.codeLabel}</div>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
                           {langItem.label}
                         </div>
-                        <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                        <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "1px" }}>
                           {langItem.sub}
                         </div>
                       </div>
                     </div>
 
                     <div className={`kv-radio-check ${isCurrent ? "active" : ""}`}>
-                      {isCurrent && <Check size={12} strokeWidth={3} />}
+                      {isCurrent && <Check size={11} strokeWidth={3} />}
                     </div>
                   </div>
                 );
@@ -1207,19 +1243,19 @@ export function Settings() {
             </div>
           </div>
 
-          {/* Звуковые эффекты и уведомления */}
+          {/* Звуковые эффекты и напоминания */}
           <div className="kv-card">
             <div className="kv-group-header">
               <div className="kv-group-icon">
-                <Sliders size={19} />
+                <Sliders size={18} />
               </div>
               <div className="kv-group-text">
                 <h3 className="kv-group-title">Эффекты и Уведомления</h3>
-                <p className="kv-group-desc">Настройте звуки интерфейса и напоминания об уроках</p>
+                <p className="kv-group-desc">Звуки интерфейса и сохранение ударного режима</p>
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {/* Звук */}
               <div
                 className="kv-toggle-row"
@@ -1230,7 +1266,7 @@ export function Settings() {
                   showToast(nextVal ? "Звуковые эффекты включены 🔊" : "Звук отключен 🔇");
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                   <div
                     className="kv-item-icon-box"
                     style={{
@@ -1239,14 +1275,14 @@ export function Settings() {
                       border: "1px solid var(--border)",
                     }}
                   >
-                    {soundEffects ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                    {soundEffects ? <Volume2 size={17} /> : <VolumeX size={17} />}
                   </div>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
                       Звуковые эффекты (SFX)
                     </div>
-                    <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
-                      Звуки карточек, квизов и получения наград
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                      Озвучка квизов, карточек и наград
                     </div>
                   </div>
                 </div>
@@ -1266,7 +1302,7 @@ export function Settings() {
                   showToast(nextVal ? "Уведомления включены 🔔" : "Уведомления выключены 🔕");
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                   <div
                     className="kv-item-icon-box"
                     style={{
@@ -1275,14 +1311,14 @@ export function Settings() {
                       border: "1px solid var(--border)",
                     }}
                   >
-                    <Bell size={18} />
+                    <Bell size={17} />
                   </div>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
-                      Напоминания об обучении
+                      Напоминания об уроках
                     </div>
-                    <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
-                      Ежедневные уведомления для сохранения ударного режима
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                      Ежедневные пуши для сохранения стрика
                     </div>
                   </div>
                 </div>
@@ -1300,12 +1336,12 @@ export function Settings() {
           ТАБ 2: ПРОФИЛЬ И БЕЗОПАСНОСТЬ (ACCOUNT)
       ══════════════════════════════════════════════════════════════════ */}
       {activeTab === "account" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {/* Карточка профиля */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%" }}>
+          {/* Профиль */}
           <div className="kv-card">
             <div className="kv-group-header">
               <div className="kv-group-icon">
-                <ShieldCheck size={19} />
+                <ShieldCheck size={18} />
               </div>
               <div className="kv-group-text">
                 <h3 className="kv-group-title">{t.settings.accountCardTitle}</h3>
@@ -1313,30 +1349,31 @@ export function Settings() {
               </div>
             </div>
 
-            {/* Блок пользователя с аватаром */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "14px",
-                padding: "14px",
+                gap: "12px",
+                padding: "12px",
                 backgroundColor: "var(--surface-raised)",
-                borderRadius: "14px",
-                marginBottom: "16px",
+                borderRadius: "12px",
+                marginBottom: "14px",
                 border: "1px solid var(--border)",
+                width: "100%",
+                boxSizing: "border-box",
               }}
             >
               <div
                 style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "12px",
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "10px",
                   backgroundColor: "var(--accent)",
                   color: "#fff",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "20px",
+                  fontSize: "18px",
                   fontWeight: 700,
                   flexShrink: 0,
                 }}
@@ -1358,12 +1395,12 @@ export function Settings() {
                 </div>
                 <div
                   style={{
-                    fontSize: "13px",
+                    fontSize: "12px",
                     color: "var(--text-muted)",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
-                    marginTop: "2px",
+                    marginTop: "1px",
                   }}
                 >
                   {userEmail || t.settings.authorizedSession}
@@ -1375,18 +1412,18 @@ export function Settings() {
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: "6px",
-                    padding: "6px 10px",
-                    borderRadius: "10px",
+                    gap: "4px",
+                    padding: "4px 8px",
+                    borderRadius: "8px",
                     background: "rgba(245, 158, 11, 0.15)",
                     border: "1px solid rgba(245, 158, 11, 0.3)",
                     color: "#f59e0b",
-                    fontSize: "12px",
+                    fontSize: "11px",
                     fontWeight: 700,
                     flexShrink: 0,
                   }}
                 >
-                  <Crown size={14} />
+                  <Crown size={12} />
                   <span>CREATOR</span>
                 </div>
               ) : (
@@ -1395,12 +1432,12 @@ export function Settings() {
             </div>
 
             {/* Редактирование никнейма */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
                 {t.settings.displayNameLabel}
               </label>
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
-                <div style={{ flex: "1 1 200px" }}>
+              <div className="kv-field-row">
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <Input
                     icon={<User size={16} />}
                     placeholder={t.settings.displayNamePlaceholder}
@@ -1409,7 +1446,7 @@ export function Settings() {
                   />
                 </div>
                 <Button onClick={handleSaveGeneral} className="kv-action-btn">
-                  <Save size={16} /> Сохранить ник
+                  <Save size={15} /> Сохранить ник
                 </Button>
               </div>
             </div>
@@ -1419,7 +1456,7 @@ export function Settings() {
           <div className="kv-card">
             <div className="kv-group-header">
               <div className="kv-group-icon">
-                <KeyRound size={19} />
+                <KeyRound size={18} />
               </div>
               <div className="kv-group-text">
                 <h3 className="kv-group-title">Безопасность и пароль</h3>
@@ -1427,9 +1464,9 @@ export function Settings() {
               </div>
             </div>
 
-            <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div>
-                <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "6px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "4px" }}>
                   Текущий пароль
                 </label>
                 <Input
@@ -1441,35 +1478,35 @@ export function Settings() {
                 />
               </div>
 
-              <div className="kv-grid-2">
+              <div className="kv-grid-1-2">
                 <div>
-                  <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "6px" }}>
+                  <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "4px" }}>
                     Новый пароль
                   </label>
                   <Input
                     type={showPassword ? "text" : "password"}
                     icon={<Lock size={16} />}
-                    placeholder="Минимум 6 символов"
+                    placeholder="От 6 символов"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                   />
                 </div>
 
                 <div>
-                  <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "6px" }}>
+                  <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "4px" }}>
                     Подтвердите пароль
                   </label>
                   <Input
                     type={showPassword ? "text" : "password"}
                     icon={<Lock size={16} />}
-                    placeholder="Повторите пароль"
+                    placeholder="Повтор пароля"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                   />
                 </div>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginTop: "4px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", marginTop: "2px" }}>
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -1477,16 +1514,16 @@ export function Settings() {
                     background: "transparent",
                     border: "none",
                     color: "var(--text-muted)",
-                    fontSize: "13px",
+                    fontSize: "12px",
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: "6px",
+                    gap: "5px",
                     cursor: "pointer",
-                    padding: "6px 0",
+                    padding: "4px 0",
                   }}
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  <span>{showPassword ? "Скрыть символы" : "Показать пароль"}</span>
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  <span>{showPassword ? "Скрыть" : "Показать"}</span>
                 </button>
 
                 <Button type="submit" disabled={passwordLoading} className="kv-action-btn">
@@ -1497,18 +1534,18 @@ export function Settings() {
           </div>
 
           {/* Выход из сессии */}
-          <div className="kv-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+          <div className="kv-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <div>
-              <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>
+              <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
                 Выход из аккаунта
               </div>
-              <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "2px" }}>
-                Завершить текущую сессию на этом устройстве
+              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                Завершить сессию на этом устройстве
               </div>
             </div>
 
             <Button variant="secondary" onClick={handleLogout} className="kv-action-btn" style={{ color: "var(--text-primary)" }}>
-              <LogOut size={16} /> {t.dash.logout}
+              <LogOut size={15} /> {t.dash.logout}
             </Button>
           </div>
         </div>
@@ -1518,20 +1555,20 @@ export function Settings() {
           ТАБ 3: ОБУЧЕНИЕ И ЦЕЛИ (LEARNING)
       ══════════════════════════════════════════════════════════════════ */}
       {activeTab === "learning" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%" }}>
           {/* Выбор изучаемого языка */}
           <div className="kv-card">
             <div className="kv-group-header">
               <div className="kv-group-icon">
-                <BookOpen size={19} />
+                <BookOpen size={18} />
               </div>
               <div className="kv-group-text">
                 <h3 className="kv-group-title">Изучаемый язык платформы</h3>
-                <p className="kv-group-desc">Переключает колоды слов, аудирование, грамматику и культурную тему</p>
+                <p className="kv-group-desc">Слова, карточки SRS, аудирование и грамматика</p>
               </div>
             </div>
 
-            <div className="kv-grid-3">
+            <div className="kv-grid-1-3">
               {(["ja", "en", "de"] as StudyLanguage[]).map((code) => {
                 const pal = STUDY_VIBE_PALETTES[code];
                 const txt = STUDY_TEXTS[code][language];
@@ -1543,13 +1580,9 @@ export function Settings() {
                     className={`kv-touch-card ${isSelected ? "selected" : ""}`}
                     style={{
                       borderColor: isSelected ? pal.accentHex : "var(--border)",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: "12px",
-                      padding: "14px 16px",
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                       <div
                         className="kv-lang-chip"
                         style={{
@@ -1560,10 +1593,10 @@ export function Settings() {
                         {code.toUpperCase()}
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
+                        <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
                           {txt.name}
                         </div>
-                        <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                        <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                           {txt.vibeBadge}
                         </div>
                       </div>
@@ -1576,7 +1609,7 @@ export function Settings() {
                         borderColor: isSelected ? pal.accentHex : "var(--border)",
                       }}
                     >
-                      {isSelected && <Check size={12} strokeWidth={3} />}
+                      {isSelected && <Check size={11} strokeWidth={3} />}
                     </div>
                   </div>
                 );
@@ -1584,7 +1617,7 @@ export function Settings() {
             </div>
           </div>
 
-          {/* Режим Разработчика и программирования */}
+          {/* Режим Разработчика */}
           <div className="kv-card">
             <div
               className="kv-toggle-row"
@@ -1595,7 +1628,7 @@ export function Settings() {
                 background: "transparent",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                 <div
                   className="kv-item-icon-box"
                   style={{
@@ -1604,13 +1637,13 @@ export function Settings() {
                     border: "1px solid var(--border)",
                   }}
                 >
-                  <Code2 size={20} />
+                  <Code2 size={18} />
                 </div>
-                <div>
-                  <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
                     Хаб программирования и репозиториев
                   </div>
-                  <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "1px" }}>
                     {showProgramming
                       ? "Разделы Dev Hub и GitHub открыты в меню"
                       : "Разделы кода скрыты (только языковое обучение)"}
@@ -1624,11 +1657,11 @@ export function Settings() {
             </div>
           </div>
 
-          {/* Ежедневные цели (Daily Goals) */}
+          {/* Ежедневные цели */}
           <div className="kv-card">
             <div className="kv-group-header">
               <div className="kv-group-icon">
-                <Target size={19} />
+                <Target size={18} />
               </div>
               <div className="kv-group-text">
                 <h3 className="kv-group-title">Дневные цели обучения</h3>
@@ -1636,9 +1669,9 @@ export function Settings() {
               </div>
             </div>
 
-            <div className="kv-grid-3">
+            <div className="kv-grid-1-3">
               <div>
-                <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "6px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "4px" }}>
                   Новых слов в день
                 </label>
                 <Input
@@ -1650,7 +1683,7 @@ export function Settings() {
               </div>
 
               <div>
-                <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "6px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "4px" }}>
                   Лимит повторений SRS
                 </label>
                 <Input
@@ -1662,7 +1695,7 @@ export function Settings() {
               </div>
 
               <div>
-                <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "6px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", display: "block", marginBottom: "4px" }}>
                   Статей / ресурсов
                 </label>
                 <Input
@@ -1674,18 +1707,18 @@ export function Settings() {
               </div>
             </div>
 
-            <div style={{ marginTop: "14px", display: "flex", justifyContent: "flex-end" }}>
+            <div style={{ marginTop: "12px", display: "flex", justifyContent: "flex-end" }}>
               <Button onClick={handleSaveGeneral} className="kv-action-btn">
-                <Save size={16} /> Сохранить цели
+                <Save size={15} /> Сохранить цели
               </Button>
             </div>
           </div>
 
-          {/* Стартовые наборы карточек (Starter Packs) */}
+          {/* Стартовые наборы карточек */}
           <div className="kv-card">
             <div className="kv-group-header">
               <div className="kv-group-icon">
-                <Sparkles size={19} />
+                <Sparkles size={18} />
               </div>
               <div className="kv-group-text">
                 <h3 className="kv-group-title">Стартовые наборы материалов</h3>
@@ -1693,26 +1726,28 @@ export function Settings() {
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {/* Языковой набор */}
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  padding: "12px 14px",
+                  padding: "10px 12px",
                   background: "var(--surface-raised)",
-                  borderRadius: "12px",
+                  borderRadius: "10px",
                   gap: "10px",
                   flexWrap: "wrap",
+                  width: "100%",
+                  boxSizing: "border-box",
                 }}
               >
-                <div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
                     Базовая колода ({STUDY_TEXTS[studyLanguage][language].name})
                   </div>
-                  <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
-                    Базовые слова, иероглифы и фразы начального уровня
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                    Слова и иероглифы начального уровня
                   </div>
                 </div>
 
@@ -1720,7 +1755,7 @@ export function Settings() {
                   variant={isPackClaimed(studyLanguageToPackType(studyLanguage)) ? "secondary" : "primary"}
                   disabled={importingStarter === "language"}
                   onClick={() => handleLoadStarterPack("language")}
-                  style={{ padding: "6px 14px", fontSize: "13px" }}
+                  style={{ padding: "6px 14px", fontSize: "12px" }}
                 >
                   {isPackClaimed(studyLanguageToPackType(studyLanguage))
                     ? "✓ Загружено"
@@ -1730,26 +1765,28 @@ export function Settings() {
                 </Button>
               </div>
 
-              {/* Набор для программирования (если включен) */}
+              {/* Набор для программирования */}
               {showProgramming && (
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "12px 14px",
+                    padding: "10px 12px",
                     background: "var(--surface-raised)",
-                    borderRadius: "12px",
+                    borderRadius: "10px",
                     gap: "10px",
                     flexWrap: "wrap",
+                    width: "100%",
+                    boxSizing: "border-box",
                   }}
                 >
-                  <div>
-                    <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
-                      💻 Набор статей разработчика и GitHub
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
+                      💻 Набор разработчика и GitHub
                     </div>
-                    <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
-                      Подборка лучших инструментов, архитектурных статей и библиотек
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                      Подборка статей и полезных репозиториев
                     </div>
                   </div>
 
@@ -1757,7 +1794,7 @@ export function Settings() {
                     variant={isPackClaimed("developer") ? "secondary" : "primary"}
                     disabled={importingStarter === "developer"}
                     onClick={() => handleLoadStarterPack("developer")}
-                    style={{ padding: "6px 14px", fontSize: "13px" }}
+                    style={{ padding: "6px 14px", fontSize: "12px" }}
                   >
                     {isPackClaimed("developer")
                       ? "✓ Загружено"
@@ -1776,12 +1813,12 @@ export function Settings() {
           ТАБ 4: БАЗА ДАННЫХ И СЕРВЕР (VAULT)
       ══════════════════════════════════════════════════════════════════ */}
       {activeTab === "vault" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%" }}>
           {/* Сетевой адрес сервера API */}
           <div className="kv-card">
             <div className="kv-group-header">
               <div className="kv-group-icon">
-                <Globe size={19} />
+                <Globe size={18} />
               </div>
               <div className="kv-group-text">
                 <h3 className="kv-group-title">Сетевой адрес сервера (API)</h3>
@@ -1791,7 +1828,7 @@ export function Settings() {
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
               <Input
                 icon={<Globe size={16} />}
                 placeholder="http://46.21.245.64:4000"
@@ -1799,9 +1836,9 @@ export function Settings() {
                 onChange={(e) => setServerUrl(e.target.value)}
               />
 
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <div className="kv-field-row">
                 <Button onClick={handleSaveServerUrl} className="kv-action-btn">
-                  <Save size={16} /> Сохранить адрес
+                  <Save size={15} /> Сохранить адрес
                 </Button>
                 <Button
                   variant="secondary"
@@ -1813,7 +1850,7 @@ export function Settings() {
                   }}
                   className="kv-action-btn"
                 >
-                  <RefreshCw size={16} /> Сбросить по умолчанию
+                  <RefreshCw size={15} /> Сбросить по умолчанию
                 </Button>
               </div>
             </div>
@@ -1823,7 +1860,7 @@ export function Settings() {
           <div className="kv-card">
             <div className="kv-group-header">
               <div className="kv-group-icon">
-                <Database size={19} />
+                <Database size={18} />
               </div>
               <div className="kv-group-text">
                 <h3 className="kv-group-title">Резервные копии и статистика</h3>
@@ -1836,42 +1873,44 @@ export function Settings() {
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "10px",
-                marginBottom: "16px",
+                gap: "8px",
+                marginBottom: "14px",
+                width: "100%",
+                boxSizing: "border-box",
               }}
             >
-              <div style={{ textAlign: "center", padding: "12px", background: "var(--surface-raised)", borderRadius: "12px" }}>
-                <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--accent)" }}>
+              <div style={{ textAlign: "center", padding: "10px 4px", background: "var(--surface-raised)", borderRadius: "10px" }}>
+                <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--accent)" }}>
                   {vaultStats.cardsCount}
                 </div>
-                <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
-                  Карточек слов
+                <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "1px" }}>
+                  Карточек
                 </div>
               </div>
 
-              <div style={{ textAlign: "center", padding: "12px", background: "var(--surface-raised)", borderRadius: "12px" }}>
-                <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>
+              <div style={{ textAlign: "center", padding: "10px 4px", background: "var(--surface-raised)", borderRadius: "10px" }}>
+                <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--success)" }}>
                   {vaultStats.resourcesCount}
                 </div>
-                <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "1px" }}>
                   Ресурсов
                 </div>
               </div>
 
-              <div style={{ textAlign: "center", padding: "12px", background: "var(--surface-raised)", borderRadius: "12px" }}>
-                <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>
+              <div style={{ textAlign: "center", padding: "10px 4px", background: "var(--surface-raised)", borderRadius: "10px" }}>
+                <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-primary)" }}>
                   {vaultStats.totalNotes}
                 </div>
-                <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "1px" }}>
                   Заметок
                 </div>
               </div>
             </div>
 
             {/* Кнопки экспорта и импорта */}
-            <div className="kv-grid-2">
+            <div className="kv-grid-1-2">
               <Button onClick={handleExportData} className="kv-action-btn">
-                <Download size={16} /> Скачать бэкап (JSON)
+                <Download size={15} /> Скачать бэкап (JSON)
               </Button>
 
               <Button
@@ -1879,7 +1918,7 @@ export function Settings() {
                 onClick={() => fileInputRef.current?.click()}
                 className="kv-action-btn"
               >
-                <Upload size={16} /> Восстановить из JSON
+                <Upload size={15} /> Восстановить из JSON
               </Button>
               <input
                 ref={fileInputRef}
@@ -1891,7 +1930,7 @@ export function Settings() {
             </div>
           </div>
 
-          {/* Опасная зона (Danger Zone) */}
+          {/* Опасная зона */}
           <div
             className="kv-card"
             style={{
@@ -1901,7 +1940,7 @@ export function Settings() {
           >
             <div className="kv-group-header">
               <div className="kv-group-icon" style={{ backgroundColor: "rgba(239, 68, 68, 0.15)", color: "var(--error)" }}>
-                <TriangleAlert size={19} />
+                <TriangleAlert size={18} />
               </div>
               <div className="kv-group-text">
                 <h3 className="kv-group-title" style={{ color: "var(--error)" }}>
@@ -1911,26 +1950,28 @@ export function Settings() {
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
               {/* Сброс прогресса SRS */}
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  gap: "12px",
-                  padding: "12px",
+                  gap: "10px",
+                  padding: "10px 12px",
                   background: "var(--surface)",
-                  borderRadius: "12px",
+                  borderRadius: "10px",
                   border: "1px solid var(--border)",
                   flexWrap: "wrap",
+                  width: "100%",
+                  boxSizing: "border-box",
                 }}
               >
-                <div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
                     {t.settings.resetSrsTitle}
                   </div>
-                  <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                     {t.settings.resetSrsDesc}
                   </div>
                 </div>
@@ -1938,9 +1979,9 @@ export function Settings() {
                 <Button
                   variant="secondary"
                   onClick={() => setIsResetSRSModalOpen(true)}
-                  style={{ gap: "6px" }}
+                  style={{ gap: "6px", fontSize: "12px", padding: "6px 12px" }}
                 >
-                  <RotateCcw size={14} /> {t.settings.resetSrsBtn}
+                  <RotateCcw size={13} /> {t.settings.resetSrsBtn}
                 </Button>
               </div>
 
@@ -1950,19 +1991,21 @@ export function Settings() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  gap: "12px",
-                  padding: "12px",
+                  gap: "10px",
+                  padding: "10px 12px",
                   background: "var(--surface)",
-                  borderRadius: "12px",
+                  borderRadius: "10px",
                   border: "1px solid var(--border)",
                   flexWrap: "wrap",
+                  width: "100%",
+                  boxSizing: "border-box",
                 }}
               >
-                <div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
                     {t.settings.clearAllTitle}
                   </div>
-                  <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                     {t.settings.clearAllDesc}
                   </div>
                 </div>
@@ -1970,9 +2013,9 @@ export function Settings() {
                 <Button
                   variant="secondary"
                   onClick={handleClearAllData}
-                  style={{ gap: "6px", color: "var(--error)" }}
+                  style={{ gap: "6px", color: "var(--error)", fontSize: "12px", padding: "6px 12px" }}
                 >
-                  <Trash2 size={14} /> {t.settings.clearAllBtn}
+                  <Trash2 size={13} /> {t.settings.clearAllBtn}
                 </Button>
               </div>
 
@@ -1982,19 +2025,21 @@ export function Settings() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  gap: "12px",
-                  padding: "12px",
+                  gap: "10px",
+                  padding: "10px 12px",
                   background: "var(--surface)",
-                  borderRadius: "12px",
+                  borderRadius: "10px",
                   border: "1px solid var(--border)",
                   flexWrap: "wrap",
+                  width: "100%",
+                  boxSizing: "border-box",
                 }}
               >
-                <div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--error)" }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--error)" }}>
                     {t.settings.deleteAccTitle}
                   </div>
-                  <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                     {t.settings.deleteAccDesc}
                   </div>
                 </div>
@@ -2002,11 +2047,11 @@ export function Settings() {
                 {isCreator ? (
                   <span
                     style={{
-                      fontSize: "12px",
+                      fontSize: "11px",
                       color: "#f59e0b",
                       fontWeight: 600,
-                      padding: "6px 12px",
-                      borderRadius: "10px",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
                       backgroundColor: "rgba(245, 158, 11, 0.1)",
                       border: "1px solid rgba(245, 158, 11, 0.2)",
                     }}
@@ -2016,7 +2061,7 @@ export function Settings() {
                 ) : (
                   <Button
                     onClick={() => setIsDeleteAccountModalOpen(true)}
-                    style={{ backgroundColor: "var(--error)", color: "#fff", border: "none" }}
+                    style={{ backgroundColor: "var(--error)", color: "#fff", border: "none", fontSize: "12px", padding: "6px 12px" }}
                   >
                     {t.settings.deleteAccBtn}
                   </Button>
