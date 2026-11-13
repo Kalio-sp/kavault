@@ -12,9 +12,7 @@ import {
   EyeOff,
   Save,
   Trophy,
-  Award,
   Image as ImageIcon,
-  Check,
   ChevronRight,
   BookOpen,
   Code2,
@@ -34,8 +32,6 @@ import {
   AVATAR_PRESETS,
   AVATAR_FRAMES,
   BANNER_THEMES,
-  PROFILE_TITLES,
-  STATUS_PRESETS,
   MONOGRAM_COLORS,
   type UserProfileCustomization,
   loadProfileCustomization,
@@ -151,9 +147,18 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
           }
         }
 
-        const resources = resRes.status === "fulfilled" && Array.isArray(resRes.value.data) ? resRes.value.data.length : 0;
-        const cards = cardsRes.status === "fulfilled" && Array.isArray(cardsRes.value.data) ? cardsRes.value.data.length : 0;
-        const notes = notesRes.status === "fulfilled" && Array.isArray(notesRes.value.data) ? notesRes.value.data.length : 0;
+        const resources =
+          resRes.status === "fulfilled" && Array.isArray(resRes.value.data)
+            ? resRes.value.data.length
+            : 0;
+        const cards =
+          cardsRes.status === "fulfilled" && Array.isArray(cardsRes.value.data)
+            ? cardsRes.value.data.length
+            : 0;
+        const notes =
+          notesRes.status === "fulfilled" && Array.isArray(notesRes.value.data)
+            ? notesRes.value.data.length
+            : 0;
 
         setStats({
           resourcesCount: resources,
@@ -169,7 +174,6 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
 
     fetchData();
 
-    // Слушатель внешних обновлений кастомизации
     const handleProfileUpdate = () => {
       setCustomization(loadProfileCustomization());
     };
@@ -328,7 +332,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
     progressPercent: Math.min(100, Math.round(((socialData?.mmr || 0) / 150) * 100)),
   };
 
-  // Выбранные на витрину достижения
+  // Достижения для показа
   const showcaseBadges = customization.showcaseAchievementIds
     .map((id) => achievements.find((a) => a.id === id))
     .filter((a): a is (typeof achievements)[number] => Boolean(a));
@@ -337,16 +341,273 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
   const displayShowcase = showcaseBadges.length > 0 ? showcaseBadges : fallbackUnlockedBadges;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "18px",
-        width: "100%",
-        maxWidth: "100%",
-        boxSizing: "border-box",
-      }}
-    >
+    <div className="kv-cabinet-root">
+      {/* ── СТИЛИ ДЛЯ ИДЕАЛЬНОЙ МОБИЛЬНОЙ И ДЕСКТОПНОЙ АДАПТАЦИИ ── */}
+      <style>{`
+        .kv-cabinet-root {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          width: 100%;
+          max-width: 860px;
+          margin: 0 auto;
+          box-sizing: border-box;
+          overflow-x: hidden;
+        }
+
+        /* Табы: на мобильном показывается короткий лейбл, на ПК — полный */
+        .kv-tab-label-short {
+          display: inline;
+        }
+        .kv-tab-label-full {
+          display: none;
+        }
+        @media (min-width: 640px) {
+          .kv-tab-label-short {
+            display: none;
+          }
+          .kv-tab-label-full {
+            display: inline;
+          }
+        }
+
+        /* Таббар кабинета */
+        .kv-cab-tabs-bar {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          background-color: var(--surface, #121214);
+          padding: 4px;
+          border-radius: 14px;
+          border: 1px solid var(--border, rgba(255,255,255,0.08));
+          gap: 4px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .kv-cab-tab-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 10px 4px;
+          border-radius: 10px;
+          border: none;
+          background-color: transparent;
+          color: var(--text-muted, #71717a);
+          font-weight: 500;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          min-width: 0;
+          white-space: nowrap;
+        }
+
+        .kv-cab-tab-btn.active {
+          background-color: var(--surface-raised, #27272a);
+          color: var(--text-primary, #ffffff);
+          font-weight: 700;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+
+        /* Ряд с никнеймом и кнопкой "Сохранить ник" */
+        .kv-nick-row {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          box-sizing: border-box;
+          margin-top: 10px;
+        }
+
+        @media (max-width: 640px) {
+          .kv-nick-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+          .kv-nick-row button {
+            width: 100% !important;
+          }
+        }
+
+        /* Парольная сетка */
+        .kv-pass-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 640px) {
+          .kv-pass-grid {
+            grid-template-columns: 1fr;
+            gap: 10px;
+          }
+        }
+
+        /* Парольные кнопки действий */
+        .kv-pass-actions {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          margin-top: 8px;
+          flex-wrap: wrap;
+        }
+
+        @media (max-width: 640px) {
+          .kv-pass-actions {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+          .kv-pass-actions button[type="submit"] {
+            width: 100% !important;
+          }
+        }
+
+        /* Выход из сессии */
+        .kv-logout-card {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        @media (max-width: 640px) {
+          .kv-logout-card {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+          }
+          .kv-logout-card button {
+            width: 100% !important;
+          }
+        }
+
+        /* Сетка пресетов аватарок */
+        .kv-presets-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+          max-height: 360px;
+          overflow-y: auto;
+          padding: 4px;
+        }
+
+        @media (max-width: 768px) {
+          .kv-presets-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .kv-presets-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+        }
+
+        /* Сетка рамок */
+        .kv-frames-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+          .kv-frames-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+        }
+
+        /* Сетка баннеров */
+        .kv-banners-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+          .kv-banners-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+        }
+
+        /* Сетка показателей в паспорте */
+        .kv-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 768px) {
+          .kv-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+          }
+        }
+
+        @media (max-width: 380px) {
+          .kv-stats-grid {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
+        }
+
+        /* Шапка карточки профиля */
+        .kv-hero-body {
+          padding: 0 16px 16px 16px;
+          position: relative;
+        }
+
+        @media (min-width: 640px) {
+          .kv-hero-body {
+            padding: 0 22px 20px 22px;
+          }
+        }
+
+        .kv-hero-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          margin-top: -38px;
+          margin-bottom: 12px;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+
+        @media (max-width: 640px) {
+          .kv-hero-row {
+            flex-direction: column;
+            align-items: flex-start;
+            margin-top: -34px;
+            gap: 10px;
+          }
+        }
+
+        .kv-action-btn {
+          min-height: 42px;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 0 16px;
+          border-radius: 10px;
+          flex-shrink: 0;
+          box-sizing: border-box;
+        }
+      `}</style>
+
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -373,7 +634,6 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
             gap: "10px",
             boxShadow: "0 14px 30px rgba(0,0,0,0.5)",
             backdropFilter: "blur(12px)",
-            animation: "fadeIn 0.2s ease",
           }}
         >
           {toastType === "error" ? (
@@ -406,11 +666,11 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
       ══════════════════════════════════════════════════════════════════ */}
       <div
         style={{
-          borderRadius: "20px",
+          borderRadius: "18px",
           overflow: "hidden",
           backgroundColor: "var(--surface, #121214)",
           border: "1px solid var(--border, rgba(255,255,255,0.08))",
-          boxShadow: "0 12px 35px rgba(0,0,0,0.25)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
           position: "relative",
           width: "100%",
           boxSizing: "border-box",
@@ -419,7 +679,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
         {/* Баннер / Обложка профиля */}
         <div
           style={{
-            height: "140px",
+            height: "130px",
             width: "100%",
             position: "relative",
             background:
@@ -429,7 +689,6 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
             transition: "background 0.4s ease",
           }}
         >
-          {/* Легкая декоративная сетка */}
           <div
             style={{
               position: "absolute",
@@ -442,67 +701,44 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
             }}
           />
 
-          {/* Быстрая кнопка смены обложки */}
           <div
             style={{
               position: "absolute",
               top: "12px",
               right: "12px",
-              display: "flex",
-              gap: "8px",
             }}
           >
             <button
-              onClick={() => {
-                setCabinetTab("cosmetics");
-              }}
+              onClick={() => setCabinetTab("cosmetics")}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "6px",
                 padding: "6px 12px",
                 borderRadius: "10px",
-                backgroundColor: "rgba(0, 0, 0, 0.55)",
+                backgroundColor: "rgba(0, 0, 0, 0.6)",
                 backdropFilter: "blur(8px)",
                 color: "#ffffff",
                 border: "1px solid rgba(255, 255, 255, 0.2)",
                 fontSize: "12px",
                 fontWeight: 600,
                 cursor: "pointer",
-                transition: "all 0.15s ease",
               }}
             >
               <Palette size={14} />
-              <span className="kv-tab-label-full">Оформить профиль</span>
+              <span className="kv-tab-label-full">Оформить стиль</span>
               <span className="kv-tab-label-short">Стиль</span>
             </button>
           </div>
         </div>
 
-        {/* Тело карточки: Аватарка + Никнейм + Статус + Звание */}
-        <div
-          style={{
-            padding: "0 20px 20px 20px",
-            position: "relative",
-          }}
-        >
-          {/* Ряд с Аватаркой и экшенами */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-              marginTop: "-44px",
-              marginBottom: "14px",
-              flexWrap: "wrap",
-              gap: "12px",
-            }}
-          >
-            {/* Аватарка с кнопкой загрузки */}
+        {/* Тело карточки: Аватарка + Никнейм + Статус */}
+        <div className="kv-hero-body">
+          <div className="kv-hero-row">
             <div style={{ position: "relative" }}>
               <UserAvatarBadge
                 customization={customization}
-                size={88}
+                size={80}
                 username={nickname || "User"}
                 showOnlineDot
                 onClick={() => setCabinetTab("cosmetics")}
@@ -512,8 +748,8 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 title="Загрузить свой аватар"
                 style={{
                   position: "absolute",
-                  bottom: "2px",
-                  right: "2px",
+                  bottom: "0px",
+                  right: "0px",
                   width: "28px",
                   height: "28px",
                   borderRadius: "50%",
@@ -531,7 +767,6 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
               </button>
             </div>
 
-            {/* Быстрые статусные бейджи */}
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
               {isCreator ? (
                 <div
@@ -539,14 +774,14 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "5px",
-                    padding: "6px 12px",
-                    borderRadius: "10px",
+                    padding: "5px 10px",
+                    borderRadius: "8px",
                     background: "rgba(245, 158, 11, 0.18)",
                     border: "1px solid rgba(245, 158, 11, 0.4)",
                     color: "#f59e0b",
                     fontSize: "12px",
                     fontWeight: 800,
-                    letterSpacing: "0.05em",
+                    letterSpacing: "0.04em",
                   }}
                 >
                   <Crown size={14} />
@@ -558,8 +793,8 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "6px",
-                    padding: "6px 12px",
-                    borderRadius: "10px",
+                    padding: "5px 10px",
+                    borderRadius: "8px",
                     background: `${currentRankTier.color}22`,
                     border: `1px solid ${currentRankTier.color}55`,
                     color: currentRankTier.color,
@@ -571,34 +806,14 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   <span>{currentRankTier.title} League</span>
                 </div>
               )}
-
-              {/* Звание пользователя */}
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 12px",
-                  borderRadius: "10px",
-                  background: "var(--surface-raised, rgba(255,255,255,0.06))",
-                  border: "1px solid var(--border, rgba(255,255,255,0.1))",
-                  color: "var(--text-primary, #ffffff)",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                }}
-              >
-                <Award size={13} color="var(--accent, #3b82f6)" />
-                <span>{customization.title}</span>
-              </div>
             </div>
           </div>
 
-          {/* Имя, Никнейм, Статус и О себе */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "10px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap" }}>
               <h1
                 style={{
-                  fontSize: "22px",
+                  fontSize: "20px",
                   fontWeight: 800,
                   color: "var(--text-primary, #ffffff)",
                   margin: 0,
@@ -609,7 +824,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
               </h1>
               <span
                 style={{
-                  fontSize: "14px",
+                  fontSize: "13.5px",
                   color: "var(--accent, #3b82f6)",
                   fontWeight: 600,
                 }}
@@ -617,176 +832,61 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 @{nickname ? nickname.toLowerCase() : "user"}
               </span>
               <span style={{ fontSize: "12px", color: "var(--text-muted, #71717a)" }}>
-                • {userEmail || "Гостевая сессия"}
+                • {userEmail || "Авторизован"}
               </span>
             </div>
-
-            {/* Пузырь статуса настроения */}
-            {customization.statusText && (
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "6px 12px",
-                  borderRadius: "20px",
-                  backgroundColor: "var(--surface-raised, rgba(255,255,255,0.04))",
-                  border: "1px solid var(--border, rgba(255,255,255,0.08))",
-                  width: "fit-content",
-                  maxWidth: "100%",
-                  fontSize: "13px",
-                  color: "var(--text-secondary, #d4d4d8)",
-                }}
-              >
-                <span style={{ fontSize: "15px" }}>{customization.statusEmoji || "⚡"}</span>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {customization.statusText}
-                </span>
-              </div>
-            )}
-
-            {/* Текст «О себе» */}
-            {customization.bio && (
-              <p
-                style={{
-                  fontSize: "13.5px",
-                  lineHeight: "1.55",
-                  color: "var(--text-secondary, #a1a1aa)",
-                  margin: "4px 0 0 0",
-                  maxWidth: "680px",
-                }}
-              >
-                {customization.bio}
-              </p>
-            )}
           </div>
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════
-          ТАБЫ УПРАВЛЕНИЯ ЛИЧНЫМ КАБИНЕТОМ
+          ТАБЫ УПРАВЛЕНИЯ ЛИЧНЫМ КАБИНЕТОМ (НЕТ ДВОЙНЫХ СЛОВ!)
       ══════════════════════════════════════════════════════════════════ */}
-      <div
-        className="kv-tabs-bar"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          backgroundColor: "var(--surface, #121214)",
-          padding: "5px",
-          borderRadius: "14px",
-          border: "1px solid var(--border, rgba(255,255,255,0.08))",
-          gap: "4px",
-          width: "100%",
-          boxSizing: "border-box",
-        }}
-      >
+      <div className="kv-cab-tabs-bar">
         <button
           onClick={() => setCabinetTab("overview")}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "10px 8px",
-            borderRadius: "10px",
-            border: "none",
-            backgroundColor:
-              cabinetTab === "overview"
-                ? "var(--surface-raised, #27272a)"
-                : "transparent",
-            color:
-              cabinetTab === "overview"
-                ? "var(--text-primary, #ffffff)"
-                : "var(--text-muted, #71717a)",
-            fontWeight: cabinetTab === "overview" ? 700 : 500,
-            fontSize: "13px",
-            cursor: "pointer",
-            transition: "all 0.15s ease",
-            minWidth: 0,
-          }}
+          className={`kv-cab-tab-btn ${cabinetTab === "overview" ? "active" : ""}`}
         >
-          <Compass size={16} color={cabinetTab === "overview" ? "var(--accent, #3b82f6)" : undefined} />
-          <span className="kv-tab-label-full">Паспорт и Статистика</span>
+          <Compass size={15} color={cabinetTab === "overview" ? "var(--accent, #3b82f6)" : undefined} />
           <span className="kv-tab-label-short">Паспорт</span>
+          <span className="kv-tab-label-full">Паспорт и Статистика</span>
         </button>
 
         <button
           onClick={() => setCabinetTab("cosmetics")}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "10px 8px",
-            borderRadius: "10px",
-            border: "none",
-            backgroundColor:
-              cabinetTab === "cosmetics"
-                ? "var(--surface-raised, #27272a)"
-                : "transparent",
-            color:
-              cabinetTab === "cosmetics"
-                ? "var(--text-primary, #ffffff)"
-                : "var(--text-muted, #71717a)",
-            fontWeight: cabinetTab === "cosmetics" ? 700 : 500,
-            fontSize: "13px",
-            cursor: "pointer",
-            transition: "all 0.15s ease",
-            minWidth: 0,
-          }}
+          className={`kv-cab-tab-btn ${cabinetTab === "cosmetics" ? "active" : ""}`}
         >
-          <Palette size={16} color={cabinetTab === "cosmetics" ? "#ec4899" : undefined} />
+          <Palette size={15} color={cabinetTab === "cosmetics" ? "#ec4899" : undefined} />
+          <span className="kv-tab-label-short">Стиль</span>
           <span className="kv-tab-label-full">Кастомизация и Стиль</span>
-          <span className="kv-tab-label-short">Украшения</span>
         </button>
 
         <button
           onClick={() => setCabinetTab("security")}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "10px 8px",
-            borderRadius: "10px",
-            border: "none",
-            backgroundColor:
-              cabinetTab === "security"
-                ? "var(--surface-raised, #27272a)"
-                : "transparent",
-            color:
-              cabinetTab === "security"
-                ? "var(--text-primary, #ffffff)"
-                : "var(--text-muted, #71717a)",
-            fontWeight: cabinetTab === "security" ? 700 : 500,
-            fontSize: "13px",
-            cursor: "pointer",
-            transition: "all 0.15s ease",
-            minWidth: 0,
-          }}
+          className={`kv-cab-tab-btn ${cabinetTab === "security" ? "active" : ""}`}
         >
-          <ShieldCheck size={16} color={cabinetTab === "security" ? "#10b981" : undefined} />
-          <span className="kv-tab-label-full">Безопасность и Вход</span>
+          <ShieldCheck size={15} color={cabinetTab === "security" ? "#10b981" : undefined} />
           <span className="kv-tab-label-short">Защита</span>
+          <span className="kv-tab-label-full">Безопасность и Вход</span>
         </button>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════
-          СЕКЦИЯ 1: ОБЗОР, РАНГ И СТАТИСТИКА
+          СЕКЦИЯ 1: ОБЗОР, РАНГ И СТАТИСТИКА (ПАСПОРТ)
       ══════════════════════════════════════════════════════════════════ */}
       {cabinetTab === "overview" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%" }}>
           {/* Карточка Task MMR и Лиги */}
           <div
             style={{
-              padding: "18px 20px",
-              borderRadius: "16px",
+              padding: "16px 18px",
+              borderRadius: "14px",
               backgroundColor: "var(--surface, #121214)",
               border: `1px solid ${currentRankTier.color}44`,
-              background: `linear-gradient(135deg, ${currentRankTier.color}15 0%, var(--surface, #121214) 70%)`,
+              background: `linear-gradient(135deg, ${currentRankTier.color}15 0%, var(--surface, #121214) 75%)`,
               display: "flex",
               flexDirection: "column",
-              gap: "14px",
+              gap: "12px",
               width: "100%",
               boxSizing: "border-box",
             }}
@@ -797,26 +897,26 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 justifyContent: "space-between",
                 alignItems: "center",
                 flexWrap: "wrap",
-                gap: "10px",
+                gap: "8px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <span style={{ fontSize: "32px", lineHeight: 1 }}>{currentRankTier.emoji}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "28px", lineHeight: 1 }}>{currentRankTier.emoji}</span>
                 <div>
                   <div
                     style={{
-                      fontSize: "12px",
+                      fontSize: "11px",
                       fontWeight: 700,
                       color: currentRankTier.color,
                       textTransform: "uppercase",
                       letterSpacing: "0.06em",
                     }}
                   >
-                    Текущая Лига Task-System
+                    Лига Task-System
                   </div>
                   <div
                     style={{
-                      fontSize: "18px",
+                      fontSize: "16px",
                       fontWeight: 800,
                       color: "var(--text-primary, #ffffff)",
                     }}
@@ -827,15 +927,15 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
               </div>
 
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "22px", fontWeight: 800, color: currentRankTier.color }}>
-                  {socialData?.mmr ?? 0} <span style={{ fontSize: "13px", fontWeight: 600 }}>MMR</span>
+                <div style={{ fontSize: "20px", fontWeight: 800, color: currentRankTier.color }}>
+                  {socialData?.mmr ?? 0} <span style={{ fontSize: "12px", fontWeight: 600 }}>MMR</span>
                 </div>
                 {socialData?.globalRank ? (
-                  <div style={{ fontSize: "12px", color: "var(--text-muted, #71717a)" }}>
-                    Ранг в топе: #{socialData.globalRank}
+                  <div style={{ fontSize: "11px", color: "var(--text-muted, #71717a)" }}>
+                    Место в топе: #{socialData.globalRank}
                   </div>
                 ) : (
-                  <div style={{ fontSize: "12px", color: "#f59e0b", fontWeight: 600 }}>
+                  <div style={{ fontSize: "11px", color: "#f59e0b", fontWeight: 600 }}>
                     Системный аккаунт
                   </div>
                 )}
@@ -848,9 +948,9 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  fontSize: "12px",
+                  fontSize: "11px",
                   color: "var(--text-muted, #71717a)",
-                  marginBottom: "6px",
+                  marginBottom: "5px",
                   fontWeight: 500,
                 }}
               >
@@ -863,7 +963,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
               </div>
               <div
                 style={{
-                  height: "8px",
+                  height: "7px",
                   borderRadius: "999px",
                   backgroundColor: "rgba(255, 255, 255, 0.08)",
                   overflow: "hidden",
@@ -888,77 +988,67 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "6px",
+                  gap: "4px",
                   fontSize: "12px",
                   fontWeight: 600,
                   color: currentRankTier.color,
                   textDecoration: "none",
                 }}
               >
-                <span>Таблица лидеров и друзья</span>
-                <ChevronRight size={14} />
+                <span>Рейтинг и друзья</span>
+                <ChevronRight size={13} />
               </Link>
             </div>
           </div>
 
-          {/* Сетка ключевых показателей (Stats Grid) */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-              gap: "12px",
-              width: "100%",
-              boxSizing: "border-box",
-            }}
-          >
-            {/* Карточки SRS */}
+          {/* Сетка показателей активности */}
+          <div className="kv-stats-grid">
             <div
               style={{
-                padding: "14px",
-                borderRadius: "14px",
+                padding: "12px 14px",
+                borderRadius: "12px",
                 backgroundColor: "var(--surface, #121214)",
                 border: "1px solid var(--border, rgba(255,255,255,0.08))",
                 display: "flex",
                 flexDirection: "column",
-                gap: "6px",
+                gap: "4px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#3b82f6" }}>
-                <BookOpen size={16} />
-                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-muted)" }}>
-                  Слов на SRS
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#3b82f6" }}>
+                <BookOpen size={15} />
+                <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-muted)" }}>
+                  Слов SRS
                 </span>
               </div>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-primary)" }}>
+              <div style={{ fontSize: "18px", fontWeight: 800, color: "var(--text-primary)" }}>
                 {stats.cardsCount}
               </div>
               <Link
                 to="/japanese"
                 style={{ fontSize: "11px", color: "var(--accent, #3b82f6)", textDecoration: "none" }}
               >
-                Повторить слова →
+                Повторить →
               </Link>
             </div>
 
-            {/* Материалы Dev */}
             <div
               style={{
-                padding: "14px",
-                borderRadius: "14px",
+                padding: "12px 14px",
+                borderRadius: "12px",
                 backgroundColor: "var(--surface, #121214)",
                 border: "1px solid var(--border, rgba(255,255,255,0.08))",
                 display: "flex",
                 flexDirection: "column",
-                gap: "6px",
+                gap: "4px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#10b981" }}>
-                <Code2 size={16} />
-                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-muted)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#10b981" }}>
+                <Code2 size={15} />
+                <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-muted)" }}>
                   Ресурсов Dev
                 </span>
               </div>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-primary)" }}>
+              <div style={{ fontSize: "18px", fontWeight: 800, color: "var(--text-primary)" }}>
                 {stats.resourcesCount}
               </div>
               <Link
@@ -969,55 +1059,53 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
               </Link>
             </div>
 
-            {/* Заметки Мыслей */}
             <div
               style={{
-                padding: "14px",
-                borderRadius: "14px",
+                padding: "12px 14px",
+                borderRadius: "12px",
                 backgroundColor: "var(--surface, #121214)",
                 border: "1px solid var(--border, rgba(255,255,255,0.08))",
                 display: "flex",
                 flexDirection: "column",
-                gap: "6px",
+                gap: "4px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#a855f7" }}>
-                <PenLine size={16} />
-                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-muted)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#a855f7" }}>
+                <PenLine size={15} />
+                <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-muted)" }}>
                   Заметок
                 </span>
               </div>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-primary)" }}>
+              <div style={{ fontSize: "18px", fontWeight: 800, color: "var(--text-primary)" }}>
                 {stats.notesCount}
               </div>
               <Link
                 to="/thoughts"
                 style={{ fontSize: "11px", color: "#a855f7", textDecoration: "none" }}
               >
-                Открыть Thoughts →
+                Заметки →
               </Link>
             </div>
 
-            {/* Достижения */}
             <div
               style={{
-                padding: "14px",
-                borderRadius: "14px",
+                padding: "12px 14px",
+                borderRadius: "12px",
                 backgroundColor: "var(--surface, #121214)",
                 border: "1px solid var(--border, rgba(255,255,255,0.08))",
                 display: "flex",
                 flexDirection: "column",
-                gap: "6px",
+                gap: "4px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#f59e0b" }}>
-                <Trophy size={16} />
-                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-muted)" }}>
-                  Достижений
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#f59e0b" }}>
+                <Trophy size={15} />
+                <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-muted)" }}>
+                  Награды
                 </span>
               </div>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-primary)" }}>
-                {unlockedCount} <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>/ {totalCount}</span>
+              <div style={{ fontSize: "18px", fontWeight: 800, color: "var(--text-primary)" }}>
+                {unlockedCount} <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>/ {totalCount}</span>
               </div>
               <button
                 onClick={openModal}
@@ -1031,123 +1119,85 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   textAlign: "left",
                 }}
               >
-                Все награды →
+                Список всех →
               </button>
             </div>
           </div>
 
-          {/* Витрина лучших наград (Showcase) */}
-          <div
-            style={{
-              padding: "18px 20px",
-              borderRadius: "16px",
-              backgroundColor: "var(--surface, #121214)",
-              border: "1px solid var(--border, rgba(255,255,255,0.08))",
-              display: "flex",
-              flexDirection: "column",
-              gap: "14px",
-              width: "100%",
-              boxSizing: "border-box",
-            }}
-          >
+          {/* Витрина наград */}
+          {displayShowcase.length > 0 && (
             <div
               style={{
+                padding: "16px 18px",
+                borderRadius: "14px",
+                backgroundColor: "var(--surface, #121214)",
+                border: "1px solid var(--border, rgba(255,255,255,0.08))",
                 display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "10px",
+                flexDirection: "column",
+                gap: "12px",
+                width: "100%",
+                boxSizing: "border-box",
               }}
             >
-              <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h3
                   style={{
-                    fontSize: "15px",
+                    fontSize: "14px",
                     fontWeight: 700,
                     color: "var(--text-primary, #ffffff)",
                     margin: 0,
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
+                    gap: "6px",
                   }}
                 >
-                  <Trophy size={17} color="#f59e0b" />
-                  <span>Витрина Достижений</span>
+                  <Trophy size={16} color="#f59e0b" />
+                  <span>Открытые награды</span>
                 </h3>
-                <p
+                <button
+                  onClick={openModal}
                   style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--text-muted)",
                     fontSize: "12px",
-                    color: "var(--text-muted, #71717a)",
-                    margin: "2px 0 0 0",
+                    cursor: "pointer",
                   }}
                 >
-                  Главные знаки отличия вашего профиля
-                </p>
+                  Все ({unlockedCount}) →
+                </button>
               </div>
 
-              <button
-                onClick={() => setCabinetTab("cosmetics")}
-                style={{
-                  background: "transparent",
-                  border: "1px solid var(--border, rgba(255,255,255,0.15))",
-                  color: "var(--text-primary, #ffffff)",
-                  padding: "5px 12px",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Настроить витрину
-              </button>
-            </div>
-
-            {displayShowcase.length === 0 ? (
-              <div
-                style={{
-                  padding: "24px",
-                  textAlign: "center",
-                  color: "var(--text-muted)",
-                  fontSize: "13px",
-                  borderRadius: "12px",
-                  border: "1px dashed var(--border)",
-                }}
-              >
-                Пока нет открытых достижений для показа. Изучайте карточки и сохраняйте статьи, чтобы открыть первые медали!
-              </div>
-            ) : (
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: "12px",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                  gap: "10px",
                 }}
               >
                 {displayShowcase.map((ach) => (
                   <div
                     key={ach.id}
                     style={{
-                      padding: "14px",
-                      borderRadius: "12px",
+                      padding: "12px",
+                      borderRadius: "10px",
                       backgroundColor: "var(--surface-raised, rgba(255,255,255,0.04))",
-                      border: "1px solid rgba(245, 158, 11, 0.25)",
+                      border: "1px solid rgba(245, 158, 11, 0.2)",
                       display: "flex",
                       alignItems: "center",
-                      gap: "12px",
-                      position: "relative",
-                      overflow: "hidden",
+                      gap: "10px",
                     }}
                   >
                     <div
                       style={{
-                        width: "44px",
-                        height: "44px",
-                        borderRadius: "10px",
+                        width: "38px",
+                        height: "38px",
+                        borderRadius: "8px",
                         backgroundColor: "rgba(245, 158, 11, 0.15)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: "22px",
+                        fontSize: "20px",
                         flexShrink: 0,
                       }}
                     >
@@ -1173,87 +1223,73 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
-                          marginTop: "2px",
                         }}
                       >
                         {ach.description}
                       </div>
                     </div>
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        color: "#f59e0b",
-                        backgroundColor: "rgba(245, 158, 11, 0.12)",
-                        padding: "2px 6px",
-                        borderRadius: "6px",
-                        flexShrink: 0,
-                      }}
-                    >
-                      +{ach.points}
-                    </div>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* ══════════════════════════════════════════════════════════════════
-          СЕКЦИЯ 2: КАСТОМИЗАЦИЯ И СТИЛЬ (COSMETICS STUDIO)
+          СЕКЦИЯ 2: КАСТОМИЗАЦИЯ И СТИЛЬ (1. Аватар, 2. Рамка, 3. Обложка)
       ══════════════════════════════════════════════════════════════════ */}
       {cabinetTab === "cosmetics" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px", width: "100%" }}>
-          {/* Интерактивный предпросмотр аватара и рамки */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
+          {/* Интерактивный предпросмотр */}
           <div
             style={{
-              padding: "18px 20px",
-              borderRadius: "16px",
+              padding: "16px 18px",
+              borderRadius: "14px",
               backgroundColor: "var(--surface, #121214)",
               border: "1px solid var(--border, rgba(255,255,255,0.08))",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               flexWrap: "wrap",
-              gap: "16px",
+              gap: "12px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
               <UserAvatarBadge
                 customization={customization}
-                size={76}
+                size={68}
                 username={nickname || "User"}
                 showOnlineDot
               />
               <div>
                 <div style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: 700 }}>
-                  Живой предпросмотр
+                  Предпросмотр стиля
                 </div>
-                <div style={{ fontSize: "16px", fontWeight: 800, color: "var(--text-primary)" }}>
-                  {nickname || "Аноним"} • {customization.title}
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "var(--text-primary)" }}>
+                  {nickname || "Аноним"}
                 </div>
-                <div style={{ fontSize: "12px", color: "var(--accent, #3b82f6)", marginTop: "2px" }}>
-                  {customization.statusEmoji} {customization.statusText}
+                <div style={{ fontSize: "11px", color: "var(--accent, #3b82f6)", marginTop: "2px" }}>
+                  Активный стиль оформления
                 </div>
               </div>
             </div>
 
             <Button onClick={() => handleSaveCosmetics()} className="kv-action-btn">
-              <Save size={15} /> Сохранить изменения
+              <Save size={15} /> Сохранить стиль
             </Button>
           </div>
 
           {/* 1. ВЫБОР АВАТАРА */}
           <div
             style={{
-              padding: "20px",
-              borderRadius: "16px",
+              padding: "16px 18px",
+              borderRadius: "14px",
               backgroundColor: "var(--surface, #121214)",
               border: "1px solid var(--border, rgba(255,255,255,0.08))",
               display: "flex",
               flexDirection: "column",
-              gap: "14px",
+              gap: "12px",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
@@ -1262,7 +1298,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   1. Стиль Аватара
                 </h3>
                 <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
-                  Выберите готового героя, монограмму или загрузите собственное фото
+                  Выберите героя, монограмму или загрузите своё фото
                 </p>
               </div>
 
@@ -1278,7 +1314,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 <button
                   onClick={() => handleSaveCosmetics({ avatarType: "preset" })}
                   style={{
-                    padding: "5px 12px",
+                    padding: "5px 10px",
                     borderRadius: "8px",
                     border: "none",
                     backgroundColor: customization.avatarType === "preset" ? "var(--accent, #3b82f6)" : "transparent",
@@ -1288,12 +1324,12 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     cursor: "pointer",
                   }}
                 >
-                  Пресеты героев
+                  Герои
                 </button>
                 <button
                   onClick={() => avatarFileInputRef.current?.click()}
                   style={{
-                    padding: "5px 12px",
+                    padding: "5px 10px",
                     borderRadius: "8px",
                     border: "none",
                     backgroundColor: customization.avatarType === "custom" ? "var(--accent, #3b82f6)" : "transparent",
@@ -1306,13 +1342,13 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     gap: "4px",
                   }}
                 >
-                  <Upload size={13} />
-                  <span>Своё фото</span>
+                  <Upload size={12} />
+                  <span>Фото</span>
                 </button>
                 <button
                   onClick={() => handleSaveCosmetics({ avatarType: "monogram" })}
                   style={{
-                    padding: "5px 12px",
+                    padding: "5px 10px",
                     borderRadius: "8px",
                     border: "none",
                     backgroundColor: customization.avatarType === "monogram" ? "var(--accent, #3b82f6)" : "transparent",
@@ -1329,16 +1365,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
 
             {/* Сетка пресетов аватарок (16 персонажей) */}
             {customization.avatarType === "preset" && (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
-                  gap: "10px",
-                  maxHeight: "340px",
-                  overflowY: "auto",
-                  padding: "4px",
-                }}
-              >
+              <div className="kv-presets-grid">
                 {AVATAR_PRESETS.map((preset) => {
                   const isSelected =
                     customization.avatarType === "preset" &&
@@ -1353,8 +1380,8 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                         })
                       }
                       style={{
-                        padding: "10px",
-                        borderRadius: "12px",
+                        padding: "10px 8px",
+                        borderRadius: "10px",
                         backgroundColor: isSelected
                           ? "rgba(59, 130, 246, 0.15)"
                           : "var(--surface-raised, rgba(255,255,255,0.04))",
@@ -1372,32 +1399,21 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     >
                       <div
                         style={{
-                          width: "48px",
-                          height: "48px",
+                          width: "44px",
+                          height: "44px",
                           borderRadius: "50%",
                           background: preset.gradient,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontSize: "24px",
-                          boxShadow: isSelected ? "0 0 12px rgba(59, 130, 246, 0.5)" : "none",
+                          fontSize: "22px",
+                          boxShadow: isSelected ? "0 0 10px rgba(59, 130, 246, 0.5)" : "none",
                         }}
                       >
                         {preset.emoji}
                       </div>
-                      <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-primary)" }}>
+                      <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-primary)" }}>
                         {preset.name}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "10px",
-                          color: "var(--text-muted)",
-                          padding: "1px 6px",
-                          borderRadius: "4px",
-                          backgroundColor: "rgba(255,255,255,0.06)",
-                        }}
-                      >
-                        {preset.tag}
                       </div>
                     </div>
                   );
@@ -1405,9 +1421,9 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
               </div>
             )}
 
-            {/* Режим Монограммы (выбор цвета) */}
+            {/* Режим Монограммы */}
             {customization.avatarType === "monogram" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "10px 0" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "6px 0" }}>
                 <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                   Выберите оттенок фона инициала ({nickname ? nickname.charAt(0).toUpperCase() : "U"}):
                 </span>
@@ -1417,8 +1433,8 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                       key={color}
                       onClick={() => handleSaveCosmetics({ monogramColor: color })}
                       style={{
-                        width: "36px",
-                        height: "36px",
+                        width: "34px",
+                        height: "34px",
                         borderRadius: "50%",
                         backgroundColor: color,
                         border:
@@ -1426,10 +1442,6 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                             ? "3px solid #ffffff"
                             : "2px solid rgba(255,255,255,0.2)",
                         cursor: "pointer",
-                        boxShadow:
-                          customization.monogramColor === color
-                            ? `0 0 12px ${color}`
-                            : "none",
                       }}
                     />
                   ))}
@@ -1439,15 +1451,15 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
 
             {/* Режим своего фото */}
             {customization.avatarType === "custom" && customization.customAvatarUrl && (
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 0" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px 0" }}>
                 <img
                   src={customization.customAvatarUrl}
                   alt="Custom"
-                  style={{ width: "56px", height: "56px", borderRadius: "50%", objectFit: "cover" }}
+                  style={{ width: "52px", height: "52px", borderRadius: "50%", objectFit: "cover" }}
                 />
                 <div>
                   <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
-                    Пользовательское фото установлено
+                    Фотография загружена
                   </div>
                   <button
                     onClick={() => avatarFileInputRef.current?.click()}
@@ -1458,7 +1470,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                       fontSize: "12px",
                       cursor: "pointer",
                       padding: 0,
-                      marginTop: "4px",
+                      marginTop: "3px",
                     }}
                   >
                     Загрузить другое фото →
@@ -1471,31 +1483,25 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
           {/* 2. РАМКИ И СВЕЧЕНИЕ АВАТАРА */}
           <div
             style={{
-              padding: "20px",
-              borderRadius: "16px",
+              padding: "16px 18px",
+              borderRadius: "14px",
               backgroundColor: "var(--surface, #121214)",
               border: "1px solid var(--border, rgba(255,255,255,0.08))",
               display: "flex",
               flexDirection: "column",
-              gap: "14px",
+              gap: "12px",
             }}
           >
             <div>
               <h3 style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
-                2. Рамка и Неоновая Аура (Avatar Frame)
+                2. Рамка и Неоновое Свечение (Avatar Frame)
               </h3>
               <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
-                Специальные световые контуры для выделения вашего аватара в системе
+                Световые контуры для выделения вашего аватара
               </p>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-                gap: "10px",
-              }}
-            >
+            <div className="kv-frames-grid">
               {AVATAR_FRAMES.map((frame) => {
                 const isSelected = customization.avatarFrameId === frame.id;
                 return (
@@ -1503,8 +1509,8 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     key={frame.id}
                     onClick={() => handleSaveCosmetics({ avatarFrameId: frame.id })}
                     style={{
-                      padding: "12px 10px",
-                      borderRadius: "12px",
+                      padding: "10px 8px",
+                      borderRadius: "10px",
                       backgroundColor: isSelected
                         ? "rgba(59, 130, 246, 0.15)"
                         : "var(--surface-raised, rgba(255,255,255,0.04))",
@@ -1515,16 +1521,15 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
-                      gap: "8px",
+                      gap: "6px",
                       textAlign: "center",
                       transition: "all 0.15s ease",
                     }}
                   >
-                    {/* Мини-превью рамки */}
                     <div
                       style={{
-                        width: "44px",
-                        height: "44px",
+                        width: "40px",
+                        height: "40px",
                         borderRadius: "50%",
                         backgroundColor: "#18181b",
                         border: frame.border,
@@ -1532,13 +1537,13 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: "18px",
+                        fontSize: "16px",
                       }}
                     >
                       ✨
                     </div>
                     <div>
-                      <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-primary)" }}>
+                      <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-primary)" }}>
                         {frame.name}
                       </div>
                       <div style={{ fontSize: "10px", color: frame.accentColor, fontWeight: 600 }}>
@@ -1554,13 +1559,13 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
           {/* 3. ОБЛОЖКА ПРОФИЛЯ (БАННЕР) */}
           <div
             style={{
-              padding: "20px",
-              borderRadius: "16px",
+              padding: "16px 18px",
+              borderRadius: "14px",
               backgroundColor: "var(--surface, #121214)",
               border: "1px solid var(--border, rgba(255,255,255,0.08))",
               display: "flex",
               flexDirection: "column",
-              gap: "14px",
+              gap: "12px",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
@@ -1569,7 +1574,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   3. Тема Обложки (Profile Banner)
                 </h3>
                 <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
-                  Кинематографичные градиенты или загрузка собственной фоновой иллюстрации
+                  Градиентные фоны или загрузка своей иллюстрации
                 </p>
               </div>
 
@@ -1589,18 +1594,12 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   cursor: "pointer",
                 }}
               >
-                <ImageIcon size={14} />
+                <ImageIcon size={13} />
                 <span>Загрузить фон</span>
               </button>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-                gap: "10px",
-              }}
-            >
+            <div className="kv-banners-grid">
               {BANNER_THEMES.map((theme) => {
                 const isSelected = customization.bannerThemeId === theme.id;
                 return (
@@ -1608,19 +1607,19 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     key={theme.id}
                     onClick={() => handleSaveCosmetics({ bannerThemeId: theme.id })}
                     style={{
-                      borderRadius: "12px",
+                      borderRadius: "10px",
                       overflow: "hidden",
                       border: isSelected
                         ? `2px solid ${theme.accentColor}`
                         : "1px solid var(--border, rgba(255,255,255,0.08))",
                       cursor: "pointer",
-                      boxShadow: isSelected ? `0 0 12px ${theme.accentColor}55` : "none",
+                      boxShadow: isSelected ? `0 0 10px ${theme.accentColor}55` : "none",
                       transition: "all 0.15s ease",
                     }}
                   >
-                    <div style={{ height: "46px", background: theme.background }} />
-                    <div style={{ padding: "8px", backgroundColor: "var(--surface-raised, #18181b)" }}>
-                      <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-primary)" }}>
+                    <div style={{ height: "42px", background: theme.background }} />
+                    <div style={{ padding: "6px 8px", backgroundColor: "var(--surface-raised, #18181b)" }}>
+                      <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-primary)" }}>
                         {theme.name}
                       </div>
                       <div style={{ fontSize: "10px", color: theme.accentColor }}>{theme.tag}</div>
@@ -1629,224 +1628,10 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 );
               })}
             </div>
-          </div>
 
-          {/* 4. ЗВАНИЕ, СТАТУС И БИОГРАФИЯ */}
-          <div
-            style={{
-              padding: "20px",
-              borderRadius: "16px",
-              backgroundColor: "var(--surface, #121214)",
-              border: "1px solid var(--border, rgba(255,255,255,0.08))",
-              display: "flex",
-              flexDirection: "column",
-              gap: "16px",
-            }}
-          >
-            <div>
-              <h3 style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
-                4. Звание, Статус и «О себе»
-              </h3>
-              <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
-                Персонализируйте то, как вас видят другие участники KaVault
-              </p>
-            </div>
-
-            {/* Выбор титула */}
-            <div>
-              <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: "6px" }}>
-                Титул профиля (Звание)
-              </label>
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
-                {PROFILE_TITLES.slice(0, 6).map((title) => (
-                  <button
-                    key={title}
-                    type="button"
-                    onClick={() => handleSaveCosmetics({ title })}
-                    style={{
-                      padding: "4px 10px",
-                      borderRadius: "8px",
-                      backgroundColor:
-                        customization.title === title
-                          ? "rgba(59, 130, 246, 0.2)"
-                          : "var(--surface-raised, rgba(255,255,255,0.04))",
-                      border:
-                        customization.title === title
-                          ? "1px solid var(--accent, #3b82f6)"
-                          : "1px solid var(--border, rgba(255,255,255,0.06))",
-                      color: customization.title === title ? "var(--accent, #3b82f6)" : "var(--text-secondary)",
-                      fontSize: "12px",
-                      cursor: "pointer",
-                      fontWeight: customization.title === title ? 700 : 500,
-                    }}
-                  >
-                    {title}
-                  </button>
-                ))}
-              </div>
-              <Input
-                value={customization.title}
-                onChange={(e) => setCustomization({ ...customization, title: e.target.value })}
-                placeholder="Или введите свой титул..."
-              />
-            </div>
-
-            {/* Статус настроения */}
-            <div>
-              <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: "6px" }}>
-                Статус дня (Mood / Focus)
-              </label>
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
-                {STATUS_PRESETS.slice(0, 5).map((sp) => (
-                  <button
-                    key={sp.text}
-                    type="button"
-                    onClick={() => handleSaveCosmetics({ statusEmoji: sp.emoji, statusText: sp.text })}
-                    style={{
-                      padding: "4px 10px",
-                      borderRadius: "8px",
-                      backgroundColor:
-                        customization.statusText === sp.text
-                          ? "rgba(16, 185, 129, 0.2)"
-                          : "var(--surface-raised, rgba(255,255,255,0.04))",
-                      border:
-                        customization.statusText === sp.text
-                          ? "1px solid #10b981"
-                          : "1px solid var(--border, rgba(255,255,255,0.06))",
-                      color: customization.statusText === sp.text ? "#10b981" : "var(--text-secondary)",
-                      fontSize: "12px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {sp.emoji} {sp.text}
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <input
-                  type="text"
-                  value={customization.statusEmoji}
-                  onChange={(e) => setCustomization({ ...customization, statusEmoji: e.target.value })}
-                  style={{
-                    width: "48px",
-                    padding: "8px",
-                    textAlign: "center",
-                    fontSize: "16px",
-                    borderRadius: "8px",
-                    backgroundColor: "var(--surface-raised, #18181b)",
-                    border: "1px solid var(--border, rgba(255,255,255,0.1))",
-                    color: "var(--text-primary)",
-                  }}
-                  maxLength={2}
-                />
-                <div style={{ flex: 1 }}>
-                  <Input
-                    value={customization.statusText}
-                    onChange={(e) => setCustomization({ ...customization, statusText: e.target.value })}
-                    placeholder="Например: В потоке кодинга..."
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* «О себе» (Bio) */}
-            <div>
-              <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: "6px" }}>
-                О себе (Bio)
-              </label>
-              <textarea
-                value={customization.bio}
-                onChange={(e) => setCustomization({ ...customization, bio: e.target.value })}
-                rows={3}
-                maxLength={280}
-                placeholder="Расскажите о своих целях, стеке разработки или любимых темах..."
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "10px",
-                  backgroundColor: "var(--surface-raised, #18181b)",
-                  border: "1px solid var(--border, rgba(255,255,255,0.1))",
-                  color: "var(--text-primary, #ffffff)",
-                  fontSize: "13px",
-                  fontFamily: "inherit",
-                  resize: "vertical",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-
-            {/* 5. ВЫБОР ДОСТИЖЕНИЙ НА ВИТРИНУ */}
-            <div>
-              <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: "6px" }}>
-                Закрепить до 3 наград на витрине профиля:
-              </label>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-                  gap: "8px",
-                  maxHeight: "200px",
-                  overflowY: "auto",
-                }}
-              >
-                {achievements
-                  .filter((a) => a.unlocked)
-                  .map((ach) => {
-                    const isPinned = customization.showcaseAchievementIds.includes(ach.id);
-                    return (
-                      <div
-                        key={ach.id}
-                        onClick={() => {
-                          let nextIds = [...customization.showcaseAchievementIds];
-                          if (isPinned) {
-                            nextIds = nextIds.filter((id) => id !== ach.id);
-                          } else {
-                            if (nextIds.length >= 3) {
-                              nextIds.shift(); // заменяем самый старый
-                            }
-                            nextIds.push(ach.id);
-                          }
-                          handleSaveCosmetics({ showcaseAchievementIds: nextIds });
-                        }}
-                        style={{
-                          padding: "8px 10px",
-                          borderRadius: "10px",
-                          backgroundColor: isPinned
-                            ? "rgba(245, 158, 11, 0.15)"
-                            : "var(--surface-raised, rgba(255,255,255,0.04))",
-                          border: isPinned
-                            ? "1px solid #f59e0b"
-                            : "1px solid var(--border, rgba(255,255,255,0.06))",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          fontSize: "12px",
-                        }}
-                      >
-                        <span style={{ fontSize: "16px" }}>{ach.icon}</span>
-                        <span
-                          style={{
-                            flex: 1,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            color: isPinned ? "#f59e0b" : "var(--text-primary)",
-                            fontWeight: isPinned ? 700 : 500,
-                          }}
-                        >
-                          {ach.title}
-                        </span>
-                        {isPinned && <Check size={14} color="#f59e0b" />}
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "10px" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
               <Button onClick={() => handleSaveCosmetics()} className="kv-action-btn">
-                <Save size={15} /> Сохранить весь стиль
+                <Save size={15} /> Сохранить оформление
               </Button>
             </div>
           </div>
@@ -1854,28 +1639,28 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
       )}
 
       {/* ══════════════════════════════════════════════════════════════════
-          СЕКЦИЯ 3: БЕЗОПАСНОСТЬ И УЧЕТНАЯ ЗАПИСЬ
+          СЕКЦИЯ 3: БЕЗОПАСНОСТЬ И УЧЕТНАЯ ЗАПИСЬ (ЗАЩИТА)
       ══════════════════════════════════════════════════════════════════ */}
       {cabinetTab === "security" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
-          {/* Смена ника */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%" }}>
+          {/* Смена ника — ИДЕАЛЬНОЕ РАССТОЯНИЕ МЕЖДУ ИНПУТОМ И КНОПКОЙ */}
           <div
             style={{
-              padding: "20px",
-              borderRadius: "16px",
+              padding: "18px 20px",
+              borderRadius: "14px",
               backgroundColor: "var(--surface, #121214)",
               border: "1px solid var(--border, rgba(255,255,255,0.08))",
               display: "flex",
               flexDirection: "column",
-              gap: "12px",
+              gap: "8px",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <div
                 style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "10px",
+                  width: "34px",
+                  height: "34px",
+                  borderRadius: "8px",
                   backgroundColor: "rgba(59, 130, 246, 0.15)",
                   display: "flex",
                   alignItems: "center",
@@ -1883,20 +1668,20 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   color: "var(--accent, #3b82f6)",
                 }}
               >
-                <User size={18} />
+                <User size={16} />
               </div>
               <div>
                 <h3 style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
                   Отображаемый никнейм (@handle)
                 </h3>
                 <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
-                  Ваш уникальный идентификатор в таблице лидеров и списках друзей
+                  Ваш уникальный идентификатор в таблице лидеров
                 </p>
               </div>
             </div>
 
-            <div className="kv-field-row" style={{ marginTop: "4px" }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="kv-nick-row">
+              <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
                 <Input
                   icon={<User size={16} />}
                   value={editNickname}
@@ -1913,21 +1698,21 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
           {/* Смена пароля */}
           <div
             style={{
-              padding: "20px",
-              borderRadius: "16px",
+              padding: "18px 20px",
+              borderRadius: "14px",
               backgroundColor: "var(--surface, #121214)",
               border: "1px solid var(--border, rgba(255,255,255,0.08))",
               display: "flex",
               flexDirection: "column",
-              gap: "14px",
+              gap: "12px",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <div
                 style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "10px",
+                  width: "34px",
+                  height: "34px",
+                  borderRadius: "8px",
                   backgroundColor: "rgba(16, 185, 129, 0.15)",
                   display: "flex",
                   alignItems: "center",
@@ -1935,14 +1720,14 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   color: "#10b981",
                 }}
               >
-                <KeyRound size={18} />
+                <KeyRound size={16} />
               </div>
               <div>
                 <h3 style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
-                  Безопасность и смена пароля
+                  Безопасность и пароль
                 </h3>
                 <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
-                  Регулярно обновляйте пароль для надежной защиты ваших данных
+                  Регулярно обновляйте пароль для защиты ваших данных
                 </p>
               </div>
             </div>
@@ -1961,7 +1746,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 />
               </div>
 
-              <div className="kv-grid-1-2">
+              <div className="kv-pass-grid">
                 <div>
                   <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: "4px" }}>
                     Новый пароль
@@ -1989,7 +1774,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 </div>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", marginTop: "4px" }}>
+              <div className="kv-pass-actions">
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -2002,6 +1787,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     alignItems: "center",
                     gap: "5px",
                     cursor: "pointer",
+                    padding: "4px 0",
                   }}
                 >
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -2019,28 +1805,25 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
           <div
             style={{
               padding: "18px 20px",
-              borderRadius: "16px",
+              borderRadius: "14px",
               backgroundColor: "var(--surface, #121214)",
               border: "1px solid var(--border, rgba(255,255,255,0.08))",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: "12px",
             }}
           >
-            <div>
-              <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
-                Выход из аккаунта
+            <div className="kv-logout-card">
+              <div>
+                <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
+                  Выход из аккаунта
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  Завершить сессию на этом устройстве
+                </div>
               </div>
-              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                Завершить авторизованную сессию на этом устройстве
-              </div>
-            </div>
 
-            <Button variant="secondary" onClick={handleLogout} className="kv-action-btn" style={{ color: "var(--text-primary)" }}>
-              <LogOut size={15} /> Выйти из сессии
-            </Button>
+              <Button variant="secondary" onClick={handleLogout} className="kv-action-btn" style={{ color: "var(--text-primary)" }}>
+                <LogOut size={15} /> Выйти из сессии
+              </Button>
+            </div>
           </div>
         </div>
       )}
