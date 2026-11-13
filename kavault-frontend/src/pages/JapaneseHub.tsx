@@ -896,101 +896,123 @@ export function JapaneseHub() {
         })}
       </div>
 
-      {/* ── 3. ПУТЬ ПО УРОВНЯМ ЯЗЫКА (БЕЗ СКРОЛЛА, 100% ВИДИМОСТЬ ВСЕХ УРОВНЕЙ) ── */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 2,
-          padding: "10px 14px",
-          borderRadius: "14px",
-          backgroundColor: "var(--surface)",
-          border: "1px solid var(--border)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <GraduationCap size={15} color={activeColor} />
-            <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-primary)" }}>
-              {studyLanguage === "ja" ? "Уровни JLPT:" : "Уровни сложности:"}
-            </span>
-          </div>
-          {(() => {
-            const activeMeta = levelsMeta.find((m) => m.id === selectedLevel);
-            return activeMeta ? (
-              <span style={{ fontSize: "11px", fontWeight: 700, color: activeMeta.color }}>
-                {activeMeta.title[language]} · {activeMeta.subtitle[language]}
-              </span>
-            ) : null;
-          })()}
-        </div>
-
+      {/* ── 3. ПУТЬ ПО УРОВНЯМ ЯЗЫКА (ДЛЯ ЛЕКСИКИ, ГРАММАТИКИ, ЧТЕНИЯ И АУДИО — СКРЫТО В АЗБУКЕ) ── */}
+      {skillTab !== "alphabet" && (
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(78px, 1fr))",
-            gap: "6px",
-            width: "100%",
+            position: "relative",
+            zIndex: 2,
+            padding: "12px 14px",
+            borderRadius: "14px",
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--border)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
           }}
         >
-          <button
-            type="button"
-            onClick={() => handleSelectLevel("ALL")}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <GraduationCap size={15} color={activeColor} />
+              <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-primary)" }}>
+                {studyLanguage === "ja" ? "Уровни JLPT:" : "Уровни сложности:"}
+              </span>
+            </div>
+            {(() => {
+              const activeMeta = levelsMeta.find((m) => m.id === selectedLevel);
+              return activeMeta ? (
+                <span style={{ fontSize: "11px", fontWeight: 700, color: activeMeta.color }}>
+                  {activeMeta.title[language]} · {activeMeta.subtitle[language]}
+                </span>
+              ) : null;
+            })()}
+          </div>
+
+          <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "4px",
-              padding: "7px 6px",
-              borderRadius: "10px",
-              border: `1.5px solid ${selectedLevel === "ALL" ? activeColor : "var(--border-subtle)"}`,
-              backgroundColor: selectedLevel === "ALL" ? activeColor : "var(--bg-elevated)",
-              color: selectedLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
-              fontSize: "12px",
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "all 0.15s ease",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+              gap: "8px",
+              width: "100%",
             }}
           >
-            <span>Все</span>
-            <span style={{ fontSize: "10px", opacity: 0.85 }}>({levelCounts.ALL || 0})</span>
-          </button>
-
-          {levelsMeta.map((lvl) => {
-            const isActive = selectedLevel === lvl.id;
-            const count = levelCounts[lvl.id] || 0;
-            return (
-              <button
-                key={lvl.id}
-                type="button"
-                onClick={() => handleSelectLevel(lvl.id)}
-                title={`${lvl.title[language]} — ${lvl.subtitle[language]}`}
+            <button
+              type="button"
+              onClick={() => handleSelectLevel("ALL")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "8px 12px",
+                borderRadius: "10px",
+                border: `1.5px solid ${selectedLevel === "ALL" ? activeColor : "var(--border-subtle)"}`,
+                backgroundColor: selectedLevel === "ALL" ? activeColor : "var(--bg-elevated)",
+                color: selectedLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <span>Все уровни</span>
+              <span
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "4px",
-                  padding: "7px 6px",
-                  borderRadius: "10px",
-                  border: `1.5px solid ${isActive ? lvl.color : "var(--border-subtle)"}`,
-                  backgroundColor: isActive ? lvl.color : "var(--bg-elevated)",
-                  color: isActive ? "#ffffff" : "var(--text-primary)",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  boxShadow: isActive ? `0 2px 8px -2px ${lvl.color}` : "none",
-                  transition: "all 0.15s ease",
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  padding: "1px 7px",
+                  borderRadius: "999px",
+                  backgroundColor: selectedLevel === "ALL" ? "rgba(255, 255, 255, 0.25)" : "var(--surface)",
+                  color: selectedLevel === "ALL" ? "#ffffff" : "var(--text-muted)",
                 }}
               >
-                <span>{lvl.badge}</span>
-                <span style={{ fontSize: "10px", opacity: 0.85 }}>({count})</span>
-              </button>
-            );
-          })}
+                {levelCounts.ALL || 0}
+              </span>
+            </button>
+
+            {levelsMeta.map((lvl) => {
+              const isActive = selectedLevel === lvl.id;
+              const count = levelCounts[lvl.id] || 0;
+              return (
+                <button
+                  key={lvl.id}
+                  type="button"
+                  onClick={() => handleSelectLevel(lvl.id)}
+                  title={`${lvl.title[language]} — ${lvl.subtitle[language]}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "8px 12px",
+                    borderRadius: "10px",
+                    border: `1.5px solid ${isActive ? lvl.color : "var(--border-subtle)"}`,
+                    backgroundColor: isActive ? lvl.color : "var(--bg-elevated)",
+                    color: isActive ? "#ffffff" : "var(--text-primary)",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    boxShadow: isActive ? `0 2px 8px -2px ${lvl.color}` : "none",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <span>{lvl.badge}</span>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 800,
+                      padding: "1px 7px",
+                      borderRadius: "999px",
+                      backgroundColor: isActive ? "rgba(255, 255, 255, 0.25)" : "var(--surface)",
+                      color: isActive ? "#ffffff" : "var(--text-muted)",
+                    }}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── 4. МОДУЛЬ 0: АЗБУКА И АЛФАВИТ ── */}
       {skillTab === "alphabet" && (
