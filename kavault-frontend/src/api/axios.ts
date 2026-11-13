@@ -59,13 +59,13 @@ export const getApiBaseURL = (): string => {
       return "http://localhost:4000";
     }
 
-    // 4. Если открыто в веб-браузере по сетевому IP сервера или домену
+    // 4. Если открыто в веб-браузере по сетевому IP сервера или домену (работаем через порт 80 без CORS)
     if (
       !Capacitor.isNativePlatform() &&
       window.location.hostname &&
       !window.location.protocol.startsWith("file")
     ) {
-      return `http://${window.location.hostname}:4000`;
+      return window.location.origin;
     }
 
     // 5. Динамический адрес, автоматически подгруженный с GitHub (обновляется при смене IP сервера)
