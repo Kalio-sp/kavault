@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Palette,
   X,
+  ChevronRight,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
@@ -108,7 +109,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div
       style={{
         display: "flex",
-        flexDirection: "row",
+        flexDirection: isMobile ? "column" : "row",
         height: "100vh",
         backgroundColor: "var(--bg)",
         backgroundImage: "var(--vibe-page-bg)",
@@ -397,278 +398,143 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </aside>
       )}
 
-      {/* ── МОБИЛЬНЫЙ БОКОВОЙ ТАБ-БАР СЛЕВА (Mobile Left Rail) ── */}
+      {/* ── МОБИЛЬНЫЙ ВЕРХНИЙ ХЕДЕР (iOS Safe Area) ── */}
       {isMobile && (
-        <aside
+        <header
           style={{
-            width: "56px",
-            flexShrink: 0,
-            height: "100vh",
-            backgroundColor: "var(--tabbar-bg)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            borderRight: "1px solid var(--border)",
+            padding: "12px 16px",
+            paddingTop: "calc(12px + env(safe-area-inset-top, 0px))",
             display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
             alignItems: "center",
-            paddingTop: "calc(10px + env(safe-area-inset-top, 0px))",
-            paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
-            paddingLeft: "env(safe-area-inset-left, 0px)",
-            zIndex: 45,
-            boxSizing: "border-box",
+            justifyContent: "space-between",
+            backgroundColor: "var(--surface)",
+            borderBottom: "1px solid var(--border)",
+            zIndex: 40,
+            flexShrink: 0,
           }}
         >
-          {/* Верхняя группа: логотип K + 4 главные вкладки */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "8px",
-              width: "100%",
-            }}
-          >
-            {/* Мини-логотип KaVault */}
-            <Link
-              to="/dashboard"
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div
               style={{
-                width: "36px",
-                height: "36px",
-                backgroundColor: isCreator ? "#f59e0b" : studyPalette.accentHex,
-                color: isCreator ? "#000" : "#fff",
+                width: "24px",
+                height: "24px",
+                backgroundColor: isCreator
+                  ? "#f59e0b"
+                  : studyPalette.accentHex,
+                color: isCreator ? "#000" : "#ffffff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: "10px",
-                fontSize: "16px",
+                borderRadius: "6px",
+                fontSize: "13px",
                 fontWeight: 800,
-                textDecoration: "none",
-                marginBottom: "4px",
-                boxShadow: isCreator ? "0 0 12px rgba(245, 158, 11, 0.4)" : "none",
               }}
-              title="KAVAULT Главная"
             >
               K
-            </Link>
-
-            {/* Вкладки */}
-            {mobileTabs.map((tab) => {
-              const isActive = location.pathname === tab.path;
-              const Icon = tab.icon;
-              return (
-                <Link
-                  key={tab.path}
-                  to={tab.path}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "2px",
-                    color: isActive ? "var(--accent)" : "var(--text-secondary)",
-                    backgroundColor: isActive ? "var(--accent-soft)" : "transparent",
-                    border: isActive
-                      ? "1px solid var(--accent, #3b82f6)"
-                      : "1px solid transparent",
-                    borderRadius: "12px",
-                    textDecoration: "none",
-                    width: "46px",
-                    height: "46px",
-                    transition: "all 0.15s ease",
-                    boxSizing: "border-box",
-                  }}
-                  title={tab.label}
-                >
-                  <Icon size={19} />
-                  <span
-                    style={{
-                      fontSize: "8.5px",
-                      fontWeight: isActive ? 700 : 500,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      maxWidth: "42px",
-                      textAlign: "center",
-                      lineHeight: 1,
-                    }}
-                  >
-                    {tab.label}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Нижняя кнопка: "Еще" (гамбургер) */}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "2px",
-              color: mobileMenuOpen ? "var(--accent)" : "var(--text-secondary)",
-              backgroundColor: mobileMenuOpen ? "var(--accent-soft)" : "transparent",
-              border: mobileMenuOpen
-                ? "1px solid var(--accent, #3b82f6)"
-                : "1px solid transparent",
-              borderRadius: "12px",
-              borderStyle: "solid",
-              borderWidth: "1px",
-              cursor: "pointer",
-              width: "46px",
-              height: "46px",
-              transition: "all 0.15s ease",
-              boxSizing: "border-box",
-            }}
-            title={t.nav.more}
-          >
-            <Menu size={19} />
+            </div>
+            <span style={{ fontWeight: 700, fontSize: "16px" }}>KAVAULT</span>
             <span
               style={{
-                fontSize: "8.5px",
-                fontWeight: mobileMenuOpen ? 700 : 500,
-                lineHeight: 1,
+                fontSize: "11px",
+                padding: "1px 6px",
+                borderRadius: "999px",
+                backgroundColor: "var(--vibe-soft)",
+                border: "1px solid var(--vibe-banner-border)",
+                color: "var(--vibe-accent)",
+                fontWeight: 600,
               }}
+              title={studyText.vibeBadge}
             >
-              {t.nav.more}
+              {studyPalette.flag}
             </span>
-          </button>
-        </aside>
-      )}
-
-      {/* ── ПРАВАЯ ОБЛАСТЬ: ХЕДЕР + КОНТЕНТ ── */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          height: "100vh",
-          overflow: "hidden",
-          minWidth: 0,
-        }}
-      >
-        {/* ── МОБИЛЬНЫЙ ВЕРХНИЙ ХЕДЕР (iOS Safe Area) ── */}
-        {isMobile && (
-          <header
-            style={{
-              padding: "10px 14px",
-              paddingTop: "calc(10px + env(safe-area-inset-top, 0px))",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              backgroundColor: "var(--surface)",
-              borderBottom: "1px solid var(--border)",
-              zIndex: 40,
-              flexShrink: 0,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontWeight: 800, fontSize: "16px", letterSpacing: "-0.01em" }}>KAVAULT</span>
+            {isCreator && (
               <span
                 style={{
-                  fontSize: "11px",
-                  padding: "1px 6px",
-                  borderRadius: "999px",
-                  backgroundColor: "var(--vibe-soft)",
-                  border: "1px solid var(--vibe-banner-border)",
-                  color: "var(--vibe-accent)",
-                  fontWeight: 600,
-                }}
-                title={studyText.vibeBadge}
-              >
-                {studyPalette.flag}
-              </span>
-              {isCreator && (
-                <span
-                  style={{
-                    fontSize: "9px",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    padding: "1px 5px",
-                    borderRadius: "4px",
-                    backgroundColor: "rgba(245, 158, 11, 0.15)",
-                    color: "#f59e0b",
-                    border: "1px solid rgba(245, 158, 11, 0.3)",
-                  }}
-                >
-                  Root
-                </span>
-              )}
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <Link
-                to="/social"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  padding: "5px 11px",
-                  borderRadius: "999px",
-                  backgroundColor: "rgba(59, 130, 246, 0.12)",
-                  border: "1px solid rgba(59, 130, 246, 0.3)",
-                  color: "#60a5fa",
-                  textDecoration: "none",
-                  fontSize: "12px",
+                  fontSize: "9px",
                   fontWeight: 700,
-                  transition: "all 0.15s ease",
+                  textTransform: "uppercase",
+                  padding: "1px 5px",
+                  borderRadius: "4px",
+                  backgroundColor: "rgba(245, 158, 11, 0.15)",
+                  color: "#f59e0b",
+                  border: "1px solid rgba(245, 158, 11, 0.3)",
                 }}
-                title="Рейтинг и Таблица лидеров"
               >
-                <TrendingUp size={14} />
-                <span>Рейтинг</span>
-              </Link>
+                Root
+              </span>
+            )}
+          </div>
 
-              <Link
-                to="/settings"
-                style={{
-                  padding: "7px",
-                  color: "var(--text-secondary)",
-                  display: "flex",
-                  alignItems: "center",
-                  borderRadius: "8px",
-                }}
-                title={t.nav.settings}
-              >
-                <SettingsIcon size={20} />
-              </Link>
-            </div>
-          </header>
-        )}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <Link
+              to="/social"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                padding: "5px 11px",
+                borderRadius: "999px",
+                backgroundColor: "rgba(59, 130, 246, 0.12)",
+                border: "1px solid rgba(59, 130, 246, 0.3)",
+                color: "#60a5fa",
+                textDecoration: "none",
+                fontSize: "12px",
+                fontWeight: 700,
+                transition: "all 0.15s ease",
+              }}
+              title="Рейтинг и Таблица лидеров"
+            >
+              <TrendingUp size={14} />
+              <span>Рейтинг</span>
+            </Link>
 
-        {/* ── ОСНОВНОЙ КОНТЕНТ ── */}
-        <main
+            <Link
+              to="/settings"
+              style={{
+                padding: "7px",
+                color: "var(--text-secondary)",
+                display: "flex",
+                alignItems: "center",
+                borderRadius: "8px",
+              }}
+              title={t.nav.settings}
+            >
+              <SettingsIcon size={20} />
+            </Link>
+          </div>
+        </header>
+      )}
+
+      {/* ── ОСНОВНОЙ КОНТЕНТ ── */}
+      <main
+        style={{
+          flex: 1,
+          padding: isMobile ? "var(--space-4)" : "var(--space-8)",
+          paddingBottom: isMobile
+            ? "calc(74px + env(safe-area-inset-bottom, 0px))"
+            : "var(--space-8)",
+          overflowY: "auto",
+          overflowX: "hidden",
+          height: "100%",
+          WebkitOverflowScrolling: "touch",
+          boxSizing: "border-box",
+          width: "100%",
+        }}
+      >
+        <div
+          key={location.pathname}
+          className="kv-page-enter"
           style={{
-            flex: 1,
-            padding: isMobile ? "12px 10px" : "var(--space-8)",
-            paddingBottom: "24px",
-            overflowY: "auto",
-            overflowX: "hidden",
-            height: "100%",
-            WebkitOverflowScrolling: "touch",
-            boxSizing: "border-box",
+            maxWidth: "1200px",
+            margin: "0 auto",
             width: "100%",
+            overflowX: "hidden",
+            boxSizing: "border-box",
           }}
         >
-          <div
-            key={location.pathname}
-            className="kv-page-enter"
-            style={{
-              maxWidth: "1200px",
-              margin: "0 auto",
-              width: "100%",
-              overflowX: "hidden",
-              boxSizing: "border-box",
-            }}
-          >
-            {children}
-          </div>
-        </main>
-      </div>
+          {children}
+        </div>
+      </main>
 
       {/* ── МОБИЛЬНОЕ ВСПЛЫВАЮЩЕЕ МЕНЮ (ШТОРКА "ЕЩЁ") ── */}
       {isMobile && mobileMenuOpen && (
@@ -810,23 +676,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </Link>
 
-            {/* Сетка разделов 2 колонки */}
+            {/* Вертикальный список разделов KAVAULT (в 1 колонку для комфортного скролла вниз) */}
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
+                display: "flex",
+                flexDirection: "column",
                 gap: "8px",
               }}
             >
-              {/* Повторить лексику */}
+              {/* Повторение */}
               <Link
                 to="/review"
                 onClick={() => setMobileMenuOpen(false)}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "10px",
-                  padding: "10px 12px",
+                  justifyContent: "space-between",
+                  padding: "11px 14px",
                   borderRadius: "14px",
                   backgroundColor:
                     location.pathname === "/review"
@@ -840,41 +706,42 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   transition: "all 0.15s ease",
                 }}
               >
-                <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "10px",
-                    backgroundColor: "rgba(236, 72, 153, 0.15)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <Sparkles size={16} color={studyPalette.accentHex} />
-                </div>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                   <div
                     style={{
-                      fontSize: "12.5px",
-                      fontWeight: 700,
-                      color: "var(--text-primary)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "10px",
+                      backgroundColor: "rgba(236, 72, 153, 0.15)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    Повторение
+                    <Sparkles size={18} color={studyPalette.accentHex} />
                   </div>
-                  <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
-                    Интервалы SRS
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: "13.5px",
+                        fontWeight: 700,
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      Повторение лексики
+                    </div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                      Интервалы SRS & карточки
+                    </div>
                   </div>
                 </div>
+                <ChevronRight size={16} color="var(--text-muted)" style={{ flexShrink: 0, opacity: 0.6 }} />
               </Link>
 
               {/* Зал наград */}
               <button
+                type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   openModal();
@@ -882,47 +749,48 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "10px",
-                  padding: "10px 12px",
+                  justifyContent: "space-between",
+                  padding: "11px 14px",
                   borderRadius: "14px",
                   backgroundColor: "rgba(255, 255, 255, 0.03)",
                   border: "1px solid rgba(255, 255, 255, 0.06)",
                   cursor: "pointer",
                   textAlign: "left",
+                  width: "100%",
                   transition: "all 0.15s ease",
                 }}
               >
-                <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "10px",
-                    backgroundColor: "rgba(234, 179, 8, 0.15)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <Trophy size={16} color="#eab308" />
-                </div>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                   <div
                     style={{
-                      fontSize: "12.5px",
-                      fontWeight: 700,
-                      color: "var(--text-primary)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "10px",
+                      backgroundColor: "rgba(234, 179, 8, 0.15)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    Зал наград
+                    <Trophy size={18} color="#eab308" />
                   </div>
-                  <div style={{ fontSize: "10px", color: "#eab308", fontWeight: 600 }}>
-                    {unlockedCount}/{totalCount} открыто
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: "13.5px",
+                        fontWeight: 700,
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      Зал наград
+                    </div>
+                    <div style={{ fontSize: "11px", color: "#eab308", fontWeight: 600 }}>
+                      {unlockedCount}/{totalCount} открыто
+                    </div>
                   </div>
                 </div>
+                <ChevronRight size={16} color="var(--text-muted)" style={{ flexShrink: 0, opacity: 0.6 }} />
               </button>
 
               {/* Сообщество & Рейтинг */}
@@ -932,8 +800,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "10px",
-                  padding: "10px 12px",
+                  justifyContent: "space-between",
+                  padding: "11px 14px",
                   borderRadius: "14px",
                   backgroundColor:
                     location.pathname === "/social"
@@ -947,37 +815,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   transition: "all 0.15s ease",
                 }}
               >
-                <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "10px",
-                    backgroundColor: "rgba(59, 130, 246, 0.15)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <Users size={16} color="#60a5fa" />
-                </div>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                   <div
                     style={{
-                      fontSize: "12.5px",
-                      fontWeight: 700,
-                      color: "var(--text-primary)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "10px",
+                      backgroundColor: "rgba(59, 130, 246, 0.15)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    {t.nav.social}
+                    <Users size={18} color="#60a5fa" />
                   </div>
-                  <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
-                    Друзья & MMR
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: "13.5px",
+                        fontWeight: 700,
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {t.nav.social}
+                    </div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                      Друзья, активность & MMR
+                    </div>
                   </div>
                 </div>
+                <ChevronRight size={16} color="var(--text-muted)" style={{ flexShrink: 0, opacity: 0.6 }} />
               </Link>
 
               {/* Мысли & Заметки */}
@@ -987,8 +855,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "10px",
-                  padding: "10px 12px",
+                  justifyContent: "space-between",
+                  padding: "11px 14px",
                   borderRadius: "14px",
                   backgroundColor:
                     location.pathname === "/thoughts"
@@ -1002,37 +870,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   transition: "all 0.15s ease",
                 }}
               >
-                <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "10px",
-                    backgroundColor: "rgba(168, 85, 247, 0.15)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <PenLine size={16} color="#c084fc" />
-                </div>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                   <div
                     style={{
-                      fontSize: "12.5px",
-                      fontWeight: 700,
-                      color: "var(--text-primary)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "10px",
+                      backgroundColor: "rgba(168, 85, 247, 0.15)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    {t.nav.thoughts}
+                    <PenLine size={18} color="#c084fc" />
                   </div>
-                  <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
-                    Заметки и идеи
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: "13.5px",
+                        fontWeight: 700,
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {t.nav.thoughts}
+                    </div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                      Заметки, идеи и дневник
+                    </div>
                   </div>
                 </div>
+                <ChevronRight size={16} color="var(--text-muted)" style={{ flexShrink: 0, opacity: 0.6 }} />
               </Link>
 
               {/* Граф знаний */}
@@ -1042,8 +910,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "10px",
-                  padding: "10px 12px",
+                  justifyContent: "space-between",
+                  padding: "11px 14px",
                   borderRadius: "14px",
                   backgroundColor:
                     location.pathname === "/graph"
@@ -1057,40 +925,40 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   transition: "all 0.15s ease",
                 }}
               >
-                <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "10px",
-                    backgroundColor: "rgba(16, 185, 129, 0.15)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <Network size={16} color="#34d399" />
-                </div>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                   <div
                     style={{
-                      fontSize: "12.5px",
-                      fontWeight: 700,
-                      color: "var(--text-primary)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "10px",
+                      backgroundColor: "rgba(16, 185, 129, 0.15)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    {t.nav.graph}
+                    <Network size={18} color="#34d399" />
                   </div>
-                  <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
-                    Карта связей
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: "13.5px",
+                        fontWeight: 700,
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {t.nav.graph}
+                    </div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                      Интерактивная карта связей
+                    </div>
                   </div>
                 </div>
+                <ChevronRight size={16} color="var(--text-muted)" style={{ flexShrink: 0, opacity: 0.6 }} />
               </Link>
 
-              {/* GitHub Проекты (если вкл. программирование) */}
+              {/* GitHub Проекты (если включено программирование) */}
               {showProgramming && (
                 <Link
                   to="/github"
@@ -1098,8 +966,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
-                    padding: "10px 12px",
+                    justifyContent: "space-between",
+                    padding: "11px 14px",
                     borderRadius: "14px",
                     backgroundColor:
                       location.pathname === "/github"
@@ -1113,37 +981,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     transition: "all 0.15s ease",
                   }}
                 >
-                  <div
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "10px",
-                      backgroundColor: "rgba(6, 182, 212, 0.15)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <GitBranch size={16} color="#22d3ee" />
-                  </div>
-                  <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                     <div
                       style={{
-                        fontSize: "12.5px",
-                        fontWeight: 700,
-                        color: "var(--text-primary)",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        backgroundColor: "rgba(6, 182, 212, 0.15)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
                       }}
                     >
-                      {t.nav.github}
+                      <GitBranch size={18} color="#22d3ee" />
                     </div>
-                    <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
-                      Репозитории
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: "13.5px",
+                          fontWeight: 700,
+                          color: "var(--text-primary)",
+                        }}
+                      >
+                        {t.nav.github}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                        Репозитории & активность
+                      </div>
                     </div>
                   </div>
+                  <ChevronRight size={16} color="var(--text-muted)" style={{ flexShrink: 0, opacity: 0.6 }} />
                 </Link>
               )}
 
@@ -1154,8 +1022,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "10px",
-                  padding: "10px 12px",
+                  justifyContent: "space-between",
+                  padding: "11px 14px",
                   borderRadius: "14px",
                   backgroundColor:
                     location.pathname === "/settings"
@@ -1169,40 +1037,40 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   transition: "all 0.15s ease",
                 }}
               >
-                <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "10px",
-                    backgroundColor: "rgba(255, 255, 255, 0.07)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <SettingsIcon size={16} color="var(--text-secondary)" />
-                </div>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                   <div
                     style={{
-                      fontSize: "12.5px",
-                      fontWeight: 700,
-                      color: "var(--text-primary)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "10px",
+                      backgroundColor: "rgba(255, 255, 255, 0.07)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    {t.nav.settings}
+                    <SettingsIcon size={18} color="var(--text-secondary)" />
                   </div>
-                  <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
-                    Темы & аккаунт
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: "13.5px",
+                        fontWeight: 700,
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {t.nav.settings}
+                    </div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                      Темы оформления & аккаунт
+                    </div>
                   </div>
                 </div>
+                <ChevronRight size={16} color="var(--text-muted)" style={{ flexShrink: 0, opacity: 0.6 }} />
               </Link>
 
-              {/* Панель Создателя (если Root) ИЛИ Кастомизация & Рамки (если обычный пользователь) */}
+              {/* Панель Создателя (если Root) ИЛИ Стиль & Оформление */}
               {isCreator ? (
                 <Link
                   to="/admin"
@@ -1210,8 +1078,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
-                    padding: "10px 12px",
+                    justifyContent: "space-between",
+                    padding: "11px 14px",
                     borderRadius: "14px",
                     backgroundColor:
                       location.pathname === "/admin"
@@ -1223,37 +1091,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     transition: "all 0.15s ease",
                   }}
                 >
-                  <div
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "10px",
-                      backgroundColor: "rgba(245, 158, 11, 0.2)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Crown size={16} color="#f59e0b" />
-                  </div>
-                  <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                     <div
                       style={{
-                        fontSize: "12.5px",
-                        fontWeight: 800,
-                        color: "#fbbf24",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        backgroundColor: "rgba(245, 158, 11, 0.2)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
                       }}
                     >
-                      Панель Создателя
+                      <Crown size={18} color="#f59e0b" />
                     </div>
-                    <div style={{ fontSize: "10px", color: "#f59e0b", opacity: 0.9 }}>
-                      Root управление
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: "13.5px",
+                          fontWeight: 800,
+                          color: "#fbbf24",
+                        }}
+                      >
+                        Панель Создателя
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#f59e0b", opacity: 0.9 }}>
+                        Root управление & аналитика
+                      </div>
                     </div>
                   </div>
+                  <ChevronRight size={16} color="#fbbf24" style={{ flexShrink: 0, opacity: 0.8 }} />
                 </Link>
               ) : (
                 <Link
@@ -1262,8 +1130,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
-                    padding: "10px 12px",
+                    justifyContent: "space-between",
+                    padding: "11px 14px",
                     borderRadius: "14px",
                     backgroundColor:
                       location.pathname === "/profile"
@@ -1274,37 +1142,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     transition: "all 0.15s ease",
                   }}
                 >
-                  <div
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "10px",
-                      backgroundColor: "rgba(236, 72, 153, 0.18)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Palette size={16} color="#f472b6" />
-                  </div>
-                  <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                     <div
                       style={{
-                        fontSize: "12.5px",
-                        fontWeight: 700,
-                        color: "var(--text-primary)",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        backgroundColor: "rgba(236, 72, 153, 0.18)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
                       }}
                     >
-                      Стиль & Рамки
+                      <Palette size={18} color="#f472b6" />
                     </div>
-                    <div style={{ fontSize: "10px", color: "#f472b6" }}>
-                      Кастомизация
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: "13.5px",
+                          fontWeight: 700,
+                          color: "var(--text-primary)",
+                        }}
+                      >
+                        Стиль & Оформление
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#f472b6" }}>
+                        Рамки, темы и баннеры
+                      </div>
                     </div>
                   </div>
+                  <ChevronRight size={16} color="var(--text-muted)" style={{ flexShrink: 0, opacity: 0.6 }} />
                 </Link>
               )}
             </div>
@@ -1316,7 +1184,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "8px",
-                padding: "4px 0",
+                padding: "8px 0 2px 0",
                 color: "var(--text-muted)",
                 fontSize: "11px",
                 fontWeight: 600,
@@ -1330,6 +1198,84 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── МОБИЛЬНЫЙ НИЖНИЙ НАВИГАЦИОННЫЙ ТАБ-БАР (iOS Safe Area) ── */}
+      {isMobile && (
+        <nav
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "calc(62px + env(safe-area-inset-bottom, 0px))",
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            backgroundColor: "var(--tabbar-bg, rgba(18, 18, 20, 0.95))",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            borderTop: "1px solid var(--border)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-around",
+            zIndex: 45,
+            boxSizing: "border-box",
+          }}
+        >
+          {mobileTabs.map((tab) => {
+            const isActive = location.pathname === tab.path;
+            const Icon = tab.icon;
+            return (
+              <Link
+                key={tab.path}
+                to={tab.path}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "2px",
+                  color: isActive ? "var(--accent)" : "var(--text-secondary)",
+                  backgroundColor: isActive ? "var(--accent-soft)" : "transparent",
+                  borderRadius: "12px",
+                  padding: "6px 12px",
+                  textDecoration: "none",
+                  minWidth: "56px",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <Icon size={20} />
+                <span style={{ fontSize: "10px", fontWeight: isActive ? 700 : 500 }}>
+                  {tab.label}
+                </span>
+              </Link>
+            );
+          })}
+
+          {/* Кнопка открытия шторки "Ещё" */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "2px",
+              color: mobileMenuOpen ? "var(--accent)" : "var(--text-secondary)",
+              backgroundColor: mobileMenuOpen ? "var(--accent-soft)" : "transparent",
+              borderRadius: "12px",
+              padding: "6px 12px",
+              border: "none",
+              cursor: "pointer",
+              minWidth: "56px",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <Menu size={20} />
+            <span style={{ fontSize: "10px", fontWeight: mobileMenuOpen ? 700 : 500 }}>
+              {t.nav.more}
+            </span>
+          </button>
+        </nav>
       )}
     </div>
   );
