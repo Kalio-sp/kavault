@@ -56,16 +56,26 @@ export function Login() {
     try {
       localStorage.setItem("access_token", acc.token);
       localStorage.setItem("kavault_username", acc.nickname);
+
+      // Проверяем валидность токена через рабочий эндпоинт /auth/profile
       try {
-        await api.get("/users/profile");
+        const res = await api.get("/auth/profile");
+        const freshNick = res.data?.nickname || acc.nickname;
+        localStorage.setItem("kavault_username", freshNick);
         window.dispatchEvent(new Event("kavault-auth-changed"));
         navigate("/dashboard");
         return;
-      } catch {
-        // Токен устарел или недействителен — предлагаем ввести пароль
-        localStorage.removeItem("access_token");
-        setEmail(acc.email);
-        setError("Сессия истекла. Пожалуйста, введите пароль для входа.");
+      } catch (err: any) {
+        // Только если сервер явно вернул 401 Unauthorized — токен действительно истек
+        if (err.response?.status === 401) {
+          localStorage.removeItem("access_token");
+          setEmail(acc.email);
+          setError("Срок действия сессии истёк. Пожалуйста, введите пароль для входа.");
+          return;
+        }
+        // При временных заминках сети всё равно переходим в профиль по сохраненному токену
+        window.dispatchEvent(new Event("kavault-auth-changed"));
+        navigate("/dashboard");
       }
     } finally {
       setIsLoading(false);

@@ -12,7 +12,7 @@ import { SocialModule } from '../social/social.module';
     JwtModule.registerAsync({
       useFactory: () => ({
         secret: process.env.JWT_SECRET || 'kavault_local_dev_jwt_secret_unsafe_change_in_prod',
-        signOptions: { expiresIn: '7d' },
+        signOptions: { expiresIn: '90d' },
       }),
     }),
   ],
