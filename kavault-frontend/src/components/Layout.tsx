@@ -14,6 +14,8 @@ import {
   Sparkles,
   PenLine,
   Users,
+  TrendingUp,
+  X,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
@@ -460,46 +462,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <button
-              onClick={openModal}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#eab308",
-                padding: "8px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-              }}
-              title={t.nav.achievements}
-            >
-              <Trophy size={20} />
-            </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <Link
-              to="/profile"
+              to="/social"
               style={{
-                padding: "2px 4px",
-                display: "flex",
+                display: "inline-flex",
                 alignItems: "center",
+                gap: "5px",
+                padding: "5px 11px",
+                borderRadius: "999px",
+                backgroundColor: "rgba(59, 130, 246, 0.12)",
+                border: "1px solid rgba(59, 130, 246, 0.3)",
+                color: "#60a5fa",
                 textDecoration: "none",
+                fontSize: "12px",
+                fontWeight: 700,
+                transition: "all 0.15s ease",
               }}
-              title="Личный кабинет"
+              title="Рейтинг и Таблица лидеров"
             >
-              <UserAvatarBadge
-                customization={profileCustom}
-                size={28}
-                username={nickname || "User"}
-              />
+              <TrendingUp size={14} />
+              <span>Рейтинг</span>
             </Link>
 
             <Link
               to="/settings"
               style={{
-                padding: "8px",
+                padding: "7px",
                 color: "var(--text-secondary)",
                 display: "flex",
                 alignItems: "center",
+                borderRadius: "8px",
               }}
               title={t.nav.settings}
             >
@@ -525,19 +518,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>{children}</div>
       </main>
 
-      {/* ── МОБИЛЬНОЕ ВСПЛЫВАЮЩЕЕ МЕНЮ (ШТОРКА) ── */}
+      {/* ── МОБИЛЬНОЕ ВСПЛЫВАЮЩЕЕ МЕНЮ (ШТОРКА "ЕЩЁ") ── */}
       {isMobile && mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
           style={{
             position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: "calc(62px + env(safe-area-inset-bottom, 0px))",
-            backgroundColor: "var(--overlay-bg)",
-            backdropFilter: "blur(8px)",
-            zIndex: 45,
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            zIndex: 60,
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-end",
@@ -547,149 +538,74 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: "var(--surface)",
-              borderTop: "1px solid var(--border)",
-              borderTopLeftRadius: "16px",
-              borderTopRightRadius: "16px",
-              padding: "var(--space-5)",
+              backgroundColor: "var(--surface, #121214)",
+              backgroundImage:
+                "linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%)",
+              borderTop: "1px solid rgba(255, 255, 255, 0.12)",
+              borderTopLeftRadius: "24px",
+              borderTopRightRadius: "24px",
+              padding: "14px 16px calc(76px + env(safe-area-inset-bottom, 16px)) 16px",
               display: "flex",
               flexDirection: "column",
-              gap: "8px",
-              boxShadow: "var(--tabbar-shadow)",
+              gap: "12px",
+              boxShadow: "0 -10px 40px rgba(0, 0, 0, 0.6)",
+              maxHeight: "82vh",
+              overflowY: "auto",
               animation: "kavaultScaleIn 0.25s ease-out",
             }}
           >
+            {/* Индикатор для свайпа (Drag handle) */}
             <div
               style={{
-                fontSize: "12px",
-                fontWeight: 600,
-                color: "var(--text-muted)",
-                textTransform: "uppercase",
-                marginBottom: "4px",
+                width: "40px",
+                height: "4px",
+                borderRadius: "999px",
+                backgroundColor: "rgba(255, 255, 255, 0.25)",
+                margin: "0 auto 4px auto",
               }}
-            >
-              {t.nav.allSections}
-            </div>
+            />
 
-            <Link
-              to="/review"
+            {/* Заголовок шторки и кнопка закрытия */}
+            <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "12px",
-                padding: "12px",
-                borderRadius: "var(--radius-md)",
-                color:
-                  location.pathname === "/review"
-                    ? "var(--vibe-accent)"
-                    : "var(--text-secondary)",
-                backgroundColor:
-                  location.pathname === "/review"
-                    ? "var(--vibe-soft)"
-                    : "transparent",
-                textDecoration: "none",
-                fontSize: "15px",
-                fontWeight: 500,
+                justifyContent: "space-between",
+                padding: "0 2px",
               }}
             >
-              <Sparkles size={18} color={studyPalette.accentHex} /> {studyText.section1.repeatBtn}
-            </Link>
-
-            {showProgramming && (
-              <Link
-                to="/github"
+              <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "12px",
-                  borderRadius: "var(--radius-md)",
-                  color:
-                    location.pathname === "/github"
-                      ? "var(--text-primary)"
-                      : "var(--text-secondary)",
-                  backgroundColor:
-                    location.pathname === "/github"
-                      ? "var(--surface-raised)"
-                      : "transparent",
-                  textDecoration: "none",
-                  fontSize: "15px",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  color: "var(--text-muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
                 }}
               >
-                <GitBranch size={18} /> {t.nav.github}
-              </Link>
-            )}
+                {t.nav.allSections}
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(255, 255, 255, 0.07)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  color: "var(--text-secondary)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+                aria-label="Закрыть"
+              >
+                <X size={15} />
+              </button>
+            </div>
 
-            <Link
-              to="/thoughts"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "12px",
-                borderRadius: "var(--radius-md)",
-                color:
-                  location.pathname === "/thoughts"
-                    ? "var(--text-primary)"
-                    : "var(--text-secondary)",
-                backgroundColor:
-                  location.pathname === "/thoughts"
-                    ? "var(--surface-raised)"
-                    : "transparent",
-                textDecoration: "none",
-                fontSize: "15px",
-              }}
-            >
-              <PenLine size={18} /> {t.nav.thoughts}
-            </Link>
-
-            <Link
-              to="/social"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "12px",
-                borderRadius: "var(--radius-md)",
-                color:
-                  location.pathname === "/social"
-                    ? "var(--text-primary)"
-                    : "var(--text-secondary)",
-                backgroundColor:
-                  location.pathname === "/social"
-                    ? "var(--surface-raised)"
-                    : "transparent",
-                textDecoration: "none",
-                fontSize: "15px",
-              }}
-            >
-              <Users size={18} /> {t.nav.social}
-            </Link>
-
-            <Link
-              to="/graph"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "12px",
-                borderRadius: "var(--radius-md)",
-                color:
-                  location.pathname === "/graph"
-                    ? "var(--text-primary)"
-                    : "var(--text-secondary)",
-                backgroundColor:
-                  location.pathname === "/graph"
-                    ? "var(--surface-raised)"
-                    : "transparent",
-                textDecoration: "none",
-                fontSize: "15px",
-              }}
-            >
-              <Network size={18} /> {t.nav.graph}
-            </Link>
-
-            {/* Личный кабинет в мобильном меню */}
+            {/* Карточка профиля / быстрый вход в Личный кабинет */}
             <Link
               to="/profile"
               onClick={() => setMobileMenuOpen(false)}
@@ -697,71 +613,487 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 display: "flex",
                 alignItems: "center",
                 gap: "12px",
-                padding: "12px",
-                borderRadius: "var(--radius-md)",
-                color:
-                  location.pathname === "/profile"
-                    ? "var(--text-primary)"
-                    : "var(--text-secondary)",
+                padding: "10px 14px",
+                borderRadius: "16px",
                 backgroundColor:
                   location.pathname === "/profile"
-                    ? "var(--surface-raised)"
-                    : "transparent",
+                    ? "var(--vibe-soft, rgba(59, 130, 246, 0.15))"
+                    : "rgba(255, 255, 255, 0.04)",
+                border:
+                  location.pathname === "/profile"
+                    ? "1px solid var(--accent, #3b82f6)"
+                    : "1px solid rgba(255, 255, 255, 0.08)",
                 textDecoration: "none",
-                fontSize: "15px",
-                fontWeight: 600,
+                transition: "all 0.15s ease",
               }}
             >
               <UserAvatarBadge
                 customization={profileCustom}
-                size={24}
+                size={38}
                 username={nickname || "User"}
+                showOnlineDot
               />
-              <span>Личный кабинет</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {nickname || "Мой профиль"}
+                </div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--accent, #3b82f6)",
+                    fontWeight: 600,
+                  }}
+                >
+                  Личный кабинет и аватар →
+                </div>
+              </div>
             </Link>
 
-            <Link
-              to="/settings"
+            {/* Сетка разделов 2 колонки */}
+            <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "12px",
-                borderRadius: "var(--radius-md)",
-                color:
-                  location.pathname === "/settings"
-                    ? "var(--text-primary)"
-                    : "var(--text-secondary)",
-                backgroundColor:
-                  location.pathname === "/settings"
-                    ? "var(--surface-raised)"
-                    : "transparent",
-                textDecoration: "none",
-                fontSize: "15px",
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: "8px",
               }}
             >
-              <SettingsIcon size={18} /> {t.nav.settings}
-            </Link>
+              {/* Повторить лексику */}
+              <Link
+                to="/review"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "10px 12px",
+                  borderRadius: "14px",
+                  backgroundColor:
+                    location.pathname === "/review"
+                      ? "var(--vibe-soft)"
+                      : "rgba(255, 255, 255, 0.03)",
+                  border:
+                    location.pathname === "/review"
+                      ? "1px solid var(--vibe-banner-border)"
+                      : "1px solid rgba(255, 255, 255, 0.06)",
+                  textDecoration: "none",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <div
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "10px",
+                    backgroundColor: "rgba(236, 72, 153, 0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Sparkles size={16} color={studyPalette.accentHex} />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "var(--text-primary)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    Повторение
+                  </div>
+                  <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                    Интервалы SRS
+                  </div>
+                </div>
+              </Link>
 
+              {/* Зал наград */}
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openModal();
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "10px 12px",
+                  borderRadius: "14px",
+                  backgroundColor: "rgba(255, 255, 255, 0.03)",
+                  border: "1px solid rgba(255, 255, 255, 0.06)",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <div
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "10px",
+                    backgroundColor: "rgba(234, 179, 8, 0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Trophy size={16} color="#eab308" />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "var(--text-primary)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    Зал наград
+                  </div>
+                  <div style={{ fontSize: "10px", color: "#eab308", fontWeight: 600 }}>
+                    {unlockedCount}/{totalCount} открыто
+                  </div>
+                </div>
+              </button>
+
+              {/* Сообщество & Рейтинг */}
+              <Link
+                to="/social"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "10px 12px",
+                  borderRadius: "14px",
+                  backgroundColor:
+                    location.pathname === "/social"
+                      ? "rgba(59, 130, 246, 0.15)"
+                      : "rgba(255, 255, 255, 0.03)",
+                  border:
+                    location.pathname === "/social"
+                      ? "1px solid rgba(59, 130, 246, 0.3)"
+                      : "1px solid rgba(255, 255, 255, 0.06)",
+                  textDecoration: "none",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <div
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "10px",
+                    backgroundColor: "rgba(59, 130, 246, 0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Users size={16} color="#60a5fa" />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "var(--text-primary)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {t.nav.social}
+                  </div>
+                  <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                    Друзья & MMR
+                  </div>
+                </div>
+              </Link>
+
+              {/* Мысли & Заметки */}
+              <Link
+                to="/thoughts"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "10px 12px",
+                  borderRadius: "14px",
+                  backgroundColor:
+                    location.pathname === "/thoughts"
+                      ? "rgba(168, 85, 247, 0.15)"
+                      : "rgba(255, 255, 255, 0.03)",
+                  border:
+                    location.pathname === "/thoughts"
+                      ? "1px solid rgba(168, 85, 247, 0.3)"
+                      : "1px solid rgba(255, 255, 255, 0.06)",
+                  textDecoration: "none",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <div
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "10px",
+                    backgroundColor: "rgba(168, 85, 247, 0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <PenLine size={16} color="#c084fc" />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "var(--text-primary)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {t.nav.thoughts}
+                  </div>
+                  <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                    Заметки и идеи
+                  </div>
+                </div>
+              </Link>
+
+              {/* Граф знаний */}
+              <Link
+                to="/graph"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "10px 12px",
+                  borderRadius: "14px",
+                  backgroundColor:
+                    location.pathname === "/graph"
+                      ? "rgba(16, 185, 129, 0.15)"
+                      : "rgba(255, 255, 255, 0.03)",
+                  border:
+                    location.pathname === "/graph"
+                      ? "1px solid rgba(16, 185, 129, 0.3)"
+                      : "1px solid rgba(255, 255, 255, 0.06)",
+                  textDecoration: "none",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <div
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "10px",
+                    backgroundColor: "rgba(16, 185, 129, 0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Network size={16} color="#34d399" />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "var(--text-primary)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {t.nav.graph}
+                  </div>
+                  <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                    Карта связей
+                  </div>
+                </div>
+              </Link>
+
+              {/* GitHub Проекты (если вкл. программирование) */}
+              {showProgramming && (
+                <Link
+                  to="/github"
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "10px 12px",
+                    borderRadius: "14px",
+                    backgroundColor:
+                      location.pathname === "/github"
+                        ? "rgba(6, 182, 212, 0.15)"
+                        : "rgba(255, 255, 255, 0.03)",
+                    border:
+                      location.pathname === "/github"
+                        ? "1px solid rgba(6, 182, 212, 0.3)"
+                        : "1px solid rgba(255, 255, 255, 0.06)",
+                    textDecoration: "none",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "10px",
+                      backgroundColor: "rgba(6, 182, 212, 0.15)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <GitBranch size={16} color="#22d3ee" />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: "12.5px",
+                        fontWeight: 700,
+                        color: "var(--text-primary)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {t.nav.github}
+                    </div>
+                    <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                      Репозитории
+                    </div>
+                  </div>
+                </Link>
+              )}
+
+              {/* Настройки */}
+              <Link
+                to="/settings"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "10px 12px",
+                  borderRadius: "14px",
+                  backgroundColor:
+                    location.pathname === "/settings"
+                      ? "var(--surface-raised)"
+                      : "rgba(255, 255, 255, 0.03)",
+                  border:
+                    location.pathname === "/settings"
+                      ? "1px solid var(--border)"
+                      : "1px solid rgba(255, 255, 255, 0.06)",
+                  textDecoration: "none",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <div
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "10px",
+                    backgroundColor: "rgba(255, 255, 255, 0.07)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <SettingsIcon size={16} color="var(--text-secondary)" />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "var(--text-primary)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {t.nav.settings}
+                  </div>
+                  <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                    Темы & аккаунт
+                  </div>
+                </div>
+              </Link>
+            </div>
+
+            {/* Эксклюзивная панель Создателя (если Root) */}
             {isCreator && (
               <Link
                 to="/admin"
+                onClick={() => setMobileMenuOpen(false)}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "12px",
-                  padding: "12px",
-                  borderRadius: "var(--radius-md)",
+                  padding: "12px 14px",
+                  borderRadius: "14px",
                   color: "#f59e0b",
-                  backgroundColor: "rgba(245, 158, 11, 0.1)",
-                  border: "1px solid rgba(245, 158, 11, 0.2)",
+                  backgroundColor: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.3)",
+                  boxShadow: "0 4px 16px rgba(245, 158, 11, 0.1)",
                   textDecoration: "none",
-                  fontWeight: 600,
-                  fontSize: "15px",
-                  marginTop: "4px",
+                  fontWeight: 700,
+                  fontSize: "14px",
+                  marginTop: "2px",
+                  transition: "all 0.15s ease",
                 }}
               >
-                <Crown size={18} color="#f59e0b" /> {t.nav.admin}
+                <div
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "10px",
+                    backgroundColor: "rgba(245, 158, 11, 0.2)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Crown size={17} color="#f59e0b" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: "13px", fontWeight: 800 }}>
+                    Панель Создателя
+                  </div>
+                  <div style={{ fontSize: "10px", color: "#fbbf24", opacity: 0.85 }}>
+                    Root управление системой
+                  </div>
+                </div>
               </Link>
             )}
           </div>

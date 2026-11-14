@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -17,10 +17,11 @@ import {
   TrendingUp,
   Circle,
   Trophy,
+  Crown,
+  ChevronRight,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
-import { confirmModal } from "../context/DialogContext";
 import { api } from "../api/axios";
 import {
   STARTER_DEVELOPER_RESOURCES,
@@ -33,6 +34,12 @@ import {
 import { getGermanArticleStyle } from "../data/studyVibes";
 import { CulturalHeroScene } from "../components/CulturalAtmosphere";
 import { SKILL_STUDIO_TEXTS, type StudySkillTab } from "../data/languageCurriculum";
+import { UserAvatarBadge } from "../components/UserAvatarBadge";
+import {
+  loadProfileCustomization,
+  BANNER_THEMES,
+  type UserProfileCustomization,
+} from "../utils/profileCosmetics";
 
 interface Resource {
   id: string;
@@ -67,6 +74,8 @@ export function Dashboard() {
     showProgramming,
     studyText,
     studyPalette,
+    isCreator,
+    nickname,
   } = useApp();
   const {
     achievements,
@@ -82,10 +91,46 @@ export function Dashboard() {
   const [username, setUsername] = useState(() => {
     return localStorage.getItem("kavault_username") || "";
   });
+  const [profileCustom, setProfileCustom] = useState<UserProfileCustomization>(() =>
+    loadProfileCustomization(),
+  );
+  const [socialData, setSocialData] = useState<any>(null);
+
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      setProfileCustom(loadProfileCustomization());
+    };
+    window.addEventListener("kavault_profile_updated", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("kavault_profile_updated", handleProfileUpdate);
+    };
+  }, []);
+
+  const activeBanner = useMemo(() => {
+    return (
+      BANNER_THEMES.find((b) => b.id === profileCustom.bannerThemeId) ||
+      BANNER_THEMES[0]
+    );
+  }, [profileCustom.bannerThemeId]);
+
+  const bannerBackground =
+    profileCustom.bannerThemeId === "custom" && profileCustom.customBannerUrl
+      ? `url(${profileCustom.customBannerUrl}) center / cover no-repeat`
+      : activeBanner.background;
+
+  const currentRankTier = socialData?.rankTier || {
+    key: "novice",
+    title: "Novice",
+    emoji: "🌱",
+    color: "#94a3b8",
+    minMmr: 0,
+    nextMinMmr: 150,
+    progressPercent: 50,
+  };
+
   const [resources, setResources] = useState<Resource[]>([]);
   const [cards, setCards] = useState<JapaneseCard[]>([]);
   const [streak, setStreak] = useState(0);
-  const [dateStr, setDateStr] = useState("");
   const [importingPack, setImportingPack] = useState<string | null>(null);
 
   const activeLangPack = studyLanguageToPackType(studyLanguage);
@@ -138,7 +183,7 @@ export function Dashboard() {
   /* Получение данных */
   const fetchData = async () => {
     try {
-      const [resResp, japResp, profileResp, statsResp] = await Promise.all([
+      const [resResp, japResp, profileResp, statsResp, socialResp] = await Promise.all([
         showProgramming
           ? api.get<Resource[]>("/resources").catch(() => ({ data: [] as Resource[] }))
           : Promise.resolve({ data: [] as Resource[] }),
@@ -147,12 +192,16 @@ export function Dashboard() {
           .catch(() => ({ data: [] as JapaneseCard[] })),
         api.get<{ email?: string }>("/auth/profile").catch(() => ({ data: {} as { email?: string } })),
         api.get("/stats/tracker").catch(() => ({ data: null })),
+        api.get("/social/me").catch(() => ({ data: null })),
       ]);
 
       const resData = resResp.data || [];
       const japData = japResp.data || [];
       setResources(resData);
       setCards(japData);
+      if (socialResp && (socialResp as any).data) {
+        setSocialData((socialResp as any).data);
+      }
 
       let currentUsername = username;
       // Имя пользователя
@@ -210,41 +259,8 @@ export function Dashboard() {
   };
 
   useEffect(() => {
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    };
-    setDateStr(new Date().toLocaleDateString(locale, options));
-  }, [locale]);
-
-  useEffect(() => {
     fetchData();
   }, [studyLanguage, showProgramming]);
-
-  const handleLogout = async () => {
-    const isRu = language === "ru";
-    const isJa = language === "ja";
-    const confirmed = await confirmModal({
-      title: isRu ? "Выход из аккаунта" : isJa ? "ログアウトの確認" : "Log Out",
-      message: isRu
-        ? "Вы действительно хотите завершить текущую сессию и выйти из своего аккаунта KaVault?"
-        : isJa
-          ? "このデバイスからKaVaultアカウントをログアウトしますか？"
-          : "Are you sure you want to sign out of your KaVault account on this device?",
-      confirmText: isRu ? "Выйти" : isJa ? "ログアウト" : "Log Out",
-      cancelText: isRu ? "Отмена" : isJa ? "キャンセル" : "Cancel",
-      variant: "danger",
-    });
-
-    if (!confirmed) return;
-
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("kavault_is_creator");
-    window.dispatchEvent(new Event("kavault-auth-changed"));
-    navigate("/login");
-  };
 
   /* Аналитика и расчет метрик */
   const metrics = useMemo(() => {
@@ -323,80 +339,336 @@ export function Dashboard() {
         gap: "var(--space-8)",
       }}
     >
-      {/* Верхний Header с культурным вайбом */}
+      {/* ── МИНИ-ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ НА ГЛАВНОЙ (ВМЕСТО СУХОГО ДОБРОГО УТРА) ── */}
       <div
         style={{
           position: "relative",
           overflow: "hidden",
+          borderRadius: "20px",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
+          boxShadow: "0 10px 30px -10px rgba(0, 0, 0, 0.5)",
+          background: "var(--surface, #121214)",
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "var(--space-4)",
-          padding: "var(--space-6)",
-          borderRadius: "var(--radius-lg)",
-          background: "var(--vibe-banner-bg)",
-          border: "1px solid var(--vibe-banner-border)",
+          flexDirection: "column",
         }}
       >
-        <CulturalHeroScene studyLanguage={studyLanguage} compact />
-
-        <div style={{ position: "relative", zIndex: 1 }}>
+        {/* Баннерная обложка профиля с культурным свечением */}
+        <div
+          style={{
+            height: "90px",
+            width: "100%",
+            position: "relative",
+            background: bannerBackground,
+            transition: "background 0.4s ease",
+            overflow: "hidden",
+          }}
+        >
+          {/* Текстурная сетка и вайб-сцена */}
           <div
             style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage:
+                "radial-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px)",
+              backgroundSize: "18px 18px",
+              opacity: 0.35,
+              pointerEvents: "none",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              right: "-20px",
+              top: "-20px",
+              bottom: 0,
+              width: "280px",
+              opacity: 0.7,
+              pointerEvents: "none",
+            }}
+          >
+            <CulturalHeroScene studyLanguage={studyLanguage} compact />
+          </div>
+
+          {/* Плашка текущего языка (1 флаг без дублей) */}
+          <div
+            style={{
+              position: "absolute",
+              top: "10px",
+              left: "14px",
+              zIndex: 2,
               display: "inline-flex",
               alignItems: "center",
               gap: "6px",
               padding: "4px 10px",
               borderRadius: "999px",
-              backgroundColor: "var(--vibe-soft)",
-              border: "1px solid var(--vibe-banner-border)",
-              color: "var(--vibe-accent)",
-              fontSize: "12px",
-              fontWeight: 600,
-              marginBottom: "10px",
+              backgroundColor: "rgba(0, 0, 0, 0.6)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              color: "#ffffff",
+              fontSize: "11px",
+              fontWeight: 700,
             }}
           >
             <span>{studyPalette.flag}</span>
             <span>{studyText.vibeBadge}</span>
           </div>
-          <h2
+
+          {/* Быстрая кнопка перехода в профиль прямо на баннере */}
+          <Link
+            to="/profile"
             style={{
-              fontSize: "30px",
-              fontWeight: 600,
-              margin: "0 0 var(--space-2) 0",
-              color: "var(--text-primary)",
-              display: "flex",
+              position: "absolute",
+              top: "10px",
+              right: "14px",
+              zIndex: 2,
+              display: "inline-flex",
               alignItems: "center",
-              gap: "10px",
+              gap: "6px",
+              padding: "5px 12px",
+              borderRadius: "999px",
+              backgroundColor: "rgba(0, 0, 0, 0.65)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              color: "#ffffff",
+              fontSize: "12px",
+              fontWeight: 600,
+              textDecoration: "none",
+              transition: "all 0.15s ease",
             }}
           >
-            {t.dash.goodMorning}, {username || t.dash.friend}!
-            <Sparkles size={24} color={studyPalette.accentHex} />
-          </h2>
-          <p style={{ color: "var(--text-secondary)", margin: "0 0 4px 0", fontSize: "15px" }}>
-            {studyText.vibeQuote}
-          </p>
-          <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "13px" }}>
-            {t.dash.subtitle}
-          </p>
+            <span>В профиль</span>
+            <ChevronRight size={13} />
+          </Link>
         </div>
 
+        {/* Информационный блок профиля (Аватар + Ник + Звание + Статистика) */}
         <div
           style={{
-            position: "relative",
-            zIndex: 1,
+            padding: "12px 16px 16px 16px",
             display: "flex",
-            gap: "var(--space-4)",
-            alignItems: "center",
+            flexDirection: "column",
+            gap: "12px",
+            position: "relative",
           }}
         >
-          <span style={{ color: "var(--text-secondary)", fontSize: "14px" }}>
-            {dateStr}
-          </span>
-          <Button variant="secondary" onClick={handleLogout}>
-            {t.dash.logout}
-          </Button>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "12px",
+              marginTop: "-36px",
+            }}
+          >
+            {/* Аватар + Никнейм */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                gap: "12px",
+                minWidth: 0,
+              }}
+            >
+              <div
+                style={{
+                  position: "relative",
+                  zIndex: 2,
+                  cursor: "pointer",
+                }}
+                onClick={() => navigate("/profile")}
+                title="Перейти в личный кабинет"
+              >
+                <UserAvatarBadge
+                  customization={profileCustom}
+                  size={64}
+                  username={nickname || username || "Explorer"}
+                  showOnlineDot
+                />
+              </div>
+
+              <div style={{ minWidth: 0, paddingBottom: "2px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: 800,
+                      color: "var(--text-primary)",
+                      letterSpacing: "-0.01em",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {nickname || username || "Explorer"}
+                  </span>
+
+                  {isCreator && (
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: 800,
+                        padding: "2px 7px",
+                        borderRadius: "6px",
+                        background: "rgba(245, 158, 11, 0.2)",
+                        border: "1px solid rgba(245, 158, 11, 0.4)",
+                        color: "#f59e0b",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      <Crown size={11} /> ROOT
+                    </span>
+                  )}
+
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                      background: `${currentRankTier.color}22`,
+                      border: `1px solid ${currentRankTier.color}55`,
+                      color: currentRankTier.color,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    <span>{currentRankTier.emoji}</span>
+                    <span>{currentRankTier.title}</span>
+                  </span>
+                </div>
+
+                {/* Handle & Статус */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    marginTop: "3px",
+                    fontSize: "12px",
+                    color: "var(--text-muted)",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span style={{ color: "var(--accent, #3b82f6)", fontWeight: 600 }}>
+                    @{((nickname || username || "user").toLowerCase().replace(/\s+/g, ""))}
+                  </span>
+                  <span>•</span>
+                  <span style={{ color: "var(--text-secondary)" }}>
+                    {profileCustom.title || "Архитектор знаний 🏛️"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Метрики профиля (Стрик, MMR, Ачивки) */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                flexWrap: "wrap",
+              }}
+            >
+              <div
+                onClick={() => navigate("/tracker")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: "5px 10px",
+                  borderRadius: "10px",
+                  backgroundColor: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.25)",
+                  color: "#f59e0b",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+                title="Стрик дней активности"
+              >
+                <Flame size={14} />
+                <span>{streak} дн.</span>
+              </div>
+
+              <div
+                onClick={() => navigate("/social")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: "5px 10px",
+                  borderRadius: "10px",
+                  backgroundColor: "rgba(59, 130, 246, 0.12)",
+                  border: "1px solid rgba(59, 130, 246, 0.25)",
+                  color: "#60a5fa",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+                title="Task MMR рейтинг"
+              >
+                <TrendingUp size={14} />
+                <span>{socialData?.mmr ?? 0} MMR</span>
+              </div>
+
+              <div
+                onClick={openModal}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: "5px 10px",
+                  borderRadius: "10px",
+                  backgroundColor: "rgba(234, 179, 8, 0.12)",
+                  border: "1px solid rgba(234, 179, 8, 0.25)",
+                  color: "#eab308",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+                title="Открытые награды"
+              >
+                <Trophy size={14} />
+                <span>{unlockedCount}/{totalCount}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Статус-настроение (Mood) пользователя */}
+          {profileCustom.statusText && (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "4px 10px",
+                borderRadius: "8px",
+                backgroundColor: "var(--surface-raised, rgba(255,255,255,0.04))",
+                border: "1px solid var(--border, rgba(255,255,255,0.08))",
+                fontSize: "12px",
+                color: "var(--text-secondary)",
+                width: "fit-content",
+                maxWidth: "100%",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span>{profileCustom.statusEmoji || "⚡"}</span>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                {profileCustom.statusText}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
