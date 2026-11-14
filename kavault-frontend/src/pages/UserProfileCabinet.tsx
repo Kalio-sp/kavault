@@ -254,29 +254,100 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
 
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
+    const isGif = file.type === "image/gif";
 
     if (!isImage && !isVideo) {
       showToast("Пожалуйста, выберите изображение, GIF или видео (MP4 / WebM)", "error");
       return;
     }
 
-    if (file.size > 15 * 1024 * 1024) {
-      showToast("Размер файла не должен превышать 15 МБ", "error");
+    if (file.size > 25 * 1024 * 1024) {
+      showToast("Размер файла не должен превышать 25 МБ", "error");
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      const nextCustom: UserProfileCustomization = {
-        ...customization,
-        bannerThemeId: "custom",
-        customBannerUrl: base64,
-        customBannerType: isVideo ? "video" : "image",
+      const rawUrl = event.target?.result as string;
+
+      // Если это GIF или видео — сохраняем исходный поток данных без изменений кадров
+      if (isGif || isVideo || !isImage) {
+        const nextCustom: UserProfileCustomization = {
+          ...customization,
+          bannerThemeId: "custom",
+          customBannerUrl: rawUrl,
+          customBannerType: isVideo ? "video" : "image",
+        };
+        setCustomization(nextCustom);
+        saveProfileCustomization(nextCustom);
+        showToast(isVideo ? "🎬 Живой видео-баннер загружен!" : "✨ Анимированный GIF-баннер установлен!");
+        return;
+      }
+
+      // Для статичных фото: оптимизируем четкость и размер через Canvas
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxW = 1920;
+          const maxH = 1080;
+          let w = img.width;
+          let h = img.height;
+
+          if (w > maxW || h > maxH) {
+            const ratio = Math.min(maxW / w, maxH / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, 0, 0, w, h);
+            // Пытаемся сохранить в WebP с высоким качеством 92%
+            const optimized = canvas.toDataURL("image/webp", 0.92);
+            const nextCustom: UserProfileCustomization = {
+              ...customization,
+              bannerThemeId: "custom",
+              customBannerUrl: optimized.length < rawUrl.length ? optimized : rawUrl,
+              customBannerType: "image",
+            };
+            setCustomization(nextCustom);
+            saveProfileCustomization(nextCustom);
+            showToast("🖼️ Фото-баннер оптимизирован и установлен!");
+            return;
+          }
+        } catch {
+          // fallback к сырому URL если canvas недоступен
+        }
+
+        const nextCustom: UserProfileCustomization = {
+          ...customization,
+          bannerThemeId: "custom",
+          customBannerUrl: rawUrl,
+          customBannerType: "image",
+        };
+        setCustomization(nextCustom);
+        saveProfileCustomization(nextCustom);
+        showToast("🖼️ Фото-баннер установлен!");
       };
-      setCustomization(nextCustom);
-      saveProfileCustomization(nextCustom);
-      showToast(isVideo ? "🎬 Живой видео-баннер загружен!" : "🖼️ Фоновый баннер (GIF/фото) обновлен!");
+
+      img.onerror = () => {
+        const nextCustom: UserProfileCustomization = {
+          ...customization,
+          bannerThemeId: "custom",
+          customBannerUrl: rawUrl,
+          customBannerType: "image",
+        };
+        setCustomization(nextCustom);
+        saveProfileCustomization(nextCustom);
+        showToast("🖼️ Фоновый баннер обновлен!");
+      };
+
+      img.src = rawUrl;
     };
     reader.readAsDataURL(file);
   };

@@ -140,15 +140,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
               justifyContent: "space-between",
             }}
           >
-            <div
+            <Link
+              to="/dashboard"
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                cursor: "default",
+                cursor: "pointer",
                 userSelect: "none",
+                textDecoration: "none",
+                color: "inherit",
               }}
-              title={isCreator ? "KAVAULT Creator Active" : "KAVAULT"}
+              title={isCreator ? "KAVAULT Creator Active · На главную" : "KAVAULT · На главную"}
             >
               <div
                 style={{
@@ -164,12 +167,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   borderRadius: "6px",
                   fontSize: "14px",
                   fontWeight: 800,
+                  transition: "transform 0.15s ease",
                 }}
               >
                 K
               </div>
-              <span>KAVAULT</span>
-            </div>
+              <span style={{ fontWeight: 800, letterSpacing: "0.02em" }}>KAVAULT</span>
+            </Link>
 
             {isCreator ? (
               <span
@@ -414,25 +418,38 @@ export function Layout({ children }: { children: React.ReactNode }) {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <div
+            <Link
+              to="/dashboard"
               style={{
-                width: "24px",
-                height: "24px",
-                backgroundColor: isCreator
-                  ? "#f59e0b"
-                  : studyPalette.accentHex,
-                color: isCreator ? "#000" : "#ffffff",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "6px",
-                fontSize: "13px",
-                fontWeight: 800,
+                gap: "8px",
+                textDecoration: "none",
+                color: "inherit",
+                cursor: "pointer",
               }}
+              title="На главную"
             >
-              K
-            </div>
-            <span style={{ fontWeight: 700, fontSize: "16px" }}>KAVAULT</span>
+              <div
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  backgroundColor: isCreator
+                    ? "#f59e0b"
+                    : studyPalette.accentHex,
+                  color: isCreator ? "#000" : "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  fontWeight: 800,
+                }}
+              >
+                K
+              </div>
+              <span style={{ fontWeight: 800, fontSize: "16px", letterSpacing: "0.02em" }}>KAVAULT</span>
+            </Link>
             <span
               style={{
                 fontSize: "11px",

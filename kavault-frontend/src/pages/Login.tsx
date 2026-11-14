@@ -2,9 +2,16 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { api } from "../api/axios";
 import { useApp } from "../context/AppContext";
-import { Mail, Lock, ArrowRight, Eye, EyeOff, User, Trophy } from "lucide-react";
+import { Mail, Lock, ArrowRight, Eye, EyeOff, User, Trophy, X, Zap } from "lucide-react";
 
 type AuthMode = "login" | "register";
+
+interface SavedAccount {
+  email: string;
+  nickname: string;
+  token: string;
+  savedAt: number;
+}
 
 export function Login() {
   const { t, language } = useApp();
@@ -14,6 +21,8 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberDevice, setRememberDevice] = useState(true);
+  const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -27,6 +36,49 @@ export function Login() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Загрузка сохраненных аккаунтов на этом устройстве
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("kavault_saved_accounts");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setSavedAccounts(parsed);
+        }
+      }
+    } catch {}
+  }, []);
+
+  const handleQuickLogin = async (acc: SavedAccount) => {
+    setError("");
+    setIsLoading(true);
+    try {
+      localStorage.setItem("access_token", acc.token);
+      localStorage.setItem("kavault_username", acc.nickname);
+      try {
+        await api.get("/users/profile");
+        window.dispatchEvent(new Event("kavault-auth-changed"));
+        navigate("/dashboard");
+        return;
+      } catch {
+        // Токен устарел или недействителен — предлагаем ввести пароль
+        localStorage.removeItem("access_token");
+        setEmail(acc.email);
+        setError("Сессия истекла. Пожалуйста, введите пароль для входа.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemoveSavedAccount = (emailToRemove: string) => {
+    const updated = savedAccounts.filter(
+      (a) => a.email.toLowerCase() !== emailToRemove.toLowerCase(),
+    );
+    setSavedAccounts(updated);
+    localStorage.setItem("kavault_saved_accounts", JSON.stringify(updated));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +102,9 @@ export function Login() {
     setIsLoading(true);
 
     try {
+      let finalToken = "";
+      let finalNick = "";
+
       if (mode === "register") {
         const nick = nickname.trim();
         await api.post("/auth/register", {
@@ -59,23 +114,43 @@ export function Login() {
         });
         if (nick) {
           localStorage.setItem("kavault_username", nick);
+          finalNick = nick;
         }
         // После успешной регистрации — сразу логиним
         const response = await api.post("/auth/login", { email, password });
-        localStorage.setItem("access_token", response.data.access_token);
+        finalToken = response.data.access_token;
+        localStorage.setItem("access_token", finalToken);
         const loggedNick = response.data?.user?.nickname || response.data?.nickname;
         if (loggedNick) {
           localStorage.setItem("kavault_username", loggedNick);
+          finalNick = loggedNick;
         }
         window.dispatchEvent(new Event("kavault-auth-changed"));
       } else {
         const response = await api.post("/auth/login", { email, password });
-        localStorage.setItem("access_token", response.data.access_token);
+        finalToken = response.data.access_token;
+        localStorage.setItem("access_token", finalToken);
         const loggedNick = response.data?.user?.nickname || response.data?.nickname;
         if (loggedNick) {
           localStorage.setItem("kavault_username", loggedNick);
+          finalNick = loggedNick;
         }
         window.dispatchEvent(new Event("kavault-auth-changed"));
+      }
+
+      // Сохранение аккаунта на устройстве при включенном чекбоксе
+      if (rememberDevice && finalToken) {
+        const newSaved: SavedAccount = {
+          email,
+          nickname: finalNick || email.split("@")[0],
+          token: finalToken,
+          savedAt: Date.now(),
+        };
+        const existing = savedAccounts.filter(
+          (a) => a.email.toLowerCase() !== email.toLowerCase(),
+        );
+        const updated = [newSaved, ...existing];
+        localStorage.setItem("kavault_saved_accounts", JSON.stringify(updated));
       }
 
       navigate("/dashboard");
@@ -309,6 +384,172 @@ export function Login() {
               }}
             >
               {error}
+            </div>
+          )}
+
+          {/* Сохранённые аккаунты на устройстве — Быстрый вход в 1 клик */}
+          {mode === "login" && savedAccounts.length > 0 && (
+            <div
+              style={{
+                marginBottom: "20px",
+                padding: "14px",
+                borderRadius: "14px",
+                backgroundColor: "rgba(59, 130, 246, 0.08)",
+                border: "1px solid rgba(59, 130, 246, 0.25)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Zap size={14} color="#3b82f6" />
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "var(--accent, #3b82f6)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Вход в 1 клик
+                  </span>
+                </div>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                  сохранены на устройстве
+                </span>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {savedAccounts.map((acc) => (
+                  <div
+                    key={acc.email}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "8px 12px",
+                      borderRadius: "12px",
+                      backgroundColor: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      gap: "10px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleQuickLogin(acc)}
+                      disabled={isLoading}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        background: "none",
+                        border: "none",
+                        color: "inherit",
+                        cursor: isLoading ? "wait" : "pointer",
+                        padding: 0,
+                        flex: 1,
+                        minWidth: 0,
+                        textAlign: "left",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "34px",
+                          height: "34px",
+                          borderRadius: "50%",
+                          backgroundColor: "rgba(59, 130, 246, 0.15)",
+                          color: "#60a5fa",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 800,
+                          fontSize: "14px",
+                          flexShrink: 0,
+                          border: "1.5px solid rgba(59, 130, 246, 0.4)",
+                        }}
+                      >
+                        {acc.nickname.slice(0, 1).toUpperCase()}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div
+                          style={{
+                            fontSize: "13.5px",
+                            fontWeight: 700,
+                            color: "var(--text-primary)",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {acc.nickname}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "11px",
+                            color: "var(--text-muted)",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {acc.email}
+                        </div>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          color: "#60a5fa",
+                          padding: "3px 8px",
+                          borderRadius: "6px",
+                          backgroundColor: "rgba(59, 130, 246, 0.12)",
+                          border: "1px solid rgba(59, 130, 246, 0.25)",
+                          flexShrink: 0,
+                        }}
+                      >
+                        Войти →
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSavedAccount(acc.email)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--text-muted)",
+                        cursor: "pointer",
+                        padding: "5px",
+                        borderRadius: "6px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      title="Удалить с этого устройства"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div
+                style={{
+                  textAlign: "center",
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                }}
+              >
+                Или введите пароль ниже ↓
+              </div>
             </div>
           )}
 
@@ -557,6 +798,33 @@ export function Login() {
                 </div>
               </div>
             )}
+
+            {/* Чекбокс: Запомнить этот аккаунт на устройстве */}
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "9px",
+                cursor: "pointer",
+                userSelect: "none",
+                fontSize: "13px",
+                color: "var(--text-secondary)",
+                padding: "2px 0",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={rememberDevice}
+                onChange={(e) => setRememberDevice(e.target.checked)}
+                style={{
+                  width: "16px",
+                  height: "16px",
+                  accentColor: "var(--accent, #3b82f6)",
+                  cursor: "pointer",
+                }}
+              />
+              <span>Запомнить этот аккаунт на этом устройстве</span>
+            </label>
 
             {/* Кнопка submit */}
             <button

@@ -96,6 +96,16 @@ export function Dashboard() {
   );
   const [socialData, setSocialData] = useState<any>(null);
 
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : false,
+  );
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     const handleProfileUpdate = () => {
       setProfileCustom(loadProfileCustomization());
@@ -343,7 +353,7 @@ export function Dashboard() {
         {/* Баннерная обложка профиля с живой анимацией и культурным свечением */}
         <BannerRenderer
           customization={profileCustom}
-          style={{ height: "90px" }}
+          style={{ height: isMobile ? "96px" : "118px" }}
         >
           <div
             style={{
@@ -418,50 +428,63 @@ export function Dashboard() {
         {/* Информационный блок профиля (Аватар + Ник + Звание + Статистика) */}
         <div
           style={{
-            padding: "12px 16px 16px 16px",
+            padding: isMobile ? "0 14px 14px 14px" : "0 20px 18px 20px",
             display: "flex",
             flexDirection: "column",
-            gap: "12px",
+            gap: "10px",
             position: "relative",
           }}
         >
           <div
             style={{
               display: "flex",
-              alignItems: "flex-end",
+              alignItems: isMobile ? "flex-start" : "center",
               justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "12px",
-              marginTop: "-36px",
+              flexDirection: isMobile ? "column" : "row",
+              gap: isMobile ? "10px" : "16px",
             }}
           >
             {/* Аватар + Никнейм */}
             <div
               style={{
                 display: "flex",
-                alignItems: "flex-end",
-                gap: "12px",
+                alignItems: "center",
+                gap: "14px",
                 minWidth: 0,
+                width: isMobile ? "100%" : "auto",
               }}
             >
+              {/* Аватар (ТОЛЬКО аватар выступает на баннер) */}
               <div
                 style={{
                   position: "relative",
-                  zIndex: 2,
+                  zIndex: 10,
                   cursor: "pointer",
+                  marginTop: isMobile ? "-32px" : "-40px",
+                  flexShrink: 0,
                 }}
                 onClick={() => navigate("/profile")}
                 title="Перейти в личный кабинет"
               >
                 <UserAvatarBadge
                   customization={profileCustom}
-                  size={64}
+                  size={isMobile ? 66 : 76}
                   username={nickname || username || "Explorer"}
                   showOnlineDot
                 />
               </div>
 
-              <div style={{ minWidth: 0, paddingBottom: "2px" }}>
+              {/* Текстовая информация (остается строго под баннером в теле карточки) */}
+              <div
+                style={{
+                  minWidth: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "3px",
+                  paddingTop: "6px",
+                  flex: 1,
+                }}
+              >
                 <div
                   style={{
                     display: "flex",
@@ -472,7 +495,7 @@ export function Dashboard() {
                 >
                   <span
                     style={{
-                      fontSize: "18px",
+                      fontSize: isMobile ? "17px" : "19px",
                       fontWeight: 800,
                       color: "var(--text-primary)",
                       letterSpacing: "-0.01em",
@@ -520,13 +543,12 @@ export function Dashboard() {
                   </span>
                 </div>
 
-                {/* Handle & Статус */}
+                {/* Handle & Должность */}
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
-                    marginTop: "3px",
                     fontSize: "12px",
                     color: "var(--text-muted)",
                     flexWrap: "wrap",
@@ -543,15 +565,15 @@ export function Dashboard() {
               </div>
             </div>
 
-            {/* Метрики профиля (Стрик, MMR, Ачивки) */}
+            {/* Метрики профиля (Стрик, MMR, Ачивки) — на ПК справа компактно, на мобиле снизу на 3 колонки */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                flexWrap: "wrap",
-                width: "100%",
-                maxWidth: "100%",
+                width: isMobile ? "100%" : "auto",
+                justifyContent: isMobile ? "space-between" : "flex-end",
+                flexShrink: 0,
               }}
             >
               <div
@@ -561,16 +583,16 @@ export function Dashboard() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "6px",
-                  padding: "7px 12px",
-                  borderRadius: "12px",
+                  padding: "6px 14px",
+                  borderRadius: "10px",
                   backgroundColor: "rgba(245, 158, 11, 0.12)",
                   border: "1px solid rgba(245, 158, 11, 0.25)",
                   color: "#f59e0b",
                   fontSize: "12px",
                   fontWeight: 700,
                   cursor: "pointer",
-                  flex: "1 1 0",
-                  minWidth: "85px",
+                  transition: "all 0.15s ease",
+                  flex: isMobile ? "1 1 0" : "0 0 auto",
                   boxSizing: "border-box",
                 }}
                 title="Стрик дней активности"
@@ -586,16 +608,16 @@ export function Dashboard() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "6px",
-                  padding: "7px 12px",
-                  borderRadius: "12px",
+                  padding: "6px 14px",
+                  borderRadius: "10px",
                   backgroundColor: "rgba(59, 130, 246, 0.12)",
                   border: "1px solid rgba(59, 130, 246, 0.25)",
                   color: "#60a5fa",
                   fontSize: "12px",
                   fontWeight: 700,
                   cursor: "pointer",
-                  flex: "1 1 0",
-                  minWidth: "95px",
+                  transition: "all 0.15s ease",
+                  flex: isMobile ? "1 1 0" : "0 0 auto",
                   boxSizing: "border-box",
                 }}
                 title="Task MMR рейтинг"
@@ -611,16 +633,16 @@ export function Dashboard() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "6px",
-                  padding: "7px 12px",
-                  borderRadius: "12px",
+                  padding: "6px 14px",
+                  borderRadius: "10px",
                   backgroundColor: "rgba(234, 179, 8, 0.12)",
                   border: "1px solid rgba(234, 179, 8, 0.25)",
                   color: "#eab308",
                   fontSize: "12px",
                   fontWeight: 700,
                   cursor: "pointer",
-                  flex: "1 1 0",
-                  minWidth: "85px",
+                  transition: "all 0.15s ease",
+                  flex: isMobile ? "1 1 0" : "0 0 auto",
                   boxSizing: "border-box",
                 }}
                 title="Открытые награды"

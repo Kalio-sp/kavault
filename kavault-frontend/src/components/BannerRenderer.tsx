@@ -77,6 +77,8 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
             width: "100%",
             height: "100%",
             objectFit: "cover",
+            objectPosition: "center center",
+            imageRendering: "auto",
             zIndex: 0,
           }}
         />
@@ -108,27 +110,30 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
         />
       )}
 
-      {/* Мягкая виньетка / сетка для кибер-атмосферы */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage:
-            "radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px)",
-          backgroundSize: "20px 20px",
-          opacity: 0.35,
-          pointerEvents: "none",
-          zIndex: 1,
-        }}
-      />
+      {/* Мягкая виньетка / сетка для кибер-атмосферы (только для встроенных пресетов) */}
+      {!isCustom && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage:
+              "radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px)",
+            backgroundSize: "20px 20px",
+            opacity: 0.35,
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        />
+      )}
 
-      {/* Дополнительный градиент затемнения к низу для контраста текста */}
+      {/* Деликатный градиент затемнения: для кастомных баннеров тонкий виньет по краям, для пресетов стандартный */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          background:
-            "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.65) 100%)",
+          background: isCustom
+            ? "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.3) 100%)"
+            : "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.65) 100%)",
           pointerEvents: "none",
           zIndex: 1,
         }}
