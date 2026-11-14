@@ -45,6 +45,12 @@ export class SocialController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @Patch('profile-customization')
+  updateProfileCustomization(@Request() req, @Body() customization: any) {
+    return this.socialService.updateProfileCustomization(req.user.userId, customization);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
   @Post('complete-task')
   awardTaskCompletion(
     @Request() req,

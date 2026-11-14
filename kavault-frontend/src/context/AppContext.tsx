@@ -19,6 +19,7 @@ import {
   type StudyLocaleText,
   type StudyVibePalette,
 } from "../data/studyVibes";
+import { syncProfileFromServer } from "../utils/profileCosmetics";
 
 type Theme = "light" | "dark";
 
@@ -166,6 +167,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         studyLanguage?: string;
         showProgramming?: boolean;
         onboardingCompleted?: boolean;
+        profileCustomization?: any;
       }>("/auth/profile");
 
       if (resp.data?.email) {
@@ -175,6 +177,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setIsCreator(isAdm);
       } else {
         setIsCreator(false);
+      }
+
+      if (resp.data?.profileCustomization) {
+        syncProfileFromServer(resp.data.profileCustomization, uKey);
       }
 
       if (typeof resp.data?.nickname === "string" && resp.data.nickname.trim()) {

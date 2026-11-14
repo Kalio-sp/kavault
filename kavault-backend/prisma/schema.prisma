@@ -53,6 +53,7 @@ model User {
   mmrInitialized       Boolean        @default(false)
   thoughtPreferences   Json?
   unlockedAchievements Json?
+  profileCustomization Json?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
 

@@ -54,6 +54,7 @@ export class SocialService {
         mmr: true,
         mmrInitialized: true,
         studyLanguage: true,
+        profileCustomization: true,
       },
     });
     if (!user) return null;
@@ -274,6 +275,26 @@ export class SocialService {
     };
   }
 
+  async updateProfileCustomization(userId: string, customization: any) {
+    if (!userId) throw new NotFoundException('Пользователь не найден');
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { profileCustomization: true },
+    });
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    const current = (user.profileCustomization as Record<string, any>) || {};
+    const merged = { ...current, ...customization };
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { profileCustomization: merged },
+      select: { profileCustomization: true },
+    });
+
+    return updated.profileCustomization;
+  }
+
   async getMySocialSummary(userId: string) {
     const ready = await this.ensureUserProfileReady(userId);
     if (!ready) throw new NotFoundException('Пользователь не найден');
@@ -320,6 +341,7 @@ export class SocialService {
       rankTier: ready.rankTier,
       globalRank: isCreator ? null : higherCount + 1,
       studyLanguage: ready.studyLanguage,
+      profileCustomization: (ready as any).profileCustomization || null,
       friendsCount,
       pendingIncomingCount,
       recentLogs,

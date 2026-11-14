@@ -108,7 +108,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div
       style={{
         display: "flex",
-        flexDirection: isMobile ? "column" : "row",
+        flexDirection: "row",
         height: "100vh",
         backgroundColor: "var(--bg)",
         backgroundImage: "var(--vibe-page-bg)",
@@ -397,142 +397,278 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </aside>
       )}
 
-      {/* ── МОБИЛЬНЫЙ ВЕРХНИЙ ХЕДЕР (iOS Safe Area) ── */}
+      {/* ── МОБИЛЬНЫЙ БОКОВОЙ ТАБ-БАР СЛЕВА (Mobile Left Rail) ── */}
       {isMobile && (
-        <header
+        <aside
           style={{
-            padding: "12px 16px",
-            paddingTop: "calc(12px + env(safe-area-inset-top, 0px))",
+            width: "56px",
+            flexShrink: 0,
+            height: "100vh",
+            backgroundColor: "var(--tabbar-bg)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            borderRight: "1px solid var(--border)",
             display: "flex",
-            alignItems: "center",
+            flexDirection: "column",
             justifyContent: "space-between",
-            backgroundColor: "var(--surface)",
-            borderBottom: "1px solid var(--border)",
-            zIndex: 40,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <div
-              style={{
-                width: "24px",
-                height: "24px",
-                backgroundColor: isCreator
-                  ? "#f59e0b"
-                  : studyPalette.accentHex,
-                color: isCreator ? "#000" : "#ffffff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "6px",
-                fontSize: "13px",
-                fontWeight: 800,
-              }}
-            >
-              K
-            </div>
-            <span style={{ fontWeight: 700, fontSize: "16px" }}>KAVAULT</span>
-            <span
-              style={{
-                fontSize: "11px",
-                padding: "1px 6px",
-                borderRadius: "999px",
-                backgroundColor: "var(--vibe-soft)",
-                border: "1px solid var(--vibe-banner-border)",
-                color: "var(--vibe-accent)",
-                fontWeight: 600,
-              }}
-              title={studyText.vibeBadge}
-            >
-              {studyPalette.flag}
-            </span>
-            {isCreator && (
-              <span
-                style={{
-                  fontSize: "9px",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  padding: "1px 5px",
-                  borderRadius: "4px",
-                  backgroundColor: "rgba(245, 158, 11, 0.15)",
-                  color: "#f59e0b",
-                  border: "1px solid rgba(245, 158, 11, 0.3)",
-                }}
-              >
-                Root
-              </span>
-            )}
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Link
-              to="/social"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-                padding: "5px 11px",
-                borderRadius: "999px",
-                backgroundColor: "rgba(59, 130, 246, 0.12)",
-                border: "1px solid rgba(59, 130, 246, 0.3)",
-                color: "#60a5fa",
-                textDecoration: "none",
-                fontSize: "12px",
-                fontWeight: 700,
-                transition: "all 0.15s ease",
-              }}
-              title="Рейтинг и Таблица лидеров"
-            >
-              <TrendingUp size={14} />
-              <span>Рейтинг</span>
-            </Link>
-
-            <Link
-              to="/settings"
-              style={{
-                padding: "7px",
-                color: "var(--text-secondary)",
-                display: "flex",
-                alignItems: "center",
-                borderRadius: "8px",
-              }}
-              title={t.nav.settings}
-            >
-              <SettingsIcon size={20} />
-            </Link>
-          </div>
-        </header>
-      )}
-
-      {/* ── ОСНОВНОЙ КОНТЕНТ ── */}
-      <main
-        style={{
-          flex: 1,
-          padding: isMobile ? "var(--space-4)" : "var(--space-8)",
-          paddingBottom: isMobile
-            ? "calc(74px + env(safe-area-inset-bottom, 0px))"
-            : "var(--space-8)",
-          overflowY: "auto",
-          overflowX: "hidden",
-          height: "100%",
-          WebkitOverflowScrolling: "touch",
-          boxSizing: "border-box",
-          width: "100%",
-        }}
-      >
-        <div
-          key={location.pathname}
-          className="kv-page-enter"
-          style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            width: "100%",
-            overflowX: "hidden",
+            alignItems: "center",
+            paddingTop: "calc(10px + env(safe-area-inset-top, 0px))",
+            paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
+            paddingLeft: "env(safe-area-inset-left, 0px)",
+            zIndex: 45,
             boxSizing: "border-box",
           }}
         >
-          {children}
-        </div>
-      </main>
+          {/* Верхняя группа: логотип K + 4 главные вкладки */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "8px",
+              width: "100%",
+            }}
+          >
+            {/* Мини-логотип KaVault */}
+            <Link
+              to="/dashboard"
+              style={{
+                width: "36px",
+                height: "36px",
+                backgroundColor: isCreator ? "#f59e0b" : studyPalette.accentHex,
+                color: isCreator ? "#000" : "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "10px",
+                fontSize: "16px",
+                fontWeight: 800,
+                textDecoration: "none",
+                marginBottom: "4px",
+                boxShadow: isCreator ? "0 0 12px rgba(245, 158, 11, 0.4)" : "none",
+              }}
+              title="KAVAULT Главная"
+            >
+              K
+            </Link>
+
+            {/* Вкладки */}
+            {mobileTabs.map((tab) => {
+              const isActive = location.pathname === tab.path;
+              const Icon = tab.icon;
+              return (
+                <Link
+                  key={tab.path}
+                  to={tab.path}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "2px",
+                    color: isActive ? "var(--accent)" : "var(--text-secondary)",
+                    backgroundColor: isActive ? "var(--accent-soft)" : "transparent",
+                    border: isActive
+                      ? "1px solid var(--accent, #3b82f6)"
+                      : "1px solid transparent",
+                    borderRadius: "12px",
+                    textDecoration: "none",
+                    width: "46px",
+                    height: "46px",
+                    transition: "all 0.15s ease",
+                    boxSizing: "border-box",
+                  }}
+                  title={tab.label}
+                >
+                  <Icon size={19} />
+                  <span
+                    style={{
+                      fontSize: "8.5px",
+                      fontWeight: isActive ? 700 : 500,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      maxWidth: "42px",
+                      textAlign: "center",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {tab.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Нижняя кнопка: "Еще" (гамбургер) */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "2px",
+              color: mobileMenuOpen ? "var(--accent)" : "var(--text-secondary)",
+              backgroundColor: mobileMenuOpen ? "var(--accent-soft)" : "transparent",
+              border: mobileMenuOpen
+                ? "1px solid var(--accent, #3b82f6)"
+                : "1px solid transparent",
+              borderRadius: "12px",
+              borderStyle: "solid",
+              borderWidth: "1px",
+              cursor: "pointer",
+              width: "46px",
+              height: "46px",
+              transition: "all 0.15s ease",
+              boxSizing: "border-box",
+            }}
+            title={t.nav.more}
+          >
+            <Menu size={19} />
+            <span
+              style={{
+                fontSize: "8.5px",
+                fontWeight: mobileMenuOpen ? 700 : 500,
+                lineHeight: 1,
+              }}
+            >
+              {t.nav.more}
+            </span>
+          </button>
+        </aside>
+      )}
+
+      {/* ── ПРАВАЯ ОБЛАСТЬ: ХЕДЕР + КОНТЕНТ ── */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          overflow: "hidden",
+          minWidth: 0,
+        }}
+      >
+        {/* ── МОБИЛЬНЫЙ ВЕРХНИЙ ХЕДЕР (iOS Safe Area) ── */}
+        {isMobile && (
+          <header
+            style={{
+              padding: "10px 14px",
+              paddingTop: "calc(10px + env(safe-area-inset-top, 0px))",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              backgroundColor: "var(--surface)",
+              borderBottom: "1px solid var(--border)",
+              zIndex: 40,
+              flexShrink: 0,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontWeight: 800, fontSize: "16px", letterSpacing: "-0.01em" }}>KAVAULT</span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  padding: "1px 6px",
+                  borderRadius: "999px",
+                  backgroundColor: "var(--vibe-soft)",
+                  border: "1px solid var(--vibe-banner-border)",
+                  color: "var(--vibe-accent)",
+                  fontWeight: 600,
+                }}
+                title={studyText.vibeBadge}
+              >
+                {studyPalette.flag}
+              </span>
+              {isCreator && (
+                <span
+                  style={{
+                    fontSize: "9px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    padding: "1px 5px",
+                    borderRadius: "4px",
+                    backgroundColor: "rgba(245, 158, 11, 0.15)",
+                    color: "#f59e0b",
+                    border: "1px solid rgba(245, 158, 11, 0.3)",
+                  }}
+                >
+                  Root
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <Link
+                to="/social"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: "5px 11px",
+                  borderRadius: "999px",
+                  backgroundColor: "rgba(59, 130, 246, 0.12)",
+                  border: "1px solid rgba(59, 130, 246, 0.3)",
+                  color: "#60a5fa",
+                  textDecoration: "none",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  transition: "all 0.15s ease",
+                }}
+                title="Рейтинг и Таблица лидеров"
+              >
+                <TrendingUp size={14} />
+                <span>Рейтинг</span>
+              </Link>
+
+              <Link
+                to="/settings"
+                style={{
+                  padding: "7px",
+                  color: "var(--text-secondary)",
+                  display: "flex",
+                  alignItems: "center",
+                  borderRadius: "8px",
+                }}
+                title={t.nav.settings}
+              >
+                <SettingsIcon size={20} />
+              </Link>
+            </div>
+          </header>
+        )}
+
+        {/* ── ОСНОВНОЙ КОНТЕНТ ── */}
+        <main
+          style={{
+            flex: 1,
+            padding: isMobile ? "12px 10px" : "var(--space-8)",
+            paddingBottom: "24px",
+            overflowY: "auto",
+            overflowX: "hidden",
+            height: "100%",
+            WebkitOverflowScrolling: "touch",
+            boxSizing: "border-box",
+            width: "100%",
+          }}
+        >
+          <div
+            key={location.pathname}
+            className="kv-page-enter"
+            style={{
+              maxWidth: "1200px",
+              margin: "0 auto",
+              width: "100%",
+              overflowX: "hidden",
+              boxSizing: "border-box",
+            }}
+          >
+            {children}
+          </div>
+        </main>
+      </div>
 
       {/* ── МОБИЛЬНОЕ ВСПЛЫВАЮЩЕЕ МЕНЮ (ШТОРКА "ЕЩЁ") ── */}
       {isMobile && mobileMenuOpen && (
@@ -560,7 +696,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               borderTop: "1px solid rgba(255, 255, 255, 0.12)",
               borderTopLeftRadius: "24px",
               borderTopRightRadius: "24px",
-              padding: "14px 16px calc(76px + env(safe-area-inset-bottom, 16px)) 16px",
+              padding: "16px 16px calc(24px + env(safe-area-inset-bottom, 16px)) 16px",
               display: "flex",
               flexDirection: "column",
               gap: "12px",
@@ -1194,88 +1330,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
-      )}
-
-      {/* ── МОБИЛЬНЫЙ НИЖНИЙ ТАБ-БАР (iOS Style) ── */}
-      {isMobile && (
-        <nav
-          style={{
-            position: "fixed",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: "calc(62px + env(safe-area-inset-bottom, 0px))",
-            paddingBottom: "env(safe-area-inset-bottom, 0px)",
-            paddingLeft: "6px",
-            paddingRight: "6px",
-            backgroundColor: "var(--tabbar-bg)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            borderTop: "1px solid var(--tabbar-border)",
-            boxShadow: "var(--tabbar-shadow)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-around",
-            zIndex: 50,
-          }}
-        >
-          {mobileTabs.map((tab) => {
-            const isActive = location.pathname === tab.path;
-            const Icon = tab.icon;
-            return (
-              <Link
-                key={tab.path}
-                to={tab.path}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "3px",
-                  color: isActive ? "var(--accent)" : "var(--text-secondary)",
-                  backgroundColor: isActive ? "var(--accent-soft)" : "transparent",
-                  borderRadius: "10px",
-                  textDecoration: "none",
-                  fontSize: "11px",
-                  fontWeight: isActive ? 600 : 500,
-                  width: "19%",
-                  height: "48px",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <Icon size={20} />
-                <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
-                  {tab.label}
-                </span>
-              </Link>
-            );
-          })}
-
-          {/* Кнопка "Еще" */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "3px",
-              color: mobileMenuOpen ? "var(--accent)" : "var(--text-secondary)",
-              backgroundColor: mobileMenuOpen ? "var(--accent-soft)" : "transparent",
-              borderRadius: "10px",
-              border: "none",
-              cursor: "pointer",
-              fontSize: "11px",
-              fontWeight: mobileMenuOpen ? 600 : 500,
-              width: "19%",
-              height: "48px",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <Menu size={20} />
-            <span>{t.nav.more}</span>
-          </button>
-        </nav>
       )}
     </div>
   );

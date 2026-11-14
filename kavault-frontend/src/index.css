@@ -341,15 +341,15 @@ a.kv-btn:active {
   }
 }
 
-/* Пульсирующий неон для рамок аватаров */
+/* Пульсирующий контур для рамок аватаров (без размытого свечения) */
 @keyframes kvFramePulse {
   0%, 100% {
-    filter: drop-shadow(0 0 4px currentColor);
     transform: scale(1);
+    opacity: 1;
   }
   50% {
-    filter: drop-shadow(0 0 14px currentColor);
-    transform: scale(1.02);
+    transform: scale(1.025);
+    opacity: 0.92;
   }
 }
 
@@ -357,18 +357,15 @@ a.kv-btn:active {
   animation: kvFramePulse 3s ease-in-out infinite;
 }
 
-/* Огненное мерцание рамок */
+/* Огненный контур рамок */
 @keyframes kvFrameFire {
   0%, 100% {
-    filter: drop-shadow(0 0 6px #f97316) drop-shadow(0 0 14px #ef4444);
     transform: scale(1);
   }
   33% {
-    filter: drop-shadow(0 0 10px #f59e0b) drop-shadow(0 0 20px #dc2626);
-    transform: scale(1.025);
+    transform: scale(1.02);
   }
   66% {
-    filter: drop-shadow(0 0 5px #f97316) drop-shadow(0 0 12px #b91c1c);
     transform: scale(0.995);
   }
 }
@@ -377,13 +374,15 @@ a.kv-btn:active {
   animation: kvFrameFire 2.2s ease-in-out infinite;
 }
 
-/* Ледяной блеск рамок */
+/* Ледяной контур рамок */
 @keyframes kvFrameFrost {
   0%, 100% {
-    filter: drop-shadow(0 0 6px #38bdf8) drop-shadow(0 0 12px rgba(56, 189, 248, 0.4));
+    transform: scale(1);
+    opacity: 1;
   }
   50% {
-    filter: drop-shadow(0 0 14px #e0f2fe) drop-shadow(0 0 24px #38bdf8);
+    transform: scale(1.02);
+    opacity: 0.94;
   }
 }
 
@@ -391,16 +390,16 @@ a.kv-btn:active {
   animation: kvFrameFrost 2.8s ease-in-out infinite;
 }
 
-/* Радужный перелив (Prism / 8-Bit) */
+/* Радужный перелив (Prism / 8-Bit) без размытого ореола */
 @keyframes kvFrameRainbow {
   0% {
-    filter: hue-rotate(0deg) drop-shadow(0 0 8px rgba(236, 72, 153, 0.6));
+    filter: hue-rotate(0deg);
   }
   50% {
-    filter: hue-rotate(180deg) drop-shadow(0 0 12px rgba(59, 130, 246, 0.7));
+    filter: hue-rotate(180deg);
   }
   100% {
-    filter: hue-rotate(360deg) drop-shadow(0 0 8px rgba(236, 72, 153, 0.6));
+    filter: hue-rotate(360deg);
   }
 }
 

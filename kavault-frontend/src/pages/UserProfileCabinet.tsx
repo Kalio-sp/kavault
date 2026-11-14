@@ -42,6 +42,7 @@ import {
   type UserProfileCustomization,
   loadProfileCustomization,
   saveProfileCustomization,
+  syncProfileFromServer,
   getRandomCosmetics,
 } from "../utils/profileCosmetics";
 
@@ -160,6 +161,10 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
           setSocialData(meRes.value.data);
           if (meRes.value.data.nickname && !nickname) {
             setEditNickname(meRes.value.data.nickname);
+          }
+          if (meRes.value.data.profileCustomization) {
+            const synced = syncProfileFromServer(meRes.value.data.profileCustomization);
+            setCustomization(synced);
           }
         }
 
@@ -650,6 +655,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
         .kv-hero-body {
           padding: 0 16px 16px 16px;
           position: relative;
+          z-index: 10;
         }
 
         @media (min-width: 640px) {
@@ -666,6 +672,8 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
           margin-bottom: 12px;
           flex-wrap: wrap;
           gap: 12px;
+          position: relative;
+          z-index: 15;
         }
 
         @media (max-width: 640px) {
@@ -688,6 +696,55 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
           border-radius: 10px;
           flex-shrink: 0;
           box-sizing: border-box;
+        }
+
+        .kv-preview-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        @media (max-width: 640px) {
+          .kv-preview-actions {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+        }
+
+        .kv-cosmetics-subtabs {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 6px;
+          padding: 4px;
+          border-radius: 12px;
+          background-color: var(--surface, #121214);
+          border: 1px solid var(--border, rgba(255,255,255,0.08));
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .kv-custom-avatar-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 14px;
+          border-radius: 12px;
+          background-color: rgba(59, 130, 246, 0.1);
+          border: 1px solid rgba(59, 130, 246, 0.25);
+          gap: 12px;
+        }
+        @media (max-width: 640px) {
+          .kv-custom-avatar-card {
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+          .kv-custom-avatar-actions {
+            width: 100% !important;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 8px !important;
+          }
         }
       `}</style>
 
@@ -799,7 +856,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
         {/* Тело карточки: Аватарка + Никнейм + Статус */}
         <div className="kv-hero-body">
           <div className="kv-hero-row">
-            <div style={{ position: "relative" }}>
+            <div style={{ position: "relative", zIndex: 20, isolation: "isolate" }}>
               <UserAvatarBadge
                 customization={customization}
                 size={80}
@@ -814,6 +871,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   position: "absolute",
                   bottom: "0px",
                   right: "0px",
+                  zIndex: 25,
                   width: "28px",
                   height: "28px",
                   borderRadius: "50%",
@@ -1343,15 +1401,16 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div className="kv-preview-actions">
               <button
                 type="button"
                 onClick={handleShuffleStyle}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
+                  justifyContent: "center",
                   gap: "6px",
-                  padding: "8px 14px",
+                  padding: "9px 14px",
                   borderRadius: "10px",
                   backgroundColor: "rgba(168, 85, 247, 0.15)",
                   border: "1px solid rgba(168, 85, 247, 0.35)",
@@ -1359,6 +1418,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   fontSize: "12.5px",
                   fontWeight: 700,
                   cursor: "pointer",
+                  whiteSpace: "nowrap",
                   transition: "all 0.15s ease",
                 }}
                 title="Сгенерировать случайное сочетание героя, рамки и баннера"
@@ -1374,28 +1434,16 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
           </div>
 
           {/* НАВИГАЦИОННЫЕ КНОПКИ ВЫБОРА: АВАТАР / РАМКА / БАННЕР */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "4px",
-              borderRadius: "12px",
-              backgroundColor: "var(--surface, #121214)",
-              border: "1px solid var(--border, rgba(255,255,255,0.08))",
-              overflowX: "auto",
-            }}
-          >
+          <div className="kv-cosmetics-subtabs">
             <button
               type="button"
               onClick={() => setCosmeticsSubTab("avatar")}
               style={{
-                flex: "1 1 0",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "8px",
-                padding: "10px 14px",
+                gap: "6px",
+                padding: "9px 6px",
                 borderRadius: "10px",
                 border: "none",
                 backgroundColor:
@@ -1403,27 +1451,26 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     ? "var(--accent, #3b82f6)"
                     : "transparent",
                 color: cosmeticsSubTab === "avatar" ? "#ffffff" : "var(--text-secondary)",
-                fontSize: "13px",
+                fontSize: "12.5px",
                 fontWeight: 700,
                 cursor: "pointer",
                 whiteSpace: "nowrap",
                 transition: "all 0.15s ease",
               }}
             >
-              <User size={16} />
-              <span>1. Аватар ({AVATAR_PRESETS.length})</span>
+              <User size={15} />
+              <span>Аватар</span>
             </button>
 
             <button
               type="button"
               onClick={() => setCosmeticsSubTab("frame")}
               style={{
-                flex: "1 1 0",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "8px",
-                padding: "10px 14px",
+                gap: "6px",
+                padding: "9px 6px",
                 borderRadius: "10px",
                 border: "none",
                 backgroundColor:
@@ -1431,27 +1478,26 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     ? "var(--accent, #3b82f6)"
                     : "transparent",
                 color: cosmeticsSubTab === "frame" ? "#ffffff" : "var(--text-secondary)",
-                fontSize: "13px",
+                fontSize: "12.5px",
                 fontWeight: 700,
                 cursor: "pointer",
                 whiteSpace: "nowrap",
                 transition: "all 0.15s ease",
               }}
             >
-              <Sparkles size={16} />
-              <span>2. Рамка ({AVATAR_FRAMES.length})</span>
+              <Sparkles size={15} />
+              <span>Рамка</span>
             </button>
 
             <button
               type="button"
               onClick={() => setCosmeticsSubTab("banner")}
               style={{
-                flex: "1 1 0",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "8px",
-                padding: "10px 14px",
+                gap: "6px",
+                padding: "9px 6px",
                 borderRadius: "10px",
                 border: "none",
                 backgroundColor:
@@ -1459,15 +1505,15 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     ? "var(--accent, #3b82f6)"
                     : "transparent",
                 color: cosmeticsSubTab === "banner" ? "#ffffff" : "var(--text-secondary)",
-                fontSize: "13px",
+                fontSize: "12.5px",
                 fontWeight: 700,
                 cursor: "pointer",
                 whiteSpace: "nowrap",
                 transition: "all 0.15s ease",
               }}
             >
-              <ImageIcon size={16} />
-              <span>3. Баннер ({BANNER_THEMES.length})</span>
+              <ImageIcon size={15} />
+              <span>Баннер</span>
             </button>
           </div>
 
@@ -1631,24 +1677,14 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
 
               {/* Режим своего фото */}
               {customization.avatarType === "custom" && customization.customAvatarUrl && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "12px 14px",
-                    borderRadius: "12px",
-                    backgroundColor: "rgba(59, 130, 246, 0.1)",
-                    border: "1px solid rgba(59, 130, 246, 0.25)",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div className="kv-custom-avatar-card">
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                     <img
                       src={customization.customAvatarUrl}
                       alt="Custom"
-                      style={{ width: "52px", height: "52px", borderRadius: "50%", objectFit: "cover" }}
+                      style={{ width: "52px", height: "52px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
                     />
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
                         Кастомный аватар активен
                       </div>
@@ -1658,11 +1694,11 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: "8px" }}>
+                  <div className="kv-custom-avatar-actions">
                     <button
                       onClick={() => avatarFileInputRef.current?.click()}
                       style={{
-                        padding: "6px 12px",
+                        padding: "8px 14px",
                         borderRadius: "8px",
                         backgroundColor: "var(--accent, #3b82f6)",
                         color: "#fff",
@@ -1677,7 +1713,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     <button
                       onClick={() => handleSaveCosmetics({ avatarType: "preset", customAvatarUrl: undefined })}
                       style={{
-                        padding: "6px 12px",
+                        padding: "8px 14px",
                         borderRadius: "8px",
                         backgroundColor: "rgba(255, 255, 255, 0.08)",
                         color: "var(--text-secondary)",

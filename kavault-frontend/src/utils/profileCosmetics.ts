@@ -1,3 +1,5 @@
+import { api } from "../api/axios";
+
 // Утилиты и пресеты кастомизации личного кабинета и профиля KaVault
 
 export interface AvatarPreset {
@@ -201,178 +203,162 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     name: "Минимал",
     description: "Чистая форма без рамки",
     tag: "Classic",
-    border: "2px solid rgba(255, 255, 255, 0.12)",
-    boxShadow: "none",
-    accentColor: "rgba(255, 255, 255, 0.2)",
+    border: "2px solid rgba(255, 255, 255, 0.2)",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.35)",
+    accentColor: "rgba(255, 255, 255, 0.3)",
   },
   {
     id: "frame_neon_cyan",
-    name: "Неоновый импульс",
-    description: "Бирюзовое неоновое кольцо с мягким свечением",
+    name: "Бирюзовый контур",
+    description: "Четкая неоновая бирюзовая рамка",
     tag: "Popular",
-    border: "3px solid #06b6d4",
-    boxShadow: "0 0 16px rgba(6, 182, 212, 0.75), inset 0 0 8px rgba(6, 182, 212, 0.3)",
+    border: "3.5px solid #06b6d4",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#06b6d4",
-    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_solar_fire",
-    name: "Солнечное пламя",
-    description: "Огненно-янтарная аура высокой энергии",
+    name: "Янтарный контур",
+    description: "Теплая янтарно-огненная рамка",
     tag: "Hot",
-    border: "3px solid #f97316",
-    boxShadow: "0 0 18px rgba(249, 115, 22, 0.85), inset 0 0 8px rgba(249, 115, 22, 0.4)",
+    border: "3.5px solid #f97316",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#f97316",
-    animationClass: "kv-frame-anim-fire",
   },
   {
     id: "frame_sakura_bloom",
-    name: "Лепестки сакуры",
-    description: "Нежное розовое сияние весеннего Киото",
+    name: "Розовый контур",
+    description: "Нежная рамка цвета сакуры",
     tag: "Aesthetic",
-    border: "3px solid #f43f5e",
-    boxShadow: "0 0 16px rgba(244, 63, 94, 0.75), inset 0 0 8px rgba(244, 63, 94, 0.35)",
+    border: "3.5px solid #f43f5e",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#f43f5e",
-    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_gold_legend",
-    name: "Корона Легенды",
-    description: "Чистое 24k золото для мастеров системы",
+    name: "Золотой контур",
+    description: "Чистое золото 24k для мастеров системы",
     tag: "VIP",
-    border: "3px solid #f59e0b",
-    boxShadow: "0 0 24px rgba(245, 158, 11, 0.9), inset 0 0 10px rgba(245, 158, 11, 0.45)",
+    border: "3.5px solid #f59e0b",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#f59e0b",
-    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_cyber_matrix",
-    name: "Кибер-матрица",
-    description: "Электрический ультрамарин и фиолетовый глитч",
+    name: "Фиолетовый контур",
+    description: "Электрический ультрамариновый контур",
     tag: "Cyber",
-    border: "3px solid #a855f7",
-    boxShadow: "0 0 20px rgba(168, 85, 247, 0.85), inset 0 0 10px rgba(168, 85, 247, 0.35)",
+    border: "3.5px solid #a855f7",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#a855f7",
-    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_emerald_guard",
-    name: "Изумрудный страж",
-    description: "Кибер-изумруд высокой концентрации",
+    name: "Изумрудный контур",
+    description: "Насыщенная изумрудная рамка",
     tag: "Rare",
-    border: "3px solid #10b981",
-    boxShadow: "0 0 18px rgba(16, 185, 129, 0.8), inset 0 0 8px rgba(16, 185, 129, 0.35)",
+    border: "3.5px solid #10b981",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#10b981",
-    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_void_abyss",
-    name: "Астральная бездна",
-    description: "Таинственное космическое фиолетовое свечение",
+    name: "Индиго контур",
+    description: "Глубокая космическая индиго рамка",
     tag: "Mythic",
-    border: "3px solid #6366f1",
-    boxShadow: "0 0 22px rgba(99, 102, 241, 0.85), inset 0 0 10px rgba(99, 102, 241, 0.4)",
+    border: "3.5px solid #6366f1",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#6366f1",
-    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_crimson_eclipse",
-    name: "Кровавая Луна",
-    description: "Мистическое рубиновое кольцо с пульсирующим огнем",
-    tag: "Animated",
-    border: "3px solid #ef4444",
-    boxShadow: "0 0 24px rgba(239, 68, 68, 0.9), inset 0 0 10px rgba(239, 68, 68, 0.5)",
+    name: "Алый контур",
+    description: "Рубиново-красная четкая рамка",
+    tag: "Hot",
+    border: "3.5px solid #ef4444",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#ef4444",
-    animationClass: "kv-frame-anim-fire",
   },
   {
     id: "frame_glacial_frost",
-    name: "Ледяной кристалл",
-    description: "Искрящийся арктический лед и абсолютный ноль",
+    name: "Ледяной контур",
+    description: "Арктический лазурно-ледяной контур",
     tag: "Rare",
-    border: "3px solid #38bdf8",
-    boxShadow: "0 0 20px rgba(56, 189, 248, 0.85), inset 0 0 8px rgba(56, 189, 248, 0.4)",
+    border: "3.5px solid #38bdf8",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#38bdf8",
-    animationClass: "kv-frame-anim-frost",
   },
   {
     id: "frame_rainbow_prism",
-    name: "Радужная призма",
-    description: "Плавающий спектральный перелив всех цветов",
-    tag: "Animated",
-    border: "3px solid #ec4899",
-    boxShadow: "0 0 22px rgba(236, 72, 153, 0.8), inset 0 0 10px rgba(59, 130, 246, 0.4)",
+    name: "Маджента контур",
+    description: "Яркая пурпурно-розовая рамка",
+    tag: "Aesthetic",
+    border: "3.5px solid #ec4899",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#ec4899",
-    animationClass: "kv-frame-anim-rainbow",
   },
   {
     id: "frame_toxic_plasma",
-    name: "Токсичная плазма",
-    description: "Ядовито-лаймовый радиоактивный заряд энергии",
+    name: "Лаймовый контур",
+    description: "Энергетическая неоново-лаймовая рамка",
     tag: "Cyber",
-    border: "3px solid #84cc16",
-    boxShadow: "0 0 20px rgba(132, 204, 22, 0.85), inset 0 0 8px rgba(132, 204, 22, 0.4)",
+    border: "3.5px solid #84cc16",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#84cc16",
-    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_dragon_fire",
-    name: "Дыхание Дракона",
-    description: "Древние пылающие угли и темная золотая чешуя",
+    name: "Бронзовый контур",
+    description: "Темно-янтарная бронзовая рамка",
     tag: "Mythic",
-    border: "3px solid #d97706",
-    boxShadow: "0 0 24px rgba(217, 119, 6, 0.9), inset 0 0 12px rgba(239, 68, 68, 0.5)",
+    border: "3.5px solid #d97706",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#d97706",
-    animationClass: "kv-frame-anim-fire",
   },
   {
     id: "frame_quantum_flux",
-    name: "Квантовый поток",
-    description: "Двойная вращающаяся аура лазурного и индиго",
-    tag: "Animated",
-    border: "3px solid #818cf8",
-    boxShadow: "0 0 20px rgba(129, 140, 248, 0.8), inset 0 0 10px rgba(6, 182, 212, 0.4)",
+    name: "Двойной квантовый",
+    description: "Двойной лазурный контур",
+    tag: "Rare",
+    border: "3.5px double #818cf8",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#818cf8",
-    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_synthwave_84",
-    name: "Синтвейв 1984",
-    description: "Неоновый дуэт неонового розового и ретро-циан",
+    name: "Двойной ретро",
+    description: "Двойной неоновый розовый контур",
     tag: "Hot",
-    border: "3px solid #f43f5e",
-    boxShadow: "0 0 20px rgba(244, 63, 94, 0.8), 0 0 30px rgba(6, 182, 212, 0.4)",
+    border: "3.5px double #f43f5e",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#f43f5e",
-    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_angelic_halo",
-    name: "Ангельский нимб",
-    description: "Благородное сияние чистого белого золота",
+    name: "Белое золото",
+    description: "Элегантный светлый золотой контур",
     tag: "VIP",
-    border: "3px solid #fef08a",
-    boxShadow: "0 0 22px rgba(254, 240, 138, 0.9), inset 0 0 8px rgba(255, 255, 255, 0.6)",
+    border: "3.5px solid #fef08a",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#fef08a",
-    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_obsidian_stealth",
-    name: "Обсидиановый стелс",
-    description: "Матовый титановый обод скрытного профиля",
+    name: "Титановый стелс",
+    description: "Матовый графитово-титановый контур",
     tag: "Dark",
-    border: "3px solid #475569",
-    boxShadow: "0 0 12px rgba(71, 85, 105, 0.5), inset 0 0 6px rgba(15, 23, 42, 0.6)",
+    border: "3.5px solid #64748b",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#94a3b8",
   },
   {
     id: "frame_arcade_8bit",
-    name: "Ретро Аркада",
-    description: "Пиксельный RGB стиль золотого века игр",
+    name: "Изумрудный пиксель",
+    description: "Четкий зеленый аркадный контур",
     tag: "Retro",
-    border: "3px solid #10b981",
-    boxShadow: "0 0 16px rgba(16, 185, 129, 0.7), 0 0 26px rgba(236, 72, 153, 0.4)",
+    border: "3.5px solid #10b981",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     accentColor: "#10b981",
-    animationClass: "kv-frame-anim-rainbow",
   },
 ];
 
@@ -614,6 +600,27 @@ export function loadProfileCustomization(userKey?: string): UserProfileCustomiza
   return getDefaultCustomization();
 }
 
+export function syncProfileFromServer(serverCustom: any, userKey?: string): UserProfileCustomization {
+  if (!serverCustom || typeof serverCustom !== "object") {
+    return loadProfileCustomization(userKey);
+  }
+  const key = userKey || getProfileUserKey();
+  const current = loadProfileCustomization(key);
+  const merged: UserProfileCustomization = {
+    ...current,
+    ...serverCustom,
+  };
+  try {
+    localStorage.setItem(`${STORAGE_PREFIX}${key}`, JSON.stringify(merged));
+    window.dispatchEvent(
+      new CustomEvent("kavault_profile_updated", { detail: merged }),
+    );
+  } catch (e) {
+    console.error("Failed to sync profile customization from server", e);
+  }
+  return merged;
+}
+
 export function saveProfileCustomization(
   custom: UserProfileCustomization,
   userKey?: string,
@@ -625,6 +632,14 @@ export function saveProfileCustomization(
     window.dispatchEvent(
       new CustomEvent("kavault_profile_updated", { detail: custom }),
     );
+
+    // Синхронизируем с бэкендом, если пользователь авторизован
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      api.patch("/social/profile-customization", custom).catch((err) => {
+        console.warn("Failed to sync customization to server", err);
+      });
+    }
   } catch (e) {
     console.error("Failed to save profile customization", e);
   }

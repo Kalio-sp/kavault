@@ -175,6 +175,7 @@ export class AuthService implements OnModuleInit {
         studyLanguage: true,
         showProgramming: true,
         onboardingCompleted: true,
+        profileCustomization: true,
       },
     });
     if (!user) {
@@ -192,6 +193,7 @@ export class AuthService implements OnModuleInit {
       studyLanguage: user.studyLanguage || 'ja',
       showProgramming: user.showProgramming ?? true,
       onboardingCompleted: user.onboardingCompleted ?? true,
+      profileCustomization: user.profileCustomization || (socialProfile as any)?.profileCustomization || null,
     };
   }
 
