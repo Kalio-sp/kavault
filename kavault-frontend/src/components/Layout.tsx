@@ -511,11 +511,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
             ? "calc(74px + env(safe-area-inset-bottom, 0px))"
             : "var(--space-8)",
           overflowY: "auto",
+          overflowX: "hidden",
           height: "100%",
           WebkitOverflowScrolling: "touch",
+          boxSizing: "border-box",
+          width: "100%",
         }}
       >
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>{children}</div>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%", overflowX: "hidden", boxSizing: "border-box" }}>{children}</div>
       </main>
 
       {/* ── МОБИЛЬНОЕ ВСПЛЫВАЮЩЕЕ МЕНЮ (ШТОРКА "ЕЩЁ") ── */}
@@ -1015,6 +1018,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       : "1px solid rgba(255, 255, 255, 0.06)",
                   textDecoration: "none",
                   transition: "all 0.15s ease",
+                  gridColumn: showProgramming ? "span 2" : "span 1",
                 }}
               >
                 <div

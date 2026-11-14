@@ -16,9 +16,112 @@
     <link rel="apple-touch-icon" href="/icon.png" />
     <meta name="theme-color" content="#09090b" />
     <link rel="manifest" href="/manifest.json" />
+
+    <style>
+      #kv-splash {
+        position: fixed;
+        inset: 0;
+        background: #09090b;
+        background-image: 
+          radial-gradient(circle at 50% 35%, rgba(59, 130, 246, 0.18) 0%, transparent 60%),
+          radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.12) 0%, transparent 50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justifyContent: center;
+        z-index: 99999;
+        font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+        color: #ffffff;
+        user-select: none;
+      }
+      .kv-splash-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        animation: kvFadeScale 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .kv-splash-logo {
+        position: relative;
+        width: 76px;
+        height: 76px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        font-weight: 900;
+        color: #ffffff;
+        box-shadow: 0 0 35px rgba(59, 130, 246, 0.55), inset 0 0 14px rgba(255, 255, 255, 0.4);
+        margin-bottom: 22px;
+        animation: kvPulse 2s ease-in-out infinite alternate;
+      }
+      .kv-splash-title {
+        font-size: 28px;
+        font-weight: 900;
+        letter-spacing: 0.28em;
+        margin-left: 0.28em;
+        text-transform: uppercase;
+        background: linear-gradient(135deg, #ffffff 0%, #93c5fd 50%, #f472b6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 8px;
+      }
+      .kv-splash-sub {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        margin-left: 0.22em;
+        color: rgba(255, 255, 255, 0.45);
+        text-transform: uppercase;
+        margin-bottom: 28px;
+      }
+      .kv-splash-bar {
+        width: 140px;
+        height: 3px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+        position: relative;
+      }
+      .kv-splash-bar-fill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, #3b82f6, #ec4899);
+        border-radius: 999px;
+        animation: kvFill 1.3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+      @keyframes kvFadeScale {
+        from { opacity: 0; transform: scale(0.85); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      @keyframes kvPulse {
+        0% { transform: scale(1); box-shadow: 0 0 25px rgba(59, 130, 246, 0.5); }
+        100% { transform: scale(1.06); box-shadow: 0 0 45px rgba(236, 72, 153, 0.7); }
+      }
+      @keyframes kvFill {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(0%); }
+        100% { transform: translateX(100%); }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="kv-splash">
+        <div class="kv-splash-box">
+          <div class="kv-splash-logo">K</div>
+          <div class="kv-splash-title">KAVAULT</div>
+          <div class="kv-splash-sub">Knowledge & Language Engine</div>
+          <div class="kv-splash-bar">
+            <div class="kv-splash-bar-fill"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,19 +1,21 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/axios";
 import { Card } from "../components/ui/Card";
-import { Badge } from "../components/ui/Badge";
 import {
   Flame,
   Trophy,
-  Target,
   Sparkles,
   Calendar,
   Zap,
   Award,
   Lock,
+  Plus,
+  Minus,
+  CheckCircle2,
+  TrendingUp,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
-import { useNavigate } from "react-router-dom";
 
 interface ActivityItem {
   createdAt: string;
@@ -39,13 +41,13 @@ const readGoal = (key: string, fallback: number) => {
 
 // Градация цветов активности в зависимости от культурного вайба изучаемого языка
 const getCellBg = (count: number) => {
-  if (count === 0) return "var(--surface-raised)";
+  if (count === 0) return "rgba(255, 255, 255, 0.05)";
   if (count <= 1)
-    return "color-mix(in srgb, var(--vibe-accent) 30%, var(--surface-raised))";
+    return "color-mix(in srgb, var(--vibe-accent) 35%, rgba(255,255,255,0.08))";
   if (count <= 3)
-    return "color-mix(in srgb, var(--vibe-accent) 55%, var(--surface-raised))";
+    return "color-mix(in srgb, var(--vibe-accent) 60%, rgba(255,255,255,0.08))";
   if (count <= 6)
-    return "color-mix(in srgb, var(--vibe-accent) 80%, var(--surface-raised))";
+    return "color-mix(in srgb, var(--vibe-accent) 85%, rgba(255,255,255,0.08))";
   return "var(--vibe-accent)";
 };
 
@@ -60,18 +62,35 @@ export function LearningTracker() {
     studyText,
     studyPalette,
   } = useApp();
-  const navigate = useNavigate();
 
-  const goalResources = useMemo(
-    () => readGoal("kavault_goal_resources", 5),
-    [],
+  // Интерактивные цели с сохранением в localStorage
+  const [goalCards, setGoalCards] = useState(() =>
+    readGoal("kavault_goal_cards", 50),
   );
-  const goalCards = useMemo(() => readGoal("kavault_goal_cards", 50), []);
+  const [goalResources, setGoalResources] = useState(() =>
+    readGoal("kavault_goal_resources", 5),
+  );
+
+  const updateGoalCards = (delta: number) => {
+    setGoalCards((prev) => {
+      const next = Math.max(10, Math.min(500, prev + delta));
+      localStorage.setItem("kavault_goal_cards", String(next));
+      return next;
+    });
+  };
+
+  const updateGoalResources = (delta: number) => {
+    setGoalResources((prev) => {
+      const next = Math.max(1, Math.min(50, prev + delta));
+      localStorage.setItem("kavault_goal_resources", String(next));
+      return next;
+    });
+  };
 
   const [resources, setResources] = useState<ActivityItem[]>([]);
   const [cards, setCards] = useState<ActivityItem[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [timeRange, setTimeRange] = useState<TimeRange>("6m");
+  const [timeRange, setTimeRange] = useState<TimeRange>("3m");
 
   // Тултип для ячеек хитмапа
   const [hoveredCell, setHoveredCell] = useState<{
@@ -114,7 +133,7 @@ export function LearningTracker() {
     };
   }, [studyLanguage, showProgramming]);
 
-  // Автоскролл вправо при первой загрузке
+  // Автоскролл вправо к текущей дате
   useEffect(() => {
     if (loaded && scrollRef.current) {
       scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
@@ -137,6 +156,7 @@ export function LearningTracker() {
     totalContributions,
     weeklyStats,
     todayCount,
+    currentWeekDays,
   } = useMemo(() => {
     const today = startOfDay(new Date());
 
@@ -165,7 +185,47 @@ export function LearningTracker() {
       if (d.getTime() >= weekAgo) recentCards++;
     });
 
-    // Сетка: дни с понедельника
+    // ── Сетка дней текущей недели (Пн-Вс) для тактильного виджета привычек ──
+    const currDayOfWeek = (today.getDay() + 6) % 7; // 0 = Mon, 6 = Sun
+    const monday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() - currDayOfWeek,
+    );
+
+    const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+    const currentWeekDays: {
+      date: Date;
+      dayName: string;
+      dayNum: number;
+      isToday: boolean;
+      isFuture: boolean;
+      count: number;
+      hasActivity: boolean;
+    }[] = [];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(
+        monday.getFullYear(),
+        monday.getMonth(),
+        monday.getDate() + i,
+      );
+      const key = dayKey(d);
+      const count = totalDayMap.get(key) || 0;
+      const isToday = d.getTime() === today.getTime();
+      const isFuture = d > today;
+      currentWeekDays.push({
+        date: d,
+        dayName: dayNames[i],
+        dayNum: d.getDate(),
+        isToday,
+        isFuture,
+        count,
+        hasActivity: count > 0,
+      });
+    }
+
+    // Сетка хитмапа: дни с понедельника
     const todayRow = (today.getDay() + 6) % 7;
     const firstDate = new Date(
       today.getTime() - ((weeksCount - 1) * 7 + todayRow) * DAY_MS,
@@ -257,43 +317,52 @@ export function LearningTracker() {
       totalContributions,
       weeklyStats: { resources: recentRes, cards: recentCards },
       todayCount,
+      currentWeekDays,
     };
   }, [resources, cards, weeksCount, locale]);
 
   /* Список достижений (Gamified Milestones) */
-  const achievements = useMemo(() => {
+  const milestones = useMemo(() => {
     const base = [
       {
         id: "first_step",
         title: t.track.milestones.first_step.title,
         desc: t.track.milestones.first_step.desc,
         icon: Sparkles,
+        color: "#3b82f6",
         unlocked: totalContributions >= 1,
         progress: `${Math.min(totalContributions, 1)} / 1`,
+        percent: Math.min(100, totalContributions * 100),
       },
       {
         id: "streak_3",
         title: t.track.milestones.streak_3.title,
         desc: t.track.milestones.streak_3.desc,
         icon: Flame,
+        color: "#f59e0b",
         unlocked: currentStreak >= 3 || longestStreak >= 3,
-        progress: `${Math.min(currentStreak, 3)} / 3 ${t.track.days}`,
+        progress: `${Math.min(Math.max(currentStreak, longestStreak), 3)} / 3 ${t.track.days}`,
+        percent: Math.min(100, Math.round((Math.max(currentStreak, longestStreak) / 3) * 100)),
       },
       {
         id: "week_streak",
         title: t.track.milestones.week_streak.title,
         desc: t.track.milestones.week_streak.desc,
         icon: Trophy,
+        color: "#eab308",
         unlocked: currentStreak >= 7 || longestStreak >= 7,
-        progress: `${Math.min(currentStreak, 7)} / 7 ${t.track.days}`,
+        progress: `${Math.min(Math.max(currentStreak, longestStreak), 7)} / 7 ${t.track.days}`,
+        percent: Math.min(100, Math.round((Math.max(currentStreak, longestStreak) / 7) * 100)),
       },
       {
         id: "words_25",
         title: studyText.trackerMilestoneTitle,
         desc: studyText.trackerMilestoneDesc,
         icon: Award,
+        color: studyPalette.accentHex,
         unlocked: cards.length >= 25,
-        progress: `${cards.length} / 25`,
+        progress: `${Math.min(cards.length, 25)} / 25`,
+        percent: Math.min(100, Math.round((cards.length / 25) * 100)),
       },
     ];
 
@@ -303,8 +372,10 @@ export function LearningTracker() {
         title: t.track.milestones.collector.title,
         desc: t.track.milestones.collector.desc,
         icon: Zap,
+        color: "#10b981",
         unlocked: resources.length >= 15,
-        progress: `${resources.length} / 15`,
+        progress: `${Math.min(resources.length, 15)} / 15`,
+        percent: Math.min(100, Math.round((resources.length / 15) * 100)),
       });
     }
 
@@ -318,6 +389,7 @@ export function LearningTracker() {
     t,
     showProgramming,
     studyText,
+    studyPalette,
   ]);
 
   return (
@@ -325,145 +397,728 @@ export function LearningTracker() {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "var(--space-8)",
+        gap: "var(--space-6)",
+        width: "100%",
+        maxWidth: "100%",
+        overflowX: "hidden",
+        boxSizing: "border-box",
       }}
     >
-      {/* Заголовок */}
+      {/* ── ВЕРХНИЙ ХЕДЕР ТРЕКЕРА ── */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "flex-start",
+          alignItems: "center",
           flexWrap: "wrap",
-          gap: "var(--space-4)",
+          gap: "12px",
         }}
       >
         <div>
           <h2
             style={{
-              fontSize: "28px",
-              fontWeight: 600,
-              margin: "0 0 var(--space-2) 0",
+              fontSize: "24px",
+              fontWeight: 800,
+              margin: 0,
               color: "var(--text-primary)",
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              gap: "8px",
+              letterSpacing: "-0.01em",
             }}
           >
             <span>{studyPalette.flag}</span>
             <span>{t.track.title}</span>
           </h2>
-          <p style={{ color: "var(--text-muted)", margin: 0 }}>
-            {t.track.subtitle} · {studyText.name}
+          <p
+            style={{
+              color: "var(--text-muted)",
+              margin: "3px 0 0 0",
+              fontSize: "13px",
+            }}
+          >
+            {studyText.name} · {t.track.subtitle}
           </p>
         </div>
 
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <Badge variant="accent">
-            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <Zap size={14} /> {totalContributions} {t.track.totalActionsSuffix}
-            </span>
-          </Badge>
+          <Link
+            to="/review"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "7px 14px",
+              borderRadius: "12px",
+              backgroundColor: "rgba(234, 179, 8, 0.15)",
+              border: "1px solid rgba(234, 179, 8, 0.35)",
+              color: "#f59e0b",
+              fontSize: "12.5px",
+              fontWeight: 700,
+              textDecoration: "none",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <Sparkles size={14} />
+            <span>Повторить слова →</span>
+          </Link>
         </div>
       </div>
 
-      {/* KPI карточки сверху */}
+      {/* ── ГЛАВНЫЙ СТРИК-ХИРО БАННЕР (ОГОНЬ ДИСЦИПЛИНЫ) ── */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "var(--space-4)",
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: "20px",
+          padding: "20px 22px",
+          background:
+            currentStreak > 0
+              ? "linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(239, 68, 68, 0.12) 60%, rgba(236, 72, 153, 0.08) 100%)"
+              : "linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(168, 85, 247, 0.08) 100%)",
+          border:
+            currentStreak > 0
+              ? "1px solid rgba(245, 158, 11, 0.35)"
+              : "1px solid rgba(59, 130, 246, 0.25)",
+          boxShadow:
+            currentStreak > 0
+              ? "0 10px 30px -10px rgba(245, 158, 11, 0.3)"
+              : "0 10px 30px -10px rgba(0, 0, 0, 0.4)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px",
+          boxSizing: "border-box",
         }}
       >
-        <Card style={{ padding: "var(--space-5)" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              color: "var(--text-secondary)",
-              fontSize: "13px",
-              marginBottom: "var(--space-2)",
-            }}
-          >
-            <Flame size={16} color="#f59e0b" /> {t.track.streak}
-          </div>
-          <div style={{ fontSize: "32px", fontWeight: 700, color: "var(--text-primary)" }}>
-            {currentStreak} <span style={{ fontSize: "16px", fontWeight: 400 }}>{t.track.days}</span>
-          </div>
-          <div style={{ fontSize: "12px", color: "#f59e0b", marginTop: "4px" }}>
-            {todayCount > 0 ? t.track.todayLogged : t.track.todayReminder}
-          </div>
-        </Card>
+        {/* Фоновое свечение */}
+        <div
+          style={{
+            position: "absolute",
+            right: "-20px",
+            top: "-20px",
+            width: "160px",
+            height: "160px",
+            borderRadius: "50%",
+            background:
+              currentStreak > 0
+                ? "radial-gradient(circle, rgba(245, 158, 11, 0.3) 0%, transparent 70%)"
+                : "radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%)",
+            filter: "blur(20px)",
+            pointerEvents: "none",
+          }}
+        />
 
-        <Card style={{ padding: "var(--space-5)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", minWidth: 0 }}>
           <div
             style={{
+              width: "56px",
+              height: "56px",
+              borderRadius: "18px",
+              backgroundColor:
+                currentStreak > 0
+                  ? "rgba(245, 158, 11, 0.22)"
+                  : "rgba(59, 130, 246, 0.15)",
+              border:
+                currentStreak > 0
+                  ? "1px solid rgba(245, 158, 11, 0.45)"
+                  : "1px solid rgba(59, 130, 246, 0.3)",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
-              color: "var(--text-secondary)",
-              fontSize: "13px",
-              marginBottom: "var(--space-2)",
+              justifyContent: "center",
+              color: currentStreak > 0 ? "#f59e0b" : "#60a5fa",
+              boxShadow:
+                currentStreak > 0 ? "0 0 20px rgba(245, 158, 11, 0.4)" : "none",
+              flexShrink: 0,
             }}
           >
-            <Trophy size={16} color={studyPalette.accentHex} /> {t.track.bestRecord}
+            <Flame size={28} />
           </div>
-          <div style={{ fontSize: "32px", fontWeight: 700, color: "var(--text-primary)" }}>
-            {longestStreak} <span style={{ fontSize: "16px", fontWeight: 400 }}>{t.track.days}</span>
-          </div>
-          <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
-            {t.track.bestRecordDesc}
-          </div>
-        </Card>
 
-        <Card style={{ padding: "var(--space-5)" }}>
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: "11px",
+                fontWeight: 800,
+                color: currentStreak > 0 ? "#f59e0b" : "#60a5fa",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
+              {currentStreak > 0 ? "Серия активна 🔥" : "Серия ожидает запуска"}
+            </div>
+            <div
+              style={{
+                fontSize: "26px",
+                fontWeight: 900,
+                color: "var(--text-primary)",
+                lineHeight: 1.15,
+                margin: "2px 0",
+              }}
+            >
+              {currentStreak} {t.track.days}{" "}
+              <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-muted)" }}>
+                (Рекорд: {longestStreak} дн.)
+              </span>
+            </div>
+            <div style={{ fontSize: "12.5px", color: "var(--text-secondary)" }}>
+              {todayCount > 0
+                ? "✅ Сегодняшняя цель закрыта! Серия продлена."
+                : "⚡ Сделайте хотя бы 1 повторение сегодня, чтобы сохранить стрик!"}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
           <div
             style={{
+              padding: "6px 12px",
+              borderRadius: "12px",
+              backgroundColor: "rgba(255, 255, 255, 0.06)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              fontSize: "12px",
+              color: "var(--text-secondary)",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
-              color: "var(--text-secondary)",
-              fontSize: "13px",
-              marginBottom: "var(--space-2)",
+              gap: "6px",
             }}
           >
-            <Calendar size={16} color="var(--success)" /> {t.track.thisWeekActions}
+            <Trophy size={14} color="#eab308" />
+            <span>Всего: <b>{totalContributions}</b> действий</span>
           </div>
-          <div style={{ fontSize: "32px", fontWeight: 700, color: "var(--text-primary)" }}>
-            {weeklyStats.resources + weeklyStats.cards}
-          </div>
-          <div style={{ fontSize: "12px", color: "var(--success)", marginTop: "4px" }}>
-            {showProgramming
-              ? `+${weeklyStats.resources} ${t.track.materialsLabel}, +${weeklyStats.cards} ${t.track.reviewsLabel}`
-              : `+${weeklyStats.cards} ${t.track.reviewsLabel} (${studyText.name})`}
-          </div>
-        </Card>
+
+          <Link
+            to="/review"
+            style={{
+              padding: "8px 16px",
+              borderRadius: "12px",
+              backgroundColor:
+                todayCount > 0 ? "rgba(16, 185, 129, 0.2)" : "#f59e0b",
+              border:
+                todayCount > 0
+                  ? "1px solid rgba(16, 185, 129, 0.4)"
+                  : "1px solid rgba(245, 158, 11, 0.6)",
+              color: todayCount > 0 ? "#34d399" : "#000000",
+              fontSize: "12.5px",
+              fontWeight: 800,
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              boxShadow:
+                todayCount > 0 ? "none" : "0 4px 16px rgba(245, 158, 11, 0.35)",
+              transition: "all 0.15s ease",
+            }}
+          >
+            {todayCount > 0 ? (
+              <>
+                <CheckCircle2 size={15} />
+                <span>Завершено (+{todayCount})</span>
+              </>
+            ) : (
+              <>
+                <Flame size={15} />
+                <span>Зажечь сегодня</span>
+              </>
+            )}
+          </Link>
+        </div>
       </div>
 
-      {/* Основная карточка: Хитмап активности */}
-      <Card style={{ padding: "var(--space-6)", position: "relative" }}>
+      {/* ── ТАКТИЛЬНЫЙ ВИДЖЕТ НЕДЕЛЬНЫХ ПРИВЫЧЕК (ПН-ВС) ДЛЯ ТЕЛЕФОНОВ ── */}
+      <Card
+        style={{
+          padding: "16px 18px",
+          background: "var(--surface, #121214)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          boxSizing: "border-box",
+        }}
+      >
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "var(--space-5)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <Calendar size={15} color="var(--accent)" />
+            <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
+              Текущая неделя
+            </span>
+          </div>
+          <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+            +{weeklyStats.cards + weeklyStats.resources} за последние 7 дней
+          </span>
+        </div>
+
+        {/* Сетка 7 дней недели */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(7, 1fr)",
+            gap: "6px",
+            width: "100%",
+            boxSizing: "border-box",
+          }}
+        >
+          {currentWeekDays.map((d, idx) => {
+            const activeBg = d.hasActivity
+              ? "linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(236, 72, 153, 0.2) 100%)"
+              : d.isToday
+                ? "rgba(59, 130, 246, 0.12)"
+                : "rgba(255, 255, 255, 0.03)";
+            const activeBorder = d.hasActivity
+              ? "1px solid rgba(245, 158, 11, 0.5)"
+              : d.isToday
+                ? "1px solid var(--accent, #3b82f6)"
+                : "1px solid rgba(255, 255, 255, 0.06)";
+
+            return (
+              <div
+                key={idx}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "8px 4px",
+                  borderRadius: "14px",
+                  background: activeBg,
+                  border: activeBorder,
+                  transition: "all 0.15s ease",
+                  minWidth: 0,
+                  boxSizing: "border-box",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    color: d.isToday ? "var(--accent)" : "var(--text-muted)",
+                    marginBottom: "2px",
+                  }}
+                >
+                  {d.dayName}
+                </span>
+
+                <div
+                  style={{
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "12px",
+                    fontWeight: 800,
+                    color: d.hasActivity
+                      ? "#f59e0b"
+                      : d.isToday
+                        ? "#ffffff"
+                        : "var(--text-secondary)",
+                    backgroundColor: d.hasActivity
+                      ? "rgba(245, 158, 11, 0.15)"
+                      : "transparent",
+                  }}
+                >
+                  {d.hasActivity ? "🔥" : d.dayNum}
+                </div>
+
+                <span
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    color: d.hasActivity ? "#34d399" : "transparent",
+                    marginTop: "2px",
+                    lineHeight: 1,
+                  }}
+                >
+                  {d.hasActivity ? `+${d.count}` : "•"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* ── ИНТЕРАКТИВНЫЙ БЛОК УПРАВЛЕНИЯ ЦЕЛЯМИ (STEPPER ДЛЯ ТЕЛЕФОНОВ) ── */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          gap: "14px",
+          width: "100%",
+          boxSizing: "border-box",
+        }}
+      >
+        {/* Карточка цели: Слова языка */}
+        <Card
+          style={{
+            padding: "16px 18px",
+            background: "var(--surface, #121214)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "18px" }}>{studyPalette.flag}</span>
+              <div>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
+                  {studyText.trackerGoalLabel}
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                  Недельная цель изучения
+                </div>
+              </div>
+            </div>
+
+            {/* Интерактивный регулятор цели прямо в карточке */}
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                padding: "3px 6px",
+                borderRadius: "10px",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+              }}
+            >
+              <button
+                onClick={() => updateGoalCards(-10)}
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "6px",
+                  border: "none",
+                  backgroundColor: "rgba(255, 255, 255, 0.08)",
+                  color: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+                title="Уменьшить цель"
+              >
+                <Minus size={12} />
+              </button>
+              <span style={{ fontSize: "12px", fontWeight: 800, padding: "0 6px", minWidth: "30px", textAlign: "center" }}>
+                {goalCards}
+              </span>
+              <button
+                onClick={() => updateGoalCards(10)}
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "6px",
+                  border: "none",
+                  backgroundColor: "rgba(255, 255, 255, 0.08)",
+                  color: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+                title="Увеличить цель"
+              >
+                <Plus size={12} />
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "12px",
+                marginBottom: "6px",
+                color: "var(--text-secondary)",
+              }}
+            >
+              <span>Прогресс недели</span>
+              <span style={{ fontWeight: 700, color: studyPalette.accentHex }}>
+                {weeklyStats.cards} / {goalCards} слов ({Math.min(100, Math.round((weeklyStats.cards / goalCards) * 100))}%)
+              </span>
+            </div>
+            <div
+              style={{
+                height: "8px",
+                borderRadius: "999px",
+                backgroundColor: "rgba(255, 255, 255, 0.07)",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  width: `${Math.min(100, Math.round((weeklyStats.cards / goalCards) * 100))}%`,
+                  background: `linear-gradient(90deg, ${studyPalette.accentHex} 0%, #a855f7 100%)`,
+                  borderRadius: "999px",
+                  transition: "width 0.4s ease",
+                }}
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Карточка цели: Dev статьи (если включено) ИЛИ Прогресс повторений */}
+        {showProgramming ? (
+          <Card
+            style={{
+              padding: "16px 18px",
+              background: "var(--surface, #121214)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "18px" }}>💻</span>
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
+                    {t.track.artGoals}
+                  </div>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                    Материалы разработки
+                  </div>
+                </div>
+              </div>
+
+              {/* Интерактивный регулятор цели */}
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  backgroundColor: "rgba(255, 255, 255, 0.05)",
+                  padding: "3px 6px",
+                  borderRadius: "10px",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                }}
+              >
+                <button
+                  onClick={() => updateGoalResources(-1)}
+                  style={{
+                    width: "24px",
+                    height: "24px",
+                    borderRadius: "6px",
+                    border: "none",
+                    backgroundColor: "rgba(255, 255, 255, 0.08)",
+                    color: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                  title="Уменьшить цель"
+                >
+                  <Minus size={12} />
+                </button>
+                <span style={{ fontSize: "12px", fontWeight: 800, padding: "0 6px", minWidth: "24px", textAlign: "center" }}>
+                  {goalResources}
+                </span>
+                <button
+                  onClick={() => updateGoalResources(1)}
+                  style={{
+                    width: "24px",
+                    height: "24px",
+                    borderRadius: "6px",
+                    border: "none",
+                    backgroundColor: "rgba(255, 255, 255, 0.08)",
+                    color: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                  title="Увеличить цель"
+                >
+                  <Plus size={12} />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "12px",
+                  marginBottom: "6px",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                <span>Изучено статей</span>
+                <span style={{ fontWeight: 700, color: "#10b981" }}>
+                  {weeklyStats.resources} / {goalResources} ({Math.min(100, Math.round((weeklyStats.resources / goalResources) * 100))}%)
+                </span>
+              </div>
+              <div
+                style={{
+                  height: "8px",
+                  borderRadius: "999px",
+                  backgroundColor: "rgba(255, 255, 255, 0.07)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${Math.min(100, Math.round((weeklyStats.resources / goalResources) * 100))}%`,
+                    background: "linear-gradient(90deg, #10b981 0%, #06b6d4 100%)",
+                    borderRadius: "999px",
+                    transition: "width 0.4s ease",
+                  }}
+                />
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <Card
+            style={{
+              padding: "16px 18px",
+              background: "var(--surface, #121214)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "18px" }}>🧠</span>
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
+                    Интервальная память
+                  </div>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                    Карточки SRS
+                  </div>
+                </div>
+              </div>
+              <Link
+                to="/review"
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: "var(--accent, #3b82f6)",
+                  textDecoration: "none",
+                }}
+              >
+                Начать сессию →
+              </Link>
+            </div>
+
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "12px",
+                  marginBottom: "6px",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                <span>Всего слов в словаре</span>
+                <span style={{ fontWeight: 700, color: "#a855f7" }}>
+                  {cards.length} карточек
+                </span>
+              </div>
+              <div
+                style={{
+                  height: "8px",
+                  borderRadius: "999px",
+                  backgroundColor: "rgba(255, 255, 255, 0.07)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${Math.min(100, Math.round((cards.length / 100) * 100))}%`,
+                    background: "linear-gradient(90deg, #a855f7 0%, #ec4899 100%)",
+                    borderRadius: "999px",
+                    transition: "width 0.4s ease",
+                  }}
+                />
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      {/* ── ХИТМАП АКТИВНОСТИ (С ИНТЕРАКТИВНЫМ ПЕРЕКЛЮЧАТЕЛЕМ) ── */}
+      <Card
+        style={{
+          padding: "18px 20px",
+          background: "var(--surface, #121214)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+          position: "relative",
+          overflow: "hidden",
+          boxSizing: "border-box",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             flexWrap: "wrap",
-            gap: "var(--space-3)",
+            gap: "10px",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>
+            <TrendingUp size={16} color={studyPalette.accentHex} />
+            <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
               {t.track.heatmap}
             </h3>
-            <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
               ({totalContributions} {t.track.allTimeSuffix})
             </span>
           </div>
 
-          {/* Переключатель диапазона: 3 мес, 6 мес, год */}
-          <div style={{ display: "flex", gap: "4px" }}>
+          {/* Диапазон 3м / 6м / 1г */}
+          <div
+            style={{
+              display: "inline-flex",
+              backgroundColor: "rgba(255, 255, 255, 0.04)",
+              padding: "3px",
+              borderRadius: "10px",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+            }}
+          >
             {[
               { id: "3m", label: t.track.range3m },
               { id: "6m", label: t.track.range6m },
@@ -474,13 +1129,14 @@ export function LearningTracker() {
                 onClick={() => setTimeRange(r.id as TimeRange)}
                 style={{
                   padding: "4px 10px",
-                  fontSize: "12px",
-                  borderRadius: "var(--radius-md)",
-                  border: timeRange === r.id ? "1px solid var(--accent)" : "1px solid var(--border)",
-                  backgroundColor: timeRange === r.id ? "var(--surface-raised)" : "transparent",
-                  color: timeRange === r.id ? "var(--accent)" : "var(--text-muted)",
+                  fontSize: "11px",
+                  borderRadius: "7px",
+                  border: "none",
+                  backgroundColor:
+                    timeRange === r.id ? "var(--accent, #3b82f6)" : "transparent",
+                  color: timeRange === r.id ? "#ffffff" : "var(--text-muted)",
                   cursor: "pointer",
-                  fontWeight: timeRange === r.id ? 600 : 400,
+                  fontWeight: timeRange === r.id ? 700 : 500,
                   transition: "all 0.15s ease",
                 }}
               >
@@ -490,22 +1146,24 @@ export function LearningTracker() {
           </div>
         </div>
 
-        {/* Область сетки хитмапа */}
+        {/* Область скролла хитмапа */}
         <div
           ref={scrollRef}
           style={{
             overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
             paddingBottom: "8px",
+            maxWidth: "100%",
           }}
         >
-          <div style={{ minWidth: `${weeksCount * 16 + 32}px`, display: "flex", gap: "8px" }}>
-            {/* Подписи дней недели слева (Пн, Ср, Пт) */}
+          <div style={{ minWidth: `${weeksCount * 16 + 28}px`, display: "flex", gap: "8px" }}>
+            {/* Подписи дней недели */}
             <div
               style={{
                 display: "grid",
                 gridTemplateRows: "repeat(7, 13px)",
                 rowGap: "4px",
-                marginTop: "20px",
+                marginTop: "18px",
                 fontSize: "10px",
                 color: "var(--text-muted)",
                 width: "20px",
@@ -529,7 +1187,7 @@ export function LearningTracker() {
                   columnGap: "4px",
                   height: "16px",
                   marginBottom: "4px",
-                  fontSize: "11px",
+                  fontSize: "10px",
                   color: "var(--text-muted)",
                 }}
               >
@@ -540,7 +1198,7 @@ export function LearningTracker() {
                 ))}
               </div>
 
-              {/* Ячейки: 7 строк на кол-во недель */}
+              {/* Ячейки хитмапа */}
               <div
                 style={{
                   display: "grid",
@@ -553,6 +1211,18 @@ export function LearningTracker() {
                 {cells.map((cell) => (
                   <div
                     key={cell.date.getTime()}
+                    onClick={() => {
+                      if (!cell.future) {
+                        setHoveredCell({
+                          date: cell.date,
+                          count: cell.count,
+                          resCount: cell.resCount,
+                          cardCount: cell.cardCount,
+                          x: window.innerWidth / 2,
+                          y: 200,
+                        });
+                      }
+                    }}
                     onMouseEnter={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect();
                       setHoveredCell({
@@ -567,19 +1237,19 @@ export function LearningTracker() {
                     onMouseLeave={() => setHoveredCell(null)}
                     style={{
                       height: "13px",
-                      borderRadius: "2px",
+                      borderRadius: "3px",
                       backgroundColor: getCellBg(cell.count),
                       visibility: cell.future ? "hidden" : "visible",
                       cursor: cell.future ? "default" : "pointer",
                       transition: "transform 0.15s ease",
                       border:
                         cell.count > 0
-                          ? "1px solid var(--border)"
+                          ? "1px solid rgba(255, 255, 255, 0.12)"
                           : "1px solid transparent",
                     }}
                     onMouseOver={(e) => {
                       if (!cell.future) {
-                        e.currentTarget.style.transform = "scale(1.25)";
+                        e.currentTarget.style.transform = "scale(1.3)";
                       }
                     }}
                     onMouseOut={(e) => {
@@ -597,11 +1267,11 @@ export function LearningTracker() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "8px",
-            fontSize: "12px",
+            gap: "6px",
+            fontSize: "11px",
             color: "var(--text-muted)",
             justifyContent: "flex-end",
-            marginTop: "16px",
+            marginTop: "6px",
           }}
         >
           <span>{t.track.less}</span>
@@ -609,18 +1279,18 @@ export function LearningTracker() {
             <div
               key={lvl}
               style={{
-                width: "12px",
-                height: "12px",
+                width: "11px",
+                height: "11px",
                 backgroundColor: getCellBg(lvl),
                 borderRadius: "2px",
-                border: "1px solid var(--border)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
               }}
             />
           ))}
           <span>{t.track.more}</span>
         </div>
 
-        {/* Плавающий тултип ячейки */}
+        {/* Тултип дня */}
         {hoveredCell && (
           <div
             style={{
@@ -628,19 +1298,19 @@ export function LearningTracker() {
               left: hoveredCell.x,
               top: hoveredCell.y - 8,
               transform: "translate(-50%, -100%)",
-              backgroundColor: "var(--tooltip-bg)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
+              backgroundColor: "rgba(18, 18, 20, 0.96)",
+              border: "1px solid rgba(255, 255, 255, 0.18)",
+              borderRadius: "12px",
               padding: "8px 12px",
-              boxShadow: "0 10px 25px rgba(0,0,0,0.35)",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
               pointerEvents: "none",
               zIndex: 1000,
               fontSize: "12px",
-              backdropFilter: "blur(6px)",
+              backdropFilter: "blur(12px)",
               whiteSpace: "nowrap",
             }}
           >
-            <div style={{ fontWeight: 600, color: "var(--text-primary)", marginBottom: "2px" }}>
+            <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: "2px" }}>
               {hoveredCell.date.toLocaleDateString(locale, {
                 weekday: "short",
                 year: "numeric",
@@ -648,7 +1318,7 @@ export function LearningTracker() {
                 day: "numeric",
               })}
             </div>
-            <div style={{ color: hoveredCell.count > 0 ? studyPalette.accentHex : "var(--text-muted)" }}>
+            <div style={{ color: hoveredCell.count > 0 ? studyPalette.accentHex : "var(--text-muted)", fontWeight: 600 }}>
               {hoveredCell.count === 0
                 ? t.track.noActivity
                 : showProgramming
@@ -659,227 +1329,139 @@ export function LearningTracker() {
         )}
       </Card>
 
-      {/* Нижний ряд: Недельные цели + Достижения (Ачивки) */}
-      <div
+      {/* ── ДОСТИЖЕНИЯ И ВЕХИ ПРОГРЕССА (GAMIFIED MILESTONES) ── */}
+      <Card
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: "var(--space-6)",
+          padding: "18px 20px",
+          background: "var(--surface, #121214)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+          boxSizing: "border-box",
         }}
       >
-        {/* Недельные цели с прогресс-барами */}
-        <Card style={{ padding: "var(--space-6)" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "var(--space-5)",
-            }}
-          >
-            <h3
-              style={{
-                margin: 0,
-                fontSize: "16px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                fontWeight: 600,
-              }}
-            >
-              <Target size={18} color={studyPalette.accentHex} /> {t.track.goals}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Trophy size={16} color="#eab308" />
+            <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
+              {t.track.milestonesTitle}
             </h3>
-            <button
-              onClick={() => navigate("/settings")}
-              style={{
-                background: "none",
-                border: "none",
-                color: studyPalette.accentHex,
-                cursor: "pointer",
-                fontSize: "12px",
-                padding: 0,
-              }}
-            >
-              {t.track.editGoals} →
-            </button>
           </div>
+          <span style={{ fontSize: "12px", fontWeight: 700, color: "#eab308" }}>
+            {milestones.filter((m) => m.unlocked).length} / {milestones.length} открыто
+          </span>
+        </div>
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-5)",
-            }}
-          >
-            {/* Статьи (только при включённом программировании) */}
-            {showProgramming && (
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "8px",
-                    fontSize: "14px",
-                  }}
-                >
-                  <span style={{ color: "var(--text-secondary)" }}>
-                    {t.track.artGoals}
-                  </span>
-                  <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-                    {weeklyStats.resources} / {goalResources}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    height: "8px",
-                    backgroundColor: "var(--surface-raised)",
-                    borderRadius: "4px",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${Math.min(
-                        (weeklyStats.resources / goalResources) * 100,
-                        100,
-                      )}%`,
-                      height: "100%",
-                      backgroundColor: "var(--accent)",
-                      borderRadius: "4px",
-                      transition: "width 0.5s ease",
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Карточки изучаемого языка */}
-            <div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: "10px",
+          }}
+        >
+          {milestones.map((item) => {
+            const Icon = item.icon;
+            return (
               <div
+                key={item.id}
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "8px",
-                  fontSize: "14px",
-                }}
-              >
-                <span style={{ color: "var(--text-secondary)" }}>
-                  {studyPalette.flag} {studyText.trackerGoalLabel}
-                </span>
-                <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-                  {weeklyStats.cards} / {goalCards}
-                </span>
-              </div>
-              <div
-                style={{
-                  height: "8px",
-                  backgroundColor: "var(--surface-raised)",
-                  borderRadius: "4px",
-                  overflow: "hidden",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "12px 14px",
+                  backgroundColor: item.unlocked
+                    ? "rgba(16, 185, 129, 0.08)"
+                    : "rgba(255, 255, 255, 0.03)",
+                  borderRadius: "14px",
+                  border: item.unlocked
+                    ? "1px solid rgba(16, 185, 129, 0.3)"
+                    : "1px solid rgba(255, 255, 255, 0.06)",
+                  boxSizing: "border-box",
+                  minWidth: 0,
                 }}
               >
                 <div
                   style={{
-                    width: `${Math.min(
-                      (weeklyStats.cards / goalCards) * 100,
-                      100,
-                    )}%`,
-                    height: "100%",
-                    backgroundColor: studyPalette.accentHex,
-                    borderRadius: "4px",
-                    transition: "width 0.5s ease",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Коллекция достижений (Milestones & Badges) */}
-        <Card style={{ padding: "var(--space-6)" }}>
-          <h3
-            style={{
-              margin: "0 0 var(--space-4) 0",
-              fontSize: "16px",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              fontWeight: 600,
-            }}
-          >
-            <Trophy size={18} color="var(--accent)" /> {t.track.milestonesTitle}
-          </h3>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-3)",
-            }}
-          >
-            {achievements.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={item.id}
-                  style={{
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "12px",
+                    backgroundColor: item.unlocked
+                      ? "rgba(16, 185, 129, 0.2)"
+                      : "rgba(255, 255, 255, 0.06)",
+                    color: item.unlocked ? "#10b981" : "var(--text-muted)",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 14px",
-                    backgroundColor: "var(--surface-raised)",
-                    borderRadius: "var(--radius-md)",
-                    border: item.unlocked
-                      ? "1px solid rgba(16, 185, 129, 0.3)"
-                      : "1px solid var(--border)",
-                    opacity: item.unlocked ? 1 : 0.6,
-                    transition: "all 0.2s ease",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    boxShadow: item.unlocked ? "0 0 12px rgba(16, 185, 129, 0.3)" : "none",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  {item.unlocked ? <Icon size={20} /> : <Lock size={18} />}
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: item.unlocked ? "var(--text-primary)" : "var(--text-secondary)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {item.title}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "var(--text-muted)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      marginTop: "1px",
+                    }}
+                  >
+                    {item.desc}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: "6px",
+                      height: "4px",
+                      borderRadius: "999px",
+                      backgroundColor: "rgba(255, 255, 255, 0.08)",
+                      overflow: "hidden",
+                    }}
+                  >
                     <div
                       style={{
-                        width: "36px",
-                        height: "36px",
-                        borderRadius: "50%",
-                        backgroundColor: item.unlocked
-                          ? "rgba(16, 185, 129, 0.15)"
-                          : "var(--surface)",
-                        color: item.unlocked ? "var(--success)" : "var(--text-muted)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
+                        height: "100%",
+                        width: `${item.percent}%`,
+                        backgroundColor: item.unlocked ? "#10b981" : item.color,
+                        borderRadius: "999px",
                       }}
-                    >
-                      {item.unlocked ? <Icon size={18} /> : <Lock size={16} />}
-                    </div>
-
-                    <div>
-                      <div
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: "var(--text-primary)",
-                        }}
-                      >
-                        {item.title}
-                      </div>
-                      <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                        {item.desc}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ fontSize: "12px", fontWeight: 500, color: item.unlocked ? "var(--success)" : "var(--text-muted)" }}>
-                    {item.unlocked ? t.track.unlockedBadge : item.progress}
+                    />
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </Card>
-      </div>
+
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: item.unlocked ? "#10b981" : "var(--text-muted)",
+                    }}
+                  >
+                    {item.unlocked ? "Открыто ✓" : item.progress}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
     </div>
   );
 }

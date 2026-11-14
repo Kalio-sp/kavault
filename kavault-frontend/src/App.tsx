@@ -37,15 +37,41 @@ function RouteLoadingFallback() {
       style={{
         minHeight: "60vh",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        color: "var(--text-muted)",
-        fontSize: "14px",
-        fontWeight: 600,
-        letterSpacing: "0.08em",
+        gap: "14px",
       }}
     >
-      KAVAULT...
+      <div
+        style={{
+          width: "48px",
+          height: "48px",
+          borderRadius: "14px",
+          background: "linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "24px",
+          fontWeight: 900,
+          color: "#ffffff",
+          boxShadow: "0 0 25px rgba(59, 130, 246, 0.45)",
+          animation: "kavaultScaleIn 0.3s ease-out",
+        }}
+      >
+        K
+      </div>
+      <div
+        style={{
+          fontSize: "14px",
+          fontWeight: 800,
+          letterSpacing: "0.22em",
+          color: "var(--text-secondary)",
+          textTransform: "uppercase",
+        }}
+      >
+        KAVAULT
+      </div>
     </div>
   );
 }

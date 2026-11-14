@@ -33,7 +33,6 @@ import {
   AVATAR_PRESETS,
   AVATAR_FRAMES,
   BANNER_THEMES,
-  MONOGRAM_COLORS,
   type UserProfileCustomization,
   loadProfileCustomization,
   saveProfileCustomization,
@@ -1317,7 +1316,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   1. Стиль Аватара
                 </h3>
                 <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
-                  Выберите героя, монограмму или загрузите своё фото
+                  Выберите героя из коллекции или загрузите своё фото
                 </p>
               </div>
 
@@ -1333,7 +1332,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 <button
                   onClick={() => handleSaveCosmetics({ avatarType: "preset" })}
                   style={{
-                    padding: "5px 10px",
+                    padding: "5px 12px",
                     borderRadius: "8px",
                     border: "none",
                     backgroundColor: customization.avatarType === "preset" ? "var(--accent, #3b82f6)" : "transparent",
@@ -1348,7 +1347,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 <button
                   onClick={() => avatarFileInputRef.current?.click()}
                   style={{
-                    padding: "5px 10px",
+                    padding: "5px 12px",
                     borderRadius: "8px",
                     border: "none",
                     backgroundColor: customization.avatarType === "custom" ? "var(--accent, #3b82f6)" : "transparent",
@@ -1362,22 +1361,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   }}
                 >
                   <Upload size={12} />
-                  <span>Фото</span>
-                </button>
-                <button
-                  onClick={() => handleSaveCosmetics({ avatarType: "monogram" })}
-                  style={{
-                    padding: "5px 10px",
-                    borderRadius: "8px",
-                    border: "none",
-                    backgroundColor: customization.avatarType === "monogram" ? "var(--accent, #3b82f6)" : "transparent",
-                    color: "#ffffff",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  Инициалы
+                  <span>Своё фото</span>
                 </button>
               </div>
             </div>
@@ -1440,33 +1424,6 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
               </div>
             )}
 
-            {/* Режим Монограммы */}
-            {customization.avatarType === "monogram" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "6px 0" }}>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  Выберите оттенок фона инициала ({nickname ? nickname.charAt(0).toUpperCase() : "U"}):
-                </span>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  {MONOGRAM_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => handleSaveCosmetics({ monogramColor: color })}
-                      style={{
-                        width: "34px",
-                        height: "34px",
-                        borderRadius: "50%",
-                        backgroundColor: color,
-                        border:
-                          customization.monogramColor === color
-                            ? "3px solid #ffffff"
-                            : "2px solid rgba(255,255,255,0.2)",
-                        cursor: "pointer",
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Режим своего фото */}
             {customization.avatarType === "custom" && customization.customAvatarUrl && (

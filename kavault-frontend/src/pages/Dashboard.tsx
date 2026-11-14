@@ -407,10 +407,14 @@ export function Dashboard() {
               color: "#ffffff",
               fontSize: "11px",
               fontWeight: 700,
+              maxWidth: "calc(100% - 130px)",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
             <span>{studyPalette.flag}</span>
-            <span>{studyText.vibeBadge}</span>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{studyText.vibeBadge}</span>
           </div>
 
           {/* Быстрая кнопка перехода в профиль прямо на баннере */}
@@ -576,6 +580,8 @@ export function Dashboard() {
                 alignItems: "center",
                 gap: "8px",
                 flexWrap: "wrap",
+                width: "100%",
+                maxWidth: "100%",
               }}
             >
               <div
@@ -583,15 +589,19 @@ export function Dashboard() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "5px",
-                  padding: "5px 10px",
-                  borderRadius: "10px",
+                  justifyContent: "center",
+                  gap: "6px",
+                  padding: "7px 12px",
+                  borderRadius: "12px",
                   backgroundColor: "rgba(245, 158, 11, 0.12)",
                   border: "1px solid rgba(245, 158, 11, 0.25)",
                   color: "#f59e0b",
                   fontSize: "12px",
                   fontWeight: 700,
                   cursor: "pointer",
+                  flex: "1 1 0",
+                  minWidth: "85px",
+                  boxSizing: "border-box",
                 }}
                 title="Стрик дней активности"
               >
@@ -604,15 +614,19 @@ export function Dashboard() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "5px",
-                  padding: "5px 10px",
-                  borderRadius: "10px",
+                  justifyContent: "center",
+                  gap: "6px",
+                  padding: "7px 12px",
+                  borderRadius: "12px",
                   backgroundColor: "rgba(59, 130, 246, 0.12)",
                   border: "1px solid rgba(59, 130, 246, 0.25)",
                   color: "#60a5fa",
                   fontSize: "12px",
                   fontWeight: 700,
                   cursor: "pointer",
+                  flex: "1 1 0",
+                  minWidth: "95px",
+                  boxSizing: "border-box",
                 }}
                 title="Task MMR рейтинг"
               >
@@ -625,15 +639,19 @@ export function Dashboard() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "5px",
-                  padding: "5px 10px",
-                  borderRadius: "10px",
+                  justifyContent: "center",
+                  gap: "6px",
+                  padding: "7px 12px",
+                  borderRadius: "12px",
                   backgroundColor: "rgba(234, 179, 8, 0.12)",
                   border: "1px solid rgba(234, 179, 8, 0.25)",
                   color: "#eab308",
                   fontSize: "12px",
                   fontWeight: 700,
                   cursor: "pointer",
+                  flex: "1 1 0",
+                  minWidth: "85px",
+                  boxSizing: "border-box",
                 }}
                 title="Открытые награды"
               >
