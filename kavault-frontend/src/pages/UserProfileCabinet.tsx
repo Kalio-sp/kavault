@@ -21,6 +21,11 @@ import {
   Palette,
   Camera,
   Upload,
+  Dices,
+  Film,
+  Link2,
+  Trash2,
+  Check,
 } from "lucide-react";
 import { api } from "../api/axios";
 import { useApp } from "../context/AppContext";
@@ -29,6 +34,7 @@ import { confirmModal } from "../context/DialogContext";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { UserAvatarBadge } from "../components/UserAvatarBadge";
+import { BannerRenderer } from "../components/BannerRenderer";
 import {
   AVATAR_PRESETS,
   AVATAR_FRAMES,
@@ -36,6 +42,7 @@ import {
   type UserProfileCustomization,
   loadProfileCustomization,
   saveProfileCustomization,
+  getRandomCosmetics,
 } from "../utils/profileCosmetics";
 
 interface UserProfileCabinetProps {
@@ -85,6 +92,14 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
   const [customization, setCustomization] = useState<UserProfileCustomization>(() =>
     loadProfileCustomization(),
   );
+
+  // Выбор подраздела кастомизации: Аватар | Рамка | Баннер
+  const [cosmeticsSubTab, setCosmeticsSubTab] = useState<"avatar" | "frame" | "banner">("avatar");
+  const [bannerTabMode, setBannerTabMode] = useState<"presets" | "custom">("presets");
+  const [bannerFilter, setBannerFilter] = useState<string>("all");
+  const [frameFilter, setFrameFilter] = useState<string>("all");
+  const [avatarFilter, setAvatarFilter] = useState<string>("all");
+  const [bannerUrlInput, setBannerUrlInput] = useState("");
 
   // Данные социального профиля и MMR
   const [socialData, setSocialData] = useState<SocialSummary | null>(null);
@@ -227,18 +242,21 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
     reader.readAsDataURL(file);
   };
 
-  // Загрузка кастомного баннера
+  // Загрузка кастомного баннера (поддерживает изображения, GIF, WebP и видео MP4/WebM)
   const handleBannerFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      showToast("Пожалуйста, выберите файл изображения", "error");
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+
+    if (!isImage && !isVideo) {
+      showToast("Пожалуйста, выберите изображение, GIF или видео (MP4 / WebM)", "error");
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast("Размер фона не должен превышать 5 МБ", "error");
+    if (file.size > 15 * 1024 * 1024) {
+      showToast("Размер файла не должен превышать 15 МБ", "error");
       return;
     }
 
@@ -249,12 +267,64 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
         ...customization,
         bannerThemeId: "custom",
         customBannerUrl: base64,
+        customBannerType: isVideo ? "video" : "image",
       };
       setCustomization(nextCustom);
       saveProfileCustomization(nextCustom);
-      showToast("🖼️ Фоновая обложка обновлена!");
+      showToast(isVideo ? "🎬 Живой видео-баннер загружен!" : "🖼️ Фоновый баннер (GIF/фото) обновлен!");
     };
     reader.readAsDataURL(file);
+  };
+
+  // Применение прямой ссылки на GIF / видео / картинку
+  const handleApplyBannerUrl = () => {
+    const trimmed = bannerUrlInput.trim();
+    if (!trimmed) return;
+    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+      showToast("Ссылка должна начинаться с https://", "error");
+      return;
+    }
+    const isVideo =
+      trimmed.endsWith(".mp4") ||
+      trimmed.endsWith(".webm") ||
+      trimmed.includes(".mp4?") ||
+      trimmed.includes(".webm?");
+
+    const nextCustom: UserProfileCustomization = {
+      ...customization,
+      bannerThemeId: "custom",
+      customBannerUrl: trimmed,
+      customBannerType: isVideo ? "video" : "image",
+    };
+    setCustomization(nextCustom);
+    saveProfileCustomization(nextCustom);
+    setBannerUrlInput("");
+    showToast(isVideo ? "🎬 Видео-баннер по ссылке установлен!" : "✨ Баннер по ссылке успешно установлен!");
+  };
+
+  // Сброс кастомного баннера и возврат к теме
+  const handleRemoveCustomBanner = () => {
+    const nextCustom: UserProfileCustomization = {
+      ...customization,
+      bannerThemeId: "tokyo_midnight",
+      customBannerUrl: undefined,
+      customBannerType: undefined,
+    };
+    setCustomization(nextCustom);
+    saveProfileCustomization(nextCustom);
+    showToast("Фон сброшен на базовую тему");
+  };
+
+  // Случайный стиль оформления (Shuffle / Dice)
+  const handleShuffleStyle = () => {
+    const randomized = getRandomCosmetics();
+    const nextCustom: UserProfileCustomization = {
+      ...customization,
+      ...randomized,
+    };
+    setCustomization(nextCustom);
+    saveProfileCustomization(nextCustom);
+    showToast("🎲 Примерен случайный стиль оформления!");
   };
 
   // Сохранение никнейма
@@ -334,11 +404,6 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
     window.dispatchEvent(new Event("kavault-auth-changed"));
     navigate("/login");
   };
-
-  // Активная тема баннера
-  const activeBanner =
-    BANNER_THEMES.find((b) => b.id === customization.bannerThemeId) ||
-    BANNER_THEMES[0];
 
   const currentRankTier = socialData?.rankTier || {
     key: "novice",
@@ -675,7 +740,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
         type="file"
         ref={bannerFileInputRef}
         onChange={handleBannerFileUpload}
-        accept="image/*"
+        accept="image/*,video/mp4,video/webm"
         style={{ display: "none" }}
       />
 
@@ -694,36 +759,17 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
           boxSizing: "border-box",
         }}
       >
-        {/* Баннер / Обложка профиля */}
-        <div
-          style={{
-            height: "130px",
-            width: "100%",
-            position: "relative",
-            background:
-              customization.bannerThemeId === "custom" && customization.customBannerUrl
-                ? `url(${customization.customBannerUrl}) center / cover no-repeat`
-                : activeBanner.background,
-            transition: "background 0.4s ease",
-          }}
+        {/* Баннер / Обложка профиля (поддерживает живые анимации, GIF и видео) */}
+        <BannerRenderer
+          customization={customization}
+          style={{ height: "140px" }}
         >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage:
-                "radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px)",
-              backgroundSize: "20px 20px",
-              opacity: 0.35,
-              pointerEvents: "none",
-            }}
-          />
-
           <div
             style={{
               position: "absolute",
               top: "12px",
               right: "12px",
+              zIndex: 3,
             }}
           >
             <button
@@ -734,7 +780,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 gap: "6px",
                 padding: "6px 12px",
                 borderRadius: "10px",
-                backgroundColor: "rgba(0, 0, 0, 0.6)",
+                backgroundColor: "rgba(0, 0, 0, 0.65)",
                 backdropFilter: "blur(8px)",
                 color: "#ffffff",
                 border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -748,7 +794,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
               <span className="kv-tab-label-short">Стиль</span>
             </button>
           </div>
-        </div>
+        </BannerRenderer>
 
         {/* Тело карточки: Аватарка + Никнейм + Статус */}
         <div className="kv-hero-body">
@@ -1255,14 +1301,14 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
       )}
 
       {/* ══════════════════════════════════════════════════════════════════
-          СЕКЦИЯ 2: КАСТОМИЗАЦИЯ И СТИЛЬ (1. Аватар, 2. Рамка, 3. Обложка)
+          СЕКЦИЯ 2: КАСТОМИЗАЦИЯ И СТИЛЬ (КНОПКИ: АВАТАР, РАМКА, БАННЕР)
       ══════════════════════════════════════════════════════════════════ */}
       {cabinetTab === "cosmetics" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
-          {/* Интерактивный предпросмотр */}
+          {/* Интерактивная плашка статуса стиля и быстрых действий */}
           <div
             style={{
-              padding: "16px 18px",
+              padding: "14px 16px",
               borderRadius: "14px",
               backgroundColor: "var(--surface, #121214)",
               border: "1px solid var(--border, rgba(255,255,255,0.08))",
@@ -1276,341 +1322,801 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
             <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
               <UserAvatarBadge
                 customization={customization}
-                size={68}
+                size={56}
                 username={nickname || "User"}
                 showOnlineDot
               />
               <div>
                 <div style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: 700 }}>
-                  Предпросмотр стиля
+                  Предпросмотр профиля
                 </div>
                 <div style={{ fontSize: "15px", fontWeight: 800, color: "var(--text-primary)" }}>
                   {nickname || "Аноним"}
                 </div>
-                <div style={{ fontSize: "11px", color: "var(--accent, #3b82f6)", marginTop: "2px" }}>
-                  Активный стиль оформления
+                <div style={{ fontSize: "11px", color: "var(--accent, #3b82f6)", marginTop: "1px" }}>
+                  {customization.avatarType === "custom" ? "Своё фото" : "Герой"} •{" "}
+                  {AVATAR_FRAMES.find((f) => f.id === customization.avatarFrameId)?.name || "Рамка"} •{" "}
+                  {customization.bannerThemeId === "custom"
+                    ? "Свой баннер"
+                    : BANNER_THEMES.find((b) => b.id === customization.bannerThemeId)?.name || "Баннер"}
                 </div>
               </div>
             </div>
 
-            <Button onClick={() => handleSaveCosmetics()} className="kv-action-btn">
-              <Save size={15} /> Сохранить стиль
-            </Button>
-          </div>
-
-          {/* 1. ВЫБОР АВАТАРА */}
-          <div
-            style={{
-              padding: "16px 18px",
-              borderRadius: "14px",
-              backgroundColor: "var(--surface, #121214)",
-              border: "1px solid var(--border, rgba(255,255,255,0.08))",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
-              <div>
-                <h3 style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
-                  1. Стиль Аватара
-                </h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
-                  Выберите героя из коллекции или загрузите своё фото
-                </p>
-              </div>
-
-              {/* Переключатель режима аватара */}
-              <div
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <button
+                type="button"
+                onClick={handleShuffleStyle}
                 style={{
                   display: "inline-flex",
-                  padding: "3px",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "8px 14px",
                   borderRadius: "10px",
-                  backgroundColor: "var(--surface-raised, rgba(255,255,255,0.05))",
+                  backgroundColor: "rgba(168, 85, 247, 0.15)",
+                  border: "1px solid rgba(168, 85, 247, 0.35)",
+                  color: "#c084fc",
+                  fontSize: "12.5px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
                 }}
+                title="Сгенерировать случайное сочетание героя, рамки и баннера"
               >
-                <button
-                  onClick={() => handleSaveCosmetics({ avatarType: "preset" })}
+                <Dices size={15} />
+                <span>Случайный образ</span>
+              </button>
+
+              <Button onClick={() => handleSaveCosmetics()} className="kv-action-btn">
+                <Save size={15} /> Сохранить стиль
+              </Button>
+            </div>
+          </div>
+
+          {/* НАВИГАЦИОННЫЕ КНОПКИ ВЫБОРА: АВАТАР / РАМКА / БАННЕР */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px",
+              borderRadius: "12px",
+              backgroundColor: "var(--surface, #121214)",
+              border: "1px solid var(--border, rgba(255,255,255,0.08))",
+              overflowX: "auto",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setCosmeticsSubTab("avatar")}
+              style={{
+                flex: "1 1 0",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                padding: "10px 14px",
+                borderRadius: "10px",
+                border: "none",
+                backgroundColor:
+                  cosmeticsSubTab === "avatar"
+                    ? "var(--accent, #3b82f6)"
+                    : "transparent",
+                color: cosmeticsSubTab === "avatar" ? "#ffffff" : "var(--text-secondary)",
+                fontSize: "13px",
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <User size={16} />
+              <span>1. Аватар ({AVATAR_PRESETS.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCosmeticsSubTab("frame")}
+              style={{
+                flex: "1 1 0",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                padding: "10px 14px",
+                borderRadius: "10px",
+                border: "none",
+                backgroundColor:
+                  cosmeticsSubTab === "frame"
+                    ? "var(--accent, #3b82f6)"
+                    : "transparent",
+                color: cosmeticsSubTab === "frame" ? "#ffffff" : "var(--text-secondary)",
+                fontSize: "13px",
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <Sparkles size={16} />
+              <span>2. Рамка ({AVATAR_FRAMES.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCosmeticsSubTab("banner")}
+              style={{
+                flex: "1 1 0",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                padding: "10px 14px",
+                borderRadius: "10px",
+                border: "none",
+                backgroundColor:
+                  cosmeticsSubTab === "banner"
+                    ? "var(--accent, #3b82f6)"
+                    : "transparent",
+                color: cosmeticsSubTab === "banner" ? "#ffffff" : "var(--text-secondary)",
+                fontSize: "13px",
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <ImageIcon size={16} />
+              <span>3. Баннер ({BANNER_THEMES.length})</span>
+            </button>
+          </div>
+
+          {/* ══════════════════════════════════════════════════════════════════
+              ПОДРАЗДЕЛ 1: АВАТАР
+          ══════════════════════════════════════════════════════════════════ */}
+          {cosmeticsSubTab === "avatar" && (
+            <div
+              style={{
+                padding: "18px 20px",
+                borderRadius: "14px",
+                backgroundColor: "var(--surface, #121214)",
+                border: "1px solid var(--border, rgba(255,255,255,0.08))",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                <div>
+                  <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
+                    Выбор Аватара
+                  </h3>
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "3px 0 0 0" }}>
+                    Выберите персонажа из коллекции или загрузите собственное фото / GIF
+                  </p>
+                </div>
+
+                {/* Переключатель режима аватара */}
+                <div
                   style={{
-                    padding: "5px 12px",
-                    borderRadius: "8px",
-                    border: "none",
-                    backgroundColor: customization.avatarType === "preset" ? "var(--accent, #3b82f6)" : "transparent",
-                    color: "#ffffff",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    cursor: "pointer",
+                    display: "inline-flex",
+                    padding: "3px",
+                    borderRadius: "10px",
+                    backgroundColor: "var(--surface-raised, rgba(255,255,255,0.05))",
                   }}
                 >
-                  Герои
-                </button>
-                <button
-                  onClick={() => avatarFileInputRef.current?.click()}
+                  <button
+                    onClick={() => handleSaveCosmetics({ avatarType: "preset" })}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "8px",
+                      border: "none",
+                      backgroundColor: customization.avatarType === "preset" ? "var(--accent, #3b82f6)" : "transparent",
+                      color: "#ffffff",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Герои ({AVATAR_PRESETS.length})
+                  </button>
+                  <button
+                    onClick={() => avatarFileInputRef.current?.click()}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "8px",
+                      border: "none",
+                      backgroundColor: customization.avatarType === "custom" ? "var(--accent, #3b82f6)" : "transparent",
+                      color: "#ffffff",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
+                    }}
+                  >
+                    <Upload size={13} />
+                    <span>Своё фото / GIF</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Фильтры категорий героев */}
+              {customization.avatarType === "preset" && (
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                  {["all", "Cyberpunk", "Japanese", "Anime", "VIP", "Chill", "Dev"].map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => setAvatarFilter(tag)}
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: "8px",
+                        border: "1px solid",
+                        borderColor: avatarFilter === tag ? "var(--accent, #3b82f6)" : "rgba(255,255,255,0.08)",
+                        backgroundColor: avatarFilter === tag ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                        color: avatarFilter === tag ? "#60a5fa" : "var(--text-muted)",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {tag === "all" ? "Все герои" : tag}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Сетка пресетов аватарок (16 персонажей) */}
+              {customization.avatarType === "preset" && (
+                <div className="kv-presets-grid">
+                  {AVATAR_PRESETS.filter((p) => avatarFilter === "all" || p.tag.toLowerCase() === avatarFilter.toLowerCase()).map((preset) => {
+                    const isSelected =
+                      customization.avatarType === "preset" &&
+                      customization.avatarPresetId === preset.id;
+                    return (
+                      <div
+                        key={preset.id}
+                        onClick={() =>
+                          handleSaveCosmetics({
+                            avatarType: "preset",
+                            avatarPresetId: preset.id,
+                          })
+                        }
+                        style={{
+                          padding: "10px 8px",
+                          borderRadius: "12px",
+                          backgroundColor: isSelected
+                            ? "rgba(59, 130, 246, 0.15)"
+                            : "var(--surface-raised, rgba(255,255,255,0.04))",
+                          border: isSelected
+                            ? "2px solid var(--accent, #3b82f6)"
+                            : "1px solid var(--border, rgba(255,255,255,0.06))",
+                          cursor: "pointer",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "6px",
+                          transition: "all 0.15s ease",
+                          textAlign: "center",
+                          boxShadow: isSelected ? "0 0 16px rgba(59, 130, 246, 0.4)" : "none",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "46px",
+                            height: "46px",
+                            borderRadius: "50%",
+                            background: preset.gradient,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "23px",
+                            boxShadow: isSelected ? "0 0 12px rgba(59, 130, 246, 0.6)" : "none",
+                          }}
+                        >
+                          {preset.emoji}
+                        </div>
+                        <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-primary)" }}>
+                          {preset.name}
+                        </div>
+                        <div style={{ fontSize: "9.5px", color: "var(--text-muted)" }}>
+                          {preset.tag}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Режим своего фото */}
+              {customization.avatarType === "custom" && customization.customAvatarUrl && (
+                <div
                   style={{
-                    padding: "5px 12px",
-                    borderRadius: "8px",
-                    border: "none",
-                    backgroundColor: customization.avatarType === "custom" ? "var(--accent, #3b82f6)" : "transparent",
-                    color: "#ffffff",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
-                    gap: "4px",
+                    justifyContent: "space-between",
+                    padding: "12px 14px",
+                    borderRadius: "12px",
+                    backgroundColor: "rgba(59, 130, 246, 0.1)",
+                    border: "1px solid rgba(59, 130, 246, 0.25)",
                   }}
                 >
-                  <Upload size={12} />
-                  <span>Своё фото</span>
-                </button>
-              </div>
-            </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <img
+                      src={customization.customAvatarUrl}
+                      alt="Custom"
+                      style={{ width: "52px", height: "52px", borderRadius: "50%", objectFit: "cover" }}
+                    />
+                    <div>
+                      <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
+                        Кастомный аватар активен
+                      </div>
+                      <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                        Поддерживаются фото и анимированные GIF
+                      </div>
+                    </div>
+                  </div>
 
-            {/* Сетка пресетов аватарок (16 персонажей) */}
-            {customization.avatarType === "preset" && (
-              <div className="kv-presets-grid">
-                {AVATAR_PRESETS.map((preset) => {
-                  const isSelected =
-                    customization.avatarType === "preset" &&
-                    customization.avatarPresetId === preset.id;
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={() => avatarFileInputRef.current?.click()}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "8px",
+                        backgroundColor: "var(--accent, #3b82f6)",
+                        color: "#fff",
+                        border: "none",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Заменить
+                    </button>
+                    <button
+                      onClick={() => handleSaveCosmetics({ avatarType: "preset", customAvatarUrl: undefined })}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "8px",
+                        backgroundColor: "rgba(255, 255, 255, 0.08)",
+                        color: "var(--text-secondary)",
+                        border: "none",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Сбросить
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              ПОДРАЗДЕЛ 2: РАМКА АВАТАРА (18 РАМОК С ЖИВЫМ СВЕЧЕНИЕМ)
+          ══════════════════════════════════════════════════════════════════ */}
+          {cosmeticsSubTab === "frame" && (
+            <div
+              style={{
+                padding: "18px 20px",
+                borderRadius: "14px",
+                backgroundColor: "var(--surface, #121214)",
+                border: "1px solid var(--border, rgba(255,255,255,0.08))",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                <div>
+                  <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
+                    Рамка и Неоновое Свечение (Avatar Frame)
+                  </h3>
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "3px 0 0 0" }}>
+                    Световые контуры, анимированные нимбы и огненные кольца вокруг вашего аватара
+                  </p>
+                </div>
+
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                  {["all", "Animated", "Popular", "Hot", "VIP", "Mythic", "Rare", "Classic"].map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => setFrameFilter(tag)}
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: "8px",
+                        border: "1px solid",
+                        borderColor: frameFilter === tag ? "var(--accent, #3b82f6)" : "rgba(255,255,255,0.08)",
+                        backgroundColor: frameFilter === tag ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                        color: frameFilter === tag ? "#60a5fa" : "var(--text-muted)",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {tag === "all" ? "Все рамки (18)" : tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Сетка рамок */}
+              <div className="kv-frames-grid">
+                {AVATAR_FRAMES.filter((f) => frameFilter === "all" || f.tag.toLowerCase() === frameFilter.toLowerCase()).map((frame) => {
+                  const isSelected = customization.avatarFrameId === frame.id;
                   return (
                     <div
-                      key={preset.id}
-                      onClick={() =>
-                        handleSaveCosmetics({
-                          avatarType: "preset",
-                          avatarPresetId: preset.id,
-                        })
-                      }
+                      key={frame.id}
+                      onClick={() => handleSaveCosmetics({ avatarFrameId: frame.id })}
                       style={{
-                        padding: "10px 8px",
-                        borderRadius: "10px",
+                        padding: "12px 8px",
+                        borderRadius: "12px",
                         backgroundColor: isSelected
                           ? "rgba(59, 130, 246, 0.15)"
                           : "var(--surface-raised, rgba(255,255,255,0.04))",
                         border: isSelected
-                          ? "2px solid var(--accent, #3b82f6)"
+                          ? `2px solid ${frame.accentColor}`
                           : "1px solid var(--border, rgba(255,255,255,0.06))",
                         cursor: "pointer",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        gap: "6px",
-                        transition: "all 0.15s ease",
+                        gap: "8px",
                         textAlign: "center",
+                        transition: "all 0.15s ease",
+                        boxShadow: isSelected ? `0 0 16px ${frame.accentColor}66` : "none",
                       }}
                     >
+                      {/* Живой круг с примененной рамкой и анимацией */}
                       <div
+                        className={`kv-avatar-frame ${frame.animationClass || ""}`}
                         style={{
-                          width: "44px",
-                          height: "44px",
+                          width: "48px",
+                          height: "48px",
                           borderRadius: "50%",
-                          background: preset.gradient,
+                          backgroundColor: "#18181b",
+                          border: frame.border,
+                          boxShadow: frame.boxShadow,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontSize: "22px",
-                          boxShadow: isSelected ? "0 0 10px rgba(59, 130, 246, 0.5)" : "none",
+                          fontSize: "18px",
                         }}
                       >
-                        {preset.emoji}
+                        {frame.tag === "Animated" ? "🔥" : frame.tag === "VIP" ? "👑" : "✨"}
                       </div>
-                      <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-primary)" }}>
-                        {preset.name}
+                      <div>
+                        <div style={{ fontSize: "11.5px", fontWeight: 700, color: "var(--text-primary)" }}>
+                          {frame.name}
+                        </div>
+                        <div style={{ fontSize: "10px", color: frame.accentColor, fontWeight: 600, marginTop: "2px" }}>
+                          {frame.tag}
+                        </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
+            </div>
+          )}
 
-
-            {/* Режим своего фото */}
-            {customization.avatarType === "custom" && customization.customAvatarUrl && (
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px 0" }}>
-                <img
-                  src={customization.customAvatarUrl}
-                  alt="Custom"
-                  style={{ width: "52px", height: "52px", borderRadius: "50%", objectFit: "cover" }}
-                />
+          {/* ══════════════════════════════════════════════════════════════════
+              ПОДРАЗДЕЛ 3: БАННЕР ПРОФИЛЯ (18 ДЕФОЛТНЫХ/АНИМИРОВАННЫХ + ЗАГРУЗКА GIF/ВИДЕО + URL)
+          ══════════════════════════════════════════════════════════════════ */}
+          {cosmeticsSubTab === "banner" && (
+            <div
+              style={{
+                padding: "18px 20px",
+                borderRadius: "14px",
+                backgroundColor: "var(--surface, #121214)",
+                border: "1px solid var(--border, rgba(255,255,255,0.08))",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
                 <div>
-                  <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
-                    Фотография загружена
-                  </div>
+                  <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
+                    Баннер профиля (Обложка)
+                  </h3>
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "3px 0 0 0" }}>
+                    Живые анимированные темы, загрузка своих фонов, анимированных GIF и видеороликов
+                  </p>
+                </div>
+
+                {/* Переключатель: Коллекция | Свой баннер */}
+                <div
+                  style={{
+                    display: "inline-flex",
+                    padding: "3px",
+                    borderRadius: "10px",
+                    backgroundColor: "var(--surface-raised, rgba(255,255,255,0.05))",
+                  }}
+                >
                   <button
-                    onClick={() => avatarFileInputRef.current?.click()}
+                    onClick={() => setBannerTabMode("presets")}
                     style={{
-                      background: "none",
+                      padding: "6px 14px",
+                      borderRadius: "8px",
                       border: "none",
-                      color: "var(--accent, #3b82f6)",
+                      backgroundColor: bannerTabMode === "presets" ? "var(--accent, #3b82f6)" : "transparent",
+                      color: "#ffffff",
                       fontSize: "12px",
+                      fontWeight: 700,
                       cursor: "pointer",
-                      padding: 0,
-                      marginTop: "3px",
                     }}
                   >
-                    Загрузить другое фото →
+                    Коллекция ({BANNER_THEMES.length})
+                  </button>
+                  <button
+                    onClick={() => setBannerTabMode("custom")}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "8px",
+                      border: "none",
+                      backgroundColor: bannerTabMode === "custom" ? "var(--accent, #3b82f6)" : "transparent",
+                      color: "#ffffff",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
+                    }}
+                  >
+                    <Upload size={13} />
+                    <span>Загрузить баннер / GIF / Видео</span>
                   </button>
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* 2. РАМКИ И СВЕЧЕНИЕ АВАТАРА */}
-          <div
-            style={{
-              padding: "16px 18px",
-              borderRadius: "14px",
-              backgroundColor: "var(--surface, #121214)",
-              border: "1px solid var(--border, rgba(255,255,255,0.08))",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-            }}
-          >
-            <div>
-              <h3 style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
-                2. Рамка и Неоновое Свечение (Avatar Frame)
-              </h3>
-              <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
-                Световые контуры для выделения вашего аватара
-              </p>
-            </div>
+              {/* РЕЖИМ 1: КОЛЛЕКЦИЯ БАННЕРОВ */}
+              {bannerTabMode === "presets" && (
+                <>
+                  {/* Фильтры коллекции баннеров */}
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                    {["all", "Animated", "Cyberpunk", "Japanese", "Space", "Dark", "Gold"].map((tag) => (
+                      <button
+                        key={tag}
+                        onClick={() => setBannerFilter(tag)}
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: "8px",
+                          border: "1px solid",
+                          borderColor: bannerFilter === tag ? "var(--accent, #3b82f6)" : "rgba(255,255,255,0.08)",
+                          backgroundColor: bannerFilter === tag ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                          color: bannerFilter === tag ? "#60a5fa" : "var(--text-muted)",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {tag === "all" ? "Все темы (18)" : tag === "Animated" ? "✨ Живые анимированные" : tag}
+                      </button>
+                    ))}
+                  </div>
 
-            <div className="kv-frames-grid">
-              {AVATAR_FRAMES.map((frame) => {
-                const isSelected = customization.avatarFrameId === frame.id;
-                return (
+                  <div className="kv-banners-grid">
+                    {BANNER_THEMES.filter((t) => bannerFilter === "all" || t.tag.toLowerCase() === bannerFilter.toLowerCase()).map((theme) => {
+                      const isSelected = customization.bannerThemeId === theme.id;
+                      return (
+                        <div
+                          key={theme.id}
+                          onClick={() => handleSaveCosmetics({ bannerThemeId: theme.id })}
+                          style={{
+                            borderRadius: "12px",
+                            overflow: "hidden",
+                            border: isSelected
+                              ? `2px solid ${theme.accentColor}`
+                              : "1px solid var(--border, rgba(255,255,255,0.08))",
+                            cursor: "pointer",
+                            boxShadow: isSelected ? `0 0 16px ${theme.accentColor}66` : "none",
+                            transition: "all 0.15s ease",
+                          }}
+                        >
+                          <div
+                            className={theme.isAnimated ? theme.animationClass : ""}
+                            style={{
+                              height: "48px",
+                              background: theme.background,
+                              backgroundSize: theme.isAnimated ? "300% 300%" : "cover",
+                              position: "relative",
+                            }}
+                          >
+                            {theme.isAnimated && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: "4px",
+                                  right: "6px",
+                                  backgroundColor: "rgba(0,0,0,0.6)",
+                                  borderRadius: "999px",
+                                  padding: "2px 6px",
+                                  fontSize: "9px",
+                                  fontWeight: 700,
+                                  color: "#ffffff",
+                                }}
+                              >
+                                Live ✨
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ padding: "8px 10px", backgroundColor: "var(--surface-raised, #18181b)" }}>
+                            <div style={{ fontSize: "11.5px", fontWeight: 700, color: "var(--text-primary)" }}>
+                              {theme.name}
+                            </div>
+                            <div style={{ fontSize: "10px", color: theme.accentColor, marginTop: "2px" }}>
+                              {theme.tag}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* РЕЖИМ 2: ЗАГРУЗКА СВОЕГО БАННЕРА (GIF, ВИДЕО, КАРТИНКА, URL) */}
+              {bannerTabMode === "custom" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                   <div
-                    key={frame.id}
-                    onClick={() => handleSaveCosmetics({ avatarFrameId: frame.id })}
                     style={{
-                      padding: "10px 8px",
-                      borderRadius: "10px",
-                      backgroundColor: isSelected
-                        ? "rgba(59, 130, 246, 0.15)"
-                        : "var(--surface-raised, rgba(255,255,255,0.04))",
-                      border: isSelected
-                        ? `2px solid ${frame.accentColor}`
-                        : "1px solid var(--border, rgba(255,255,255,0.06))",
-                      cursor: "pointer",
+                      padding: "16px",
+                      borderRadius: "12px",
+                      backgroundColor: "rgba(255, 255, 255, 0.03)",
+                      border: "1px dashed rgba(255, 255, 255, 0.2)",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
-                      gap: "6px",
+                      justifyContent: "center",
+                      gap: "10px",
                       textAlign: "center",
-                      transition: "all 0.15s ease",
                     }}
                   >
                     <div
                       style={{
-                        width: "40px",
-                        height: "40px",
-                        borderRadius: "50%",
-                        backgroundColor: "#18181b",
-                        border: frame.border,
-                        boxShadow: frame.boxShadow,
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "12px",
+                        backgroundColor: "rgba(59, 130, 246, 0.15)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: "16px",
+                        color: "var(--accent, #3b82f6)",
                       }}
                     >
-                      ✨
+                      <Film size={24} />
                     </div>
                     <div>
-                      <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-primary)" }}>
-                        {frame.name}
+                      <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
+                        Загрузите баннер любого формата
                       </div>
-                      <div style={{ fontSize: "10px", color: frame.accentColor, fontWeight: 600 }}>
-                        {frame.tag}
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "3px" }}>
+                        Поддерживаются статические картинки (PNG, JPG, WebP), <strong>анимированные GIF</strong> и <strong>видеоролики (MP4, WebM)</strong> до 15 МБ
                       </div>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => bannerFileInputRef.current?.click()}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "9px 18px",
+                        borderRadius: "10px",
+                        backgroundColor: "var(--accent, #3b82f6)",
+                        color: "#ffffff",
+                        border: "none",
+                        fontSize: "13px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        boxShadow: "0 4px 14px rgba(59, 130, 246, 0.4)",
+                      }}
+                    >
+                      <Upload size={16} />
+                      <span>Выбрать файл с устройства</span>
+                    </button>
                   </div>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* 3. ОБЛОЖКА ПРОФИЛЯ (БАННЕР) */}
-          <div
-            style={{
-              padding: "16px 18px",
-              borderRadius: "14px",
-              backgroundColor: "var(--surface, #121214)",
-              border: "1px solid var(--border, rgba(255,255,255,0.08))",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
-              <div>
-                <h3 style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
-                  3. Тема Обложки (Profile Banner)
-                </h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
-                  Градиентные фоны или загрузка своей иллюстрации
-                </p>
-              </div>
-
-              <button
-                onClick={() => bannerFileInputRef.current?.click()}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 12px",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--surface-raised, #27272a)",
-                  border: "1px solid var(--border, rgba(255,255,255,0.1))",
-                  color: "var(--text-primary)",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                <ImageIcon size={13} />
-                <span>Загрузить фон</span>
-              </button>
-            </div>
-
-            <div className="kv-banners-grid">
-              {BANNER_THEMES.map((theme) => {
-                const isSelected = customization.bannerThemeId === theme.id;
-                return (
+                  {/* Вставка прямой ссылки на баннер / GIF / Видео */}
                   <div
-                    key={theme.id}
-                    onClick={() => handleSaveCosmetics({ bannerThemeId: theme.id })}
                     style={{
-                      borderRadius: "10px",
-                      overflow: "hidden",
-                      border: isSelected
-                        ? `2px solid ${theme.accentColor}`
-                        : "1px solid var(--border, rgba(255,255,255,0.08))",
-                      cursor: "pointer",
-                      boxShadow: isSelected ? `0 0 10px ${theme.accentColor}55` : "none",
-                      transition: "all 0.15s ease",
+                      padding: "14px 16px",
+                      borderRadius: "12px",
+                      backgroundColor: "var(--surface-raised, #18181b)",
+                      border: "1px solid var(--border, rgba(255,255,255,0.08))",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
                     }}
                   >
-                    <div style={{ height: "42px", background: theme.background }} />
-                    <div style={{ padding: "6px 8px", backgroundColor: "var(--surface-raised, #18181b)" }}>
-                      <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-primary)" }}>
-                        {theme.name}
-                      </div>
-                      <div style={{ fontSize: "10px", color: theme.accentColor }}>{theme.tag}</div>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
+                      Или вставьте прямую ссылку (URL)
+                    </div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                      Подходят ссылки на GIF (Giphy, Tenor, Imgur) или прямые ссылки на видео MP4 / изображение
+                    </div>
+
+                    <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
+                      <input
+                        type="url"
+                        value={bannerUrlInput}
+                        onChange={(e) => setBannerUrlInput(e.target.value)}
+                        placeholder="https://example.com/banner.gif или .mp4"
+                        style={{
+                          flex: 1,
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          backgroundColor: "#09090b",
+                          border: "1px solid rgba(255,255,255,0.12)",
+                          color: "#ffffff",
+                          fontSize: "12.5px",
+                        }}
+                      />
+                      <Button onClick={handleApplyBannerUrl} style={{ padding: "8px 14px", fontSize: "12px" }}>
+                        <Link2 size={14} /> Применить
+                      </Button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
-              <Button onClick={() => handleSaveCosmetics()} className="kv-action-btn">
-                <Save size={15} /> Сохранить оформление
-              </Button>
+                  {/* Превью активного кастомного баннера и кнопка удаления */}
+                  {customization.bannerThemeId === "custom" && customization.customBannerUrl && (
+                    <div
+                      style={{
+                        padding: "14px 16px",
+                        borderRadius: "12px",
+                        backgroundColor: "rgba(16, 185, 129, 0.1)",
+                        border: "1px solid rgba(16, 185, 129, 0.3)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: "10px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <Check size={18} color="#10b981" />
+                        <div>
+                          <div style={{ fontSize: "13px", fontWeight: 700, color: "#10b981" }}>
+                            Кастомный баннер активен ({customization.customBannerType === "video" ? "Видео" : "Изображение / GIF"})
+                          </div>
+                          <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                            Он отображается в шапке профиля и на вашей главной странице
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleRemoveCustomBanner}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "6px 12px",
+                          borderRadius: "8px",
+                          backgroundColor: "rgba(239, 68, 68, 0.15)",
+                          border: "1px solid rgba(239, 68, 68, 0.35)",
+                          color: "#ef4444",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        <Trash2 size={13} />
+                        <span>Сбросить кастомный фон</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
       )}
 

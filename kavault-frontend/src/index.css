@@ -304,11 +304,294 @@ h4 {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   7. ЖИВЫЕ АНИМАЦИИ САЙТА, БАННЕРОВ И НЕОНОВЫХ РАМОК KAVAULT
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Тактильный отклик и плавные микро-анимации интерактивных элементов */
+button,
+a,
+input,
+select,
+.kv-interactive {
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.4, 1),
+              box-shadow 0.2s ease,
+              border-color 0.2s ease,
+              background-color 0.2s ease;
+}
+
+button:active:not(:disabled),
+a.kv-btn:active {
+  transform: scale(0.97);
+}
+
+/* Плавный вход страниц (Page Enter Transition) */
+.kv-page-enter {
+  animation: kvPageSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes kvPageSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Пульсирующий неон для рамок аватаров */
+@keyframes kvFramePulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px currentColor);
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 14px currentColor);
+    transform: scale(1.02);
+  }
+}
+
+.kv-frame-anim-pulse {
+  animation: kvFramePulse 3s ease-in-out infinite;
+}
+
+/* Огненное мерцание рамок */
+@keyframes kvFrameFire {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px #f97316) drop-shadow(0 0 14px #ef4444);
+    transform: scale(1);
+  }
+  33% {
+    filter: drop-shadow(0 0 10px #f59e0b) drop-shadow(0 0 20px #dc2626);
+    transform: scale(1.025);
+  }
+  66% {
+    filter: drop-shadow(0 0 5px #f97316) drop-shadow(0 0 12px #b91c1c);
+    transform: scale(0.995);
+  }
+}
+
+.kv-frame-anim-fire {
+  animation: kvFrameFire 2.2s ease-in-out infinite;
+}
+
+/* Ледяной блеск рамок */
+@keyframes kvFrameFrost {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px #38bdf8) drop-shadow(0 0 12px rgba(56, 189, 248, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px #e0f2fe) drop-shadow(0 0 24px #38bdf8);
+  }
+}
+
+.kv-frame-anim-frost {
+  animation: kvFrameFrost 2.8s ease-in-out infinite;
+}
+
+/* Радужный перелив (Prism / 8-Bit) */
+@keyframes kvFrameRainbow {
+  0% {
+    filter: hue-rotate(0deg) drop-shadow(0 0 8px rgba(236, 72, 153, 0.6));
+  }
+  50% {
+    filter: hue-rotate(180deg) drop-shadow(0 0 12px rgba(59, 130, 246, 0.7));
+  }
+  100% {
+    filter: hue-rotate(360deg) drop-shadow(0 0 8px rgba(236, 72, 153, 0.6));
+  }
+}
+
+.kv-frame-anim-rainbow {
+  animation: kvFrameRainbow 5s linear infinite;
+}
+
+/* ── АНИМАЦИИ ДЛЯ ЖИВЫХ БАННЕРОВ ПРОФИЛЯ ── */
+@keyframes kvAnimGradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.kv-anim-banner-cyber {
+  animation: kvAnimGradientShift 9s ease infinite alternate;
+}
+
+.kv-anim-banner-retro {
+  animation: kvAnimGradientShift 7s ease infinite alternate;
+}
+
+.kv-anim-banner-sakura {
+  animation: kvAnimGradientShift 8s ease infinite alternate;
+}
+
+@keyframes kvAnimAuroraMove {
+  0% {
+    background-position: 0% 30%;
+    filter: brightness(1);
+  }
+  50% {
+    background-position: 100% 70%;
+    filter: brightness(1.15);
+  }
+  100% {
+    background-position: 0% 30%;
+    filter: brightness(1);
+  }
+}
+
+.kv-anim-banner-aurora {
+  animation: kvAnimAuroraMove 11s ease-in-out infinite alternate;
+}
+
+@keyframes kvAnimCrimsonPulse {
+  0% {
+    background-position: 0% 50%;
+    filter: saturate(1) contrast(1);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: saturate(1.3) contrast(1.1);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: saturate(1) contrast(1);
+  }
+}
+
+.kv-anim-banner-crimson {
+  animation: kvAnimCrimsonPulse 5s ease-in-out infinite alternate;
+}
+
+@keyframes kvAnimAbyssMove {
+  0% {
+    background-position: 10% 20%;
+  }
+  50% {
+    background-position: 90% 80%;
+  }
+  100% {
+    background-position: 10% 20%;
+  }
+}
+
+.kv-anim-banner-abyss {
+  animation: kvAnimAbyssMove 12s ease-in-out infinite alternate;
+}
+
+@keyframes kvAnimPrismFlow {
+  0% {
+    filter: hue-rotate(0deg);
+    background-position: 0% 50%;
+  }
+  50% {
+    filter: hue-rotate(180deg);
+    background-position: 100% 50%;
+  }
+  100% {
+    filter: hue-rotate(360deg);
+    background-position: 0% 50%;
+  }
+}
+
+.kv-anim-banner-prism {
+  animation: kvAnimPrismFlow 12s linear infinite;
+}
+
+@keyframes kvAnimGoldShimmer {
+  0% {
+    background-position: 0% 40%;
+    filter: brightness(0.95);
+  }
+  50% {
+    background-position: 100% 60%;
+    filter: brightness(1.2);
+  }
+  100% {
+    background-position: 0% 40%;
+    filter: brightness(0.95);
+  }
+}
+
+.kv-anim-banner-gold {
+  animation: kvAnimGoldShimmer 8s ease infinite alternate;
+}
+
+@keyframes kvAnimLofiNight {
+  0% {
+    background-position: 0% 50%;
+    opacity: 0.9;
+  }
+  50% {
+    background-position: 100% 50%;
+    opacity: 1;
+  }
+  100% {
+    background-position: 0% 50%;
+    opacity: 0.9;
+  }
+}
+
+.kv-anim-banner-lofi {
+  animation: kvAnimLofiNight 9s ease-in-out infinite alternate;
+}
+
+@keyframes kvAnimMatrixMove {
+  0% {
+    background-position: 50% 0%;
+  }
+  50% {
+    background-position: 50% 100%;
+  }
+  100% {
+    background-position: 50% 0%;
+  }
+}
+
+.kv-anim-banner-matrix {
+  animation: kvAnimMatrixMove 6s ease-in-out infinite alternate;
+}
+
+/* Эффект свечения карточек при наведении */
+.kv-card-glow {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s ease,
+              border-color 0.25s ease;
+}
+
+.kv-card-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45), 0 0 18px var(--vibe-soft, rgba(59, 130, 246, 0.2));
+  border-color: var(--vibe-accent, var(--accent, #3b82f6));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kavault-ambient-particle {
     display: none !important;
   }
-  .kavault-hero-float {
+  .kavault-hero-float,
+  .kv-frame-anim-pulse,
+  .kv-frame-anim-fire,
+  .kv-frame-anim-frost,
+  .kv-frame-anim-rainbow,
+  .kv-anim-banner-cyber,
+  .kv-anim-banner-retro,
+  .kv-anim-banner-sakura,
+  .kv-anim-banner-aurora,
+  .kv-anim-banner-crimson,
+  .kv-anim-banner-abyss,
+  .kv-anim-banner-prism,
+  .kv-anim-banner-gold,
+  .kv-anim-banner-lofi,
+  .kv-anim-banner-matrix {
     animation: none !important;
   }
 }

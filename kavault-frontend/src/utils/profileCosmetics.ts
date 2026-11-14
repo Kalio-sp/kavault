@@ -27,16 +27,20 @@ export interface BannerTheme {
   tag: string;
   background: string;
   accentColor: string;
+  isAnimated?: boolean;
+  animationClass?: string;
+  previewGradient?: string;
 }
 
 export interface UserProfileCustomization {
   avatarType: "preset" | "custom" | "monogram";
   avatarPresetId: string;
-  customAvatarUrl?: string; // base64 или URL
+  customAvatarUrl?: string; // base64 или URL (поддерживает картинки, GIF)
   monogramColor?: string;
   avatarFrameId: string;
   bannerThemeId: string;
-  customBannerUrl?: string; // base64 или URL
+  customBannerUrl?: string; // base64 или URL (картинка, GIF, WebP, MP4, WebM)
+  customBannerType?: "image" | "video"; // тип кастомного баннера
   title: string;
   statusText: string;
   statusEmoji: string;
@@ -209,6 +213,7 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     border: "3px solid #06b6d4",
     boxShadow: "0 0 16px rgba(6, 182, 212, 0.75), inset 0 0 8px rgba(6, 182, 212, 0.3)",
     accentColor: "#06b6d4",
+    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_solar_fire",
@@ -216,8 +221,9 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     description: "Огненно-янтарная аура высокой энергии",
     tag: "Hot",
     border: "3px solid #f97316",
-    boxShadow: "0 0 18px rgba(249, 115, 22, 0.8), inset 0 0 8px rgba(249, 115, 22, 0.35)",
+    boxShadow: "0 0 18px rgba(249, 115, 22, 0.85), inset 0 0 8px rgba(249, 115, 22, 0.4)",
     accentColor: "#f97316",
+    animationClass: "kv-frame-anim-fire",
   },
   {
     id: "frame_sakura_bloom",
@@ -225,8 +231,9 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     description: "Нежное розовое сияние весеннего Киото",
     tag: "Aesthetic",
     border: "3px solid #f43f5e",
-    boxShadow: "0 0 16px rgba(244, 63, 94, 0.7), inset 0 0 8px rgba(244, 63, 94, 0.3)",
+    boxShadow: "0 0 16px rgba(244, 63, 94, 0.75), inset 0 0 8px rgba(244, 63, 94, 0.35)",
     accentColor: "#f43f5e",
+    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_gold_legend",
@@ -234,8 +241,9 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     description: "Чистое 24k золото для мастеров системы",
     tag: "VIP",
     border: "3px solid #f59e0b",
-    boxShadow: "0 0 22px rgba(245, 158, 11, 0.85), inset 0 0 10px rgba(245, 158, 11, 0.4)",
+    boxShadow: "0 0 24px rgba(245, 158, 11, 0.9), inset 0 0 10px rgba(245, 158, 11, 0.45)",
     accentColor: "#f59e0b",
+    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_cyber_matrix",
@@ -243,8 +251,9 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     description: "Электрический ультрамарин и фиолетовый глитч",
     tag: "Cyber",
     border: "3px solid #a855f7",
-    boxShadow: "0 0 20px rgba(168, 85, 247, 0.8), inset 0 0 10px rgba(168, 85, 247, 0.35)",
+    boxShadow: "0 0 20px rgba(168, 85, 247, 0.85), inset 0 0 10px rgba(168, 85, 247, 0.35)",
     accentColor: "#a855f7",
+    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_emerald_guard",
@@ -252,8 +261,9 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     description: "Кибер-изумруд высокой концентрации",
     tag: "Rare",
     border: "3px solid #10b981",
-    boxShadow: "0 0 16px rgba(16, 185, 129, 0.75), inset 0 0 8px rgba(16, 185, 129, 0.3)",
+    boxShadow: "0 0 18px rgba(16, 185, 129, 0.8), inset 0 0 8px rgba(16, 185, 129, 0.35)",
     accentColor: "#10b981",
+    animationClass: "kv-frame-anim-pulse",
   },
   {
     id: "frame_void_abyss",
@@ -263,10 +273,111 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     border: "3px solid #6366f1",
     boxShadow: "0 0 22px rgba(99, 102, 241, 0.85), inset 0 0 10px rgba(99, 102, 241, 0.4)",
     accentColor: "#6366f1",
+    animationClass: "kv-frame-anim-pulse",
+  },
+  {
+    id: "frame_crimson_eclipse",
+    name: "Кровавая Луна",
+    description: "Мистическое рубиновое кольцо с пульсирующим огнем",
+    tag: "Animated",
+    border: "3px solid #ef4444",
+    boxShadow: "0 0 24px rgba(239, 68, 68, 0.9), inset 0 0 10px rgba(239, 68, 68, 0.5)",
+    accentColor: "#ef4444",
+    animationClass: "kv-frame-anim-fire",
+  },
+  {
+    id: "frame_glacial_frost",
+    name: "Ледяной кристалл",
+    description: "Искрящийся арктический лед и абсолютный ноль",
+    tag: "Rare",
+    border: "3px solid #38bdf8",
+    boxShadow: "0 0 20px rgba(56, 189, 248, 0.85), inset 0 0 8px rgba(56, 189, 248, 0.4)",
+    accentColor: "#38bdf8",
+    animationClass: "kv-frame-anim-frost",
+  },
+  {
+    id: "frame_rainbow_prism",
+    name: "Радужная призма",
+    description: "Плавающий спектральный перелив всех цветов",
+    tag: "Animated",
+    border: "3px solid #ec4899",
+    boxShadow: "0 0 22px rgba(236, 72, 153, 0.8), inset 0 0 10px rgba(59, 130, 246, 0.4)",
+    accentColor: "#ec4899",
+    animationClass: "kv-frame-anim-rainbow",
+  },
+  {
+    id: "frame_toxic_plasma",
+    name: "Токсичная плазма",
+    description: "Ядовито-лаймовый радиоактивный заряд энергии",
+    tag: "Cyber",
+    border: "3px solid #84cc16",
+    boxShadow: "0 0 20px rgba(132, 204, 22, 0.85), inset 0 0 8px rgba(132, 204, 22, 0.4)",
+    accentColor: "#84cc16",
+    animationClass: "kv-frame-anim-pulse",
+  },
+  {
+    id: "frame_dragon_fire",
+    name: "Дыхание Дракона",
+    description: "Древние пылающие угли и темная золотая чешуя",
+    tag: "Mythic",
+    border: "3px solid #d97706",
+    boxShadow: "0 0 24px rgba(217, 119, 6, 0.9), inset 0 0 12px rgba(239, 68, 68, 0.5)",
+    accentColor: "#d97706",
+    animationClass: "kv-frame-anim-fire",
+  },
+  {
+    id: "frame_quantum_flux",
+    name: "Квантовый поток",
+    description: "Двойная вращающаяся аура лазурного и индиго",
+    tag: "Animated",
+    border: "3px solid #818cf8",
+    boxShadow: "0 0 20px rgba(129, 140, 248, 0.8), inset 0 0 10px rgba(6, 182, 212, 0.4)",
+    accentColor: "#818cf8",
+    animationClass: "kv-frame-anim-pulse",
+  },
+  {
+    id: "frame_synthwave_84",
+    name: "Синтвейв 1984",
+    description: "Неоновый дуэт неонового розового и ретро-циан",
+    tag: "Hot",
+    border: "3px solid #f43f5e",
+    boxShadow: "0 0 20px rgba(244, 63, 94, 0.8), 0 0 30px rgba(6, 182, 212, 0.4)",
+    accentColor: "#f43f5e",
+    animationClass: "kv-frame-anim-pulse",
+  },
+  {
+    id: "frame_angelic_halo",
+    name: "Ангельский нимб",
+    description: "Благородное сияние чистого белого золота",
+    tag: "VIP",
+    border: "3px solid #fef08a",
+    boxShadow: "0 0 22px rgba(254, 240, 138, 0.9), inset 0 0 8px rgba(255, 255, 255, 0.6)",
+    accentColor: "#fef08a",
+    animationClass: "kv-frame-anim-pulse",
+  },
+  {
+    id: "frame_obsidian_stealth",
+    name: "Обсидиановый стелс",
+    description: "Матовый титановый обод скрытного профиля",
+    tag: "Dark",
+    border: "3px solid #475569",
+    boxShadow: "0 0 12px rgba(71, 85, 105, 0.5), inset 0 0 6px rgba(15, 23, 42, 0.6)",
+    accentColor: "#94a3b8",
+  },
+  {
+    id: "frame_arcade_8bit",
+    name: "Ретро Аркада",
+    description: "Пиксельный RGB стиль золотого века игр",
+    tag: "Retro",
+    border: "3px solid #10b981",
+    boxShadow: "0 0 16px rgba(16, 185, 129, 0.7), 0 0 26px rgba(236, 72, 153, 0.4)",
+    accentColor: "#10b981",
+    animationClass: "kv-frame-anim-rainbow",
   },
 ];
 
 export const BANNER_THEMES: BannerTheme[] = [
+  // ── СТАТИЧЕСКИЕ ДИЗАЙНЕРСКИЕ БАННЕРЫ ──
   {
     id: "tokyo_midnight",
     name: "Neo-Tokyo Night",
@@ -322,6 +433,98 @@ export const BANNER_THEMES: BannerTheme[] = [
     tag: "Dark",
     background: "linear-gradient(135deg, #18181b 0%, #27272a 60%, #3f3f46 100%)",
     accentColor: "#a1a1aa",
+  },
+
+  // ── АНИМИРОВАННЫЕ ЖИВЫЕ БАННЕРЫ ──
+  {
+    id: "anim_cyber_rain",
+    name: "⚡ Кибер-Ливень Нео-Токио",
+    tag: "Animated",
+    isAnimated: true,
+    animationClass: "kv-anim-banner-cyber",
+    background: "linear-gradient(135deg, #020617 0%, #0e7490 50%, #3b82f6 100%)",
+    accentColor: "#38bdf8",
+  },
+  {
+    id: "anim_retro_grid",
+    name: "🌅 Синтвейв Шоссе 1984",
+    tag: "Animated",
+    isAnimated: true,
+    animationClass: "kv-anim-banner-retro",
+    background: "linear-gradient(135deg, #4a044e 0%, #701a75 40%, #ea580c 100%)",
+    accentColor: "#f43f5e",
+  },
+  {
+    id: "anim_sakura_fall",
+    name: "🌸 Парящая Сакура Киото",
+    tag: "Animated",
+    isAnimated: true,
+    animationClass: "kv-anim-banner-sakura",
+    background: "linear-gradient(135deg, #500724 0%, #9d174d 50%, #f43f5e 100%)",
+    accentColor: "#fb7185",
+  },
+  {
+    id: "anim_matrix_stream",
+    name: "🟢 Цифровой Поток Матрицы",
+    tag: "Animated",
+    isAnimated: true,
+    animationClass: "kv-anim-banner-matrix",
+    background: "linear-gradient(135deg, #022c22 0%, #064e3b 45%, #10b981 100%)",
+    accentColor: "#34d399",
+  },
+  {
+    id: "anim_aurora_borealis",
+    name: "🌌 Северное Сияние",
+    tag: "Animated",
+    isAnimated: true,
+    animationClass: "kv-anim-banner-aurora",
+    background: "linear-gradient(135deg, #064e3b 0%, #0369a1 40%, #6d28d9 75%, #059669 100%)",
+    accentColor: "#2dd4bf",
+  },
+  {
+    id: "anim_crimson_storm",
+    name: "🔥 Огненный Адский Шторм",
+    tag: "Animated",
+    isAnimated: true,
+    animationClass: "kv-anim-banner-crimson",
+    background: "linear-gradient(135deg, #450a0a 0%, #991b1b 50%, #ea580c 100%)",
+    accentColor: "#f97316",
+  },
+  {
+    id: "anim_deep_abyss",
+    name: "🌊 Бездна Океана",
+    tag: "Animated",
+    isAnimated: true,
+    animationClass: "kv-anim-banner-abyss",
+    background: "linear-gradient(135deg, #030712 0%, #075985 50%, #1e1b4b 100%)",
+    accentColor: "#38bdf8",
+  },
+  {
+    id: "anim_prism_hologram",
+    name: "💎 Голограмма Призма",
+    tag: "Animated",
+    isAnimated: true,
+    animationClass: "kv-anim-banner-prism",
+    background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 33%, #ec4899 66%, #10b981 100%)",
+    accentColor: "#ec4899",
+  },
+  {
+    id: "anim_gold_luxury",
+    name: "👑 Королевский Золотой Шелк",
+    tag: "Animated",
+    isAnimated: true,
+    animationClass: "kv-anim-banner-gold",
+    background: "linear-gradient(135deg, #451a03 0%, #b45309 45%, #fbbf24 80%, #78350f 100%)",
+    accentColor: "#fbbf24",
+  },
+  {
+    id: "anim_lofi_midnight",
+    name: "🌙 Полуночные Звезды Lo-Fi",
+    tag: "Animated",
+    isAnimated: true,
+    animationClass: "kv-anim-banner-lofi",
+    background: "linear-gradient(135deg, #09090b 0%, #1e1b4b 50%, #4338ca 100%)",
+    accentColor: "#a5b4fc",
   },
 ];
 
@@ -425,4 +628,27 @@ export function saveProfileCustomization(
   } catch (e) {
     console.error("Failed to save profile customization", e);
   }
+}
+
+export function getRandomCosmetics(): Partial<UserProfileCustomization> {
+  const randomPreset =
+    AVATAR_PRESETS[Math.floor(Math.random() * AVATAR_PRESETS.length)];
+  const randomFrame =
+    AVATAR_FRAMES[Math.floor(Math.random() * AVATAR_FRAMES.length)];
+  const randomBanner =
+    BANNER_THEMES[Math.floor(Math.random() * BANNER_THEMES.length)];
+  const randomTitle =
+    PROFILE_TITLES[Math.floor(Math.random() * PROFILE_TITLES.length)];
+  const randomStatus =
+    STATUS_PRESETS[Math.floor(Math.random() * STATUS_PRESETS.length)];
+
+  return {
+    avatarType: "preset",
+    avatarPresetId: randomPreset.id,
+    avatarFrameId: randomFrame.id,
+    bannerThemeId: randomBanner.id,
+    title: randomTitle,
+    statusText: randomStatus.text,
+    statusEmoji: randomStatus.emoji,
+  };
 }

@@ -35,9 +35,9 @@ import { getGermanArticleStyle } from "../data/studyVibes";
 import { CulturalHeroScene } from "../components/CulturalAtmosphere";
 import { SKILL_STUDIO_TEXTS, type StudySkillTab } from "../data/languageCurriculum";
 import { UserAvatarBadge } from "../components/UserAvatarBadge";
+import { BannerRenderer } from "../components/BannerRenderer";
 import {
   loadProfileCustomization,
-  BANNER_THEMES,
   type UserProfileCustomization,
 } from "../utils/profileCosmetics";
 
@@ -105,18 +105,6 @@ export function Dashboard() {
       window.removeEventListener("kavault_profile_updated", handleProfileUpdate);
     };
   }, []);
-
-  const activeBanner = useMemo(() => {
-    return (
-      BANNER_THEMES.find((b) => b.id === profileCustom.bannerThemeId) ||
-      BANNER_THEMES[0]
-    );
-  }, [profileCustom.bannerThemeId]);
-
-  const bannerBackground =
-    profileCustom.bannerThemeId === "custom" && profileCustom.customBannerUrl
-      ? `url(${profileCustom.customBannerUrl}) center / cover no-repeat`
-      : activeBanner.background;
 
   const currentRankTier = socialData?.rankTier || {
     key: "novice",
@@ -352,29 +340,11 @@ export function Dashboard() {
           flexDirection: "column",
         }}
       >
-        {/* Баннерная обложка профиля с культурным свечением */}
-        <div
-          style={{
-            height: "90px",
-            width: "100%",
-            position: "relative",
-            background: bannerBackground,
-            transition: "background 0.4s ease",
-            overflow: "hidden",
-          }}
+        {/* Баннерная обложка профиля с живой анимацией и культурным свечением */}
+        <BannerRenderer
+          customization={profileCustom}
+          style={{ height: "90px" }}
         >
-          {/* Текстурная сетка и вайб-сцена */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage:
-                "radial-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px)",
-              backgroundSize: "18px 18px",
-              opacity: 0.35,
-              pointerEvents: "none",
-            }}
-          />
           <div
             style={{
               position: "absolute",
@@ -443,7 +413,7 @@ export function Dashboard() {
             <span>В профиль</span>
             <ChevronRight size={13} />
           </Link>
-        </div>
+        </BannerRenderer>
 
         {/* Информационный блок профиля (Аватар + Ник + Звание + Статистика) */}
         <div

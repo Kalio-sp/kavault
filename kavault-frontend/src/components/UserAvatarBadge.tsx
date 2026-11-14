@@ -54,6 +54,7 @@ export const UserAvatarBadge: React.FC<UserAvatarBadgeProps> = ({
     >
       {/* Контейнер аватара с рамкой */}
       <div
+        className={`kv-avatar-frame ${frame.animationClass || ""}`}
         style={{
           width: "100%",
           height: "100%",

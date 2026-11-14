@@ -15,6 +15,7 @@ import {
   PenLine,
   Users,
   TrendingUp,
+  Palette,
   X,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
@@ -518,7 +519,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
           width: "100%",
         }}
       >
-        <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%", overflowX: "hidden", boxSizing: "border-box" }}>{children}</div>
+        <div
+          key={location.pathname}
+          className="kv-page-enter"
+          style={{
+            maxWidth: "1200px",
+            margin: "0 auto",
+            width: "100%",
+            overflowX: "hidden",
+            boxSizing: "border-box",
+          }}
+        >
+          {children}
+        </div>
       </main>
 
       {/* ── МОБИЛЬНОЕ ВСПЛЫВАЮЩЕЕ МЕНЮ (ШТОРКА "ЕЩЁ") ── */}
@@ -1018,7 +1031,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       : "1px solid rgba(255, 255, 255, 0.06)",
                   textDecoration: "none",
                   transition: "all 0.15s ease",
-                  gridColumn: showProgramming ? "span 2" : "span 1",
                 }}
               >
                 <div
@@ -1053,53 +1065,133 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
               </Link>
-            </div>
 
-            {/* Эксклюзивная панель Создателя (если Root) */}
-            {isCreator && (
-              <Link
-                to="/admin"
-                onClick={() => setMobileMenuOpen(false)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "12px 14px",
-                  borderRadius: "14px",
-                  color: "#f59e0b",
-                  backgroundColor: "rgba(245, 158, 11, 0.12)",
-                  border: "1px solid rgba(245, 158, 11, 0.3)",
-                  boxShadow: "0 4px 16px rgba(245, 158, 11, 0.1)",
-                  textDecoration: "none",
-                  fontWeight: 700,
-                  fontSize: "14px",
-                  marginTop: "2px",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <div
+              {/* Панель Создателя (если Root) ИЛИ Кастомизация & Рамки (если обычный пользователь) */}
+              {isCreator ? (
+                <Link
+                  to="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
                   style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "10px",
-                    backgroundColor: "rgba(245, 158, 11, 0.2)",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
+                    gap: "10px",
+                    padding: "10px 12px",
+                    borderRadius: "14px",
+                    backgroundColor:
+                      location.pathname === "/admin"
+                        ? "rgba(245, 158, 11, 0.22)"
+                        : "rgba(245, 158, 11, 0.1)",
+                    border: "1px solid rgba(245, 158, 11, 0.35)",
+                    boxShadow: "0 0 14px rgba(245, 158, 11, 0.12)",
+                    textDecoration: "none",
+                    transition: "all 0.15s ease",
                   }}
                 >
-                  <Crown size={17} color="#f59e0b" />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "13px", fontWeight: 800 }}>
-                    Панель Создателя
+                  <div
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "10px",
+                      backgroundColor: "rgba(245, 158, 11, 0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Crown size={16} color="#f59e0b" />
                   </div>
-                  <div style={{ fontSize: "10px", color: "#fbbf24", opacity: 0.85 }}>
-                    Root управление системой
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: "12.5px",
+                        fontWeight: 800,
+                        color: "#fbbf24",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      Панель Создателя
+                    </div>
+                    <div style={{ fontSize: "10px", color: "#f59e0b", opacity: 0.9 }}>
+                      Root управление
+                    </div>
                   </div>
-                </div>
-              </Link>
-            )}
+                </Link>
+              ) : (
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "10px 12px",
+                    borderRadius: "14px",
+                    backgroundColor:
+                      location.pathname === "/profile"
+                        ? "rgba(236, 72, 153, 0.2)"
+                        : "rgba(236, 72, 153, 0.08)",
+                    border: "1px solid rgba(236, 72, 153, 0.25)",
+                    textDecoration: "none",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "10px",
+                      backgroundColor: "rgba(236, 72, 153, 0.18)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Palette size={16} color="#f472b6" />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: "12.5px",
+                        fontWeight: 700,
+                        color: "var(--text-primary)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      Стиль & Рамки
+                    </div>
+                    <div style={{ fontSize: "10px", color: "#f472b6" }}>
+                      Кастомизация
+                    </div>
+                  </div>
+                </Link>
+              )}
+            </div>
+
+            {/* Подвал шторки меню с версией платформы */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                padding: "4px 0",
+                color: "var(--text-muted)",
+                fontSize: "11px",
+                fontWeight: 600,
+                letterSpacing: "0.02em",
+                opacity: 0.75,
+              }}
+            >
+              <span>⚡ KaVault Engine v2.4</span>
+              <span>•</span>
+              <span>Web & Mobile</span>
+            </div>
           </div>
         </div>
       )}
