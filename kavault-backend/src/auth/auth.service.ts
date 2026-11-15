@@ -19,6 +19,25 @@ import {
 import { SocialService } from '../social/social.service';
 import { sanitizeNickname } from '../social/mmr.utils';
 
+export function validatePasswordStrength(password: string): string | null {
+  if (!password || password.length < 8) {
+    return 'Пароль должен содержать не менее 8 символов';
+  }
+  if (!/[A-Z]/.test(password)) {
+    return 'Пароль должен содержать хотя бы одну заглавную букву (A-Z)';
+  }
+  if (!/[a-z]/.test(password)) {
+    return 'Пароль должен содержать хотя бы одну строчную букву (a-z)';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'Пароль должен содержать хотя бы одну цифру (0-9)';
+  }
+  if (!/[!@#$%^&*]/.test(password)) {
+    return 'Пароль должен содержать хотя бы один специальный символ (!@#$%^&*)';
+  }
+  return null;
+}
+
 @Injectable()
 export class AuthService implements OnModuleInit {
   constructor(
@@ -97,6 +116,14 @@ export class AuthService implements OnModuleInit {
       finalNickname = await this.socialService.generateUniqueNickname(email);
     }
 
+    const passError = validatePasswordStrength(dto.password);
+    if (passError) {
+      throw new BadRequestException(passError);
+    }
+
+    const allowedLangs = new Set(['ja', 'en', 'de']);
+    const chosenLang = dto.studyLanguage && allowedLangs.has(dto.studyLanguage) ? dto.studyLanguage : 'ja';
+
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     const user = await this.prisma.user.create({
@@ -104,7 +131,7 @@ export class AuthService implements OnModuleInit {
         email,
         nickname: finalNickname,
         password: hashedPassword,
-        studyLanguage: 'ja',
+        studyLanguage: chosenLang,
         showProgramming: true,
         onboardingCompleted: false,
         unlockedAchievements: {},
@@ -238,8 +265,9 @@ export class AuthService implements OnModuleInit {
     const isValid = await bcrypt.compare(currentPass, user.password);
     if (!isValid) throw new BadRequestException('Неверный текущий пароль');
 
-    if (newPass.length < 6) {
-      throw new BadRequestException('Новый пароль должен быть не менее 6 символов');
+    const passError = validatePasswordStrength(newPass);
+    if (passError) {
+      throw new BadRequestException(passError);
     }
 
     const hashedPassword = await bcrypt.hash(newPass, 10);

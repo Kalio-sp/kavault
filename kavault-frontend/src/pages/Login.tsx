@@ -2,7 +2,20 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { api } from "../api/axios";
 import { useApp, syncNicknameEverywhere } from "../context/AppContext";
-import { Mail, Lock, ArrowRight, Eye, EyeOff, User, Trophy, X, Zap } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  User,
+  Trophy,
+  X,
+  Zap,
+  CheckCircle2,
+  Circle,
+  Globe,
+} from "lucide-react";
 
 type AuthMode = "login" | "register";
 
@@ -18,6 +31,7 @@ export function Login() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [nickname, setNickname] = useState("");
+  const [studyLanguage, setStudyLanguage] = useState<"ja" | "en" | "de">("ja");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -95,19 +109,35 @@ export function Login() {
     e.preventDefault();
     setError("");
 
-    if (mode === "register" && !nickname.trim()) {
-      setError(t.auth.errors.noNickname);
-      return;
-    }
+    if (mode === "register") {
+      if (!nickname.trim()) {
+        setError(t.auth.errors.noNickname);
+        return;
+      }
 
-    if (mode === "register" && password !== confirmPassword) {
-      setError(t.auth.errors.mismatch);
-      return;
-    }
+      if (password !== confirmPassword) {
+        setError(t.auth.errors.mismatch);
+        return;
+      }
 
-    if (password.length < 6) {
-      setError(t.auth.errors.shortPass);
-      return;
+      // Проверка 5 обязательных требований к надежности пароля
+      const passRules = [
+        { label: "не менее 8 символов", passed: password.length >= 8 },
+        { label: "хотя бы одну заглавную букву (A-Z)", passed: /[A-Z]/.test(password) },
+        { label: "хотя бы одну строчную букву (a-z)", passed: /[a-z]/.test(password) },
+        { label: "хотя бы одну цифру (0-9)", passed: /[0-9]/.test(password) },
+        { label: "хотя бы один специальный символ (!@#$%^&*)", passed: /[!@#$%^&*]/.test(password) },
+      ];
+      const failed = passRules.filter((r) => !r.passed);
+      if (failed.length > 0) {
+        setError(`Пароль должен содержать: ${failed.map((f) => f.label).join(", ")}`);
+        return;
+      }
+    } else {
+      if (!password) {
+        setError("Введите пароль для входа");
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -121,12 +151,15 @@ export function Login() {
         await api.post("/auth/register", {
           email,
           password,
+          studyLanguage,
           ...(nick ? { nickname: nick } : {}),
         });
         if (nick) {
           localStorage.setItem("kavault_username", nick);
           finalNick = nick;
         }
+        localStorage.setItem("kavault_study_language", studyLanguage);
+        localStorage.setItem(`kavault_study_lang_${email}`, studyLanguage);
         // После успешной регистрации — сразу логиним
         const response = await api.post("/auth/login", { email, password });
         finalToken = response.data.access_token;
@@ -682,6 +715,74 @@ export function Login() {
               </div>
             )}
 
+            {/* Выбор основного языка при регистрации */}
+            {mode === "register" && (
+              <div>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: "var(--text-secondary)",
+                    marginBottom: "8px",
+                  }}
+                >
+                  <Globe size={14} color="var(--accent)" />
+                  <span>Основной язык для изучения</span>
+                </label>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: "8px",
+                  }}
+                >
+                  {[
+                    { id: "ja" as const, flag: "🇯🇵", label: "Японский", sub: "JLPT N5–N1" },
+                    { id: "en" as const, flag: "🇬🇧", label: "Английский", sub: "CEFR A1–B2" },
+                    { id: "de" as const, flag: "🇩🇪", label: "Немецкий", sub: "CEFR A1–B2" },
+                  ].map((lang) => {
+                    const isSel = studyLanguage === lang.id;
+                    return (
+                      <button
+                        key={lang.id}
+                        type="button"
+                        onClick={() => setStudyLanguage(lang.id)}
+                        style={{
+                          padding: "10px 6px",
+                          borderRadius: "12px",
+                          border: `1.5px solid ${isSel ? "var(--accent, #3b82f6)" : "var(--border)"}`,
+                          backgroundColor: isSel
+                            ? "rgba(59, 130, 246, 0.12)"
+                            : "var(--surface)",
+                          color: isSel ? "var(--text-primary)" : "var(--text-secondary)",
+                          cursor: "pointer",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "3px",
+                          boxShadow: isSel
+                            ? "0 0 16px -4px rgba(59, 130, 246, 0.35)"
+                            : "none",
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        <span style={{ fontSize: "22px", lineHeight: 1 }}>{lang.flag}</span>
+                        <span style={{ fontSize: "12.5px", fontWeight: isSel ? 700 : 600 }}>
+                          {lang.label}
+                        </span>
+                        <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                          {lang.sub}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Пароль */}
             <div>
               <label
@@ -752,6 +853,60 @@ export function Login() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+
+              {/* Интерактивный чеклист требований к паролю при регистрации */}
+              {mode === "register" && (
+                <div
+                  style={{
+                    marginTop: "8px",
+                    padding: "10px 12px",
+                    borderRadius: "10px",
+                    backgroundColor: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "5px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "11.5px",
+                      fontWeight: 700,
+                      color: "var(--text-secondary)",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    Пароль должен содержать:
+                  </div>
+                  {[
+                    { id: "len", label: "не менее 8 символов", passed: password.length >= 8 },
+                    { id: "upper", label: "хотя бы одну заглавную букву (A-Z)", passed: /[A-Z]/.test(password) },
+                    { id: "lower", label: "хотя бы одну строчную букву (a-z)", passed: /[a-z]/.test(password) },
+                    { id: "num", label: "хотя бы одну цифру (0-9)", passed: /[0-9]/.test(password) },
+                    { id: "special", label: "хотя бы один специальный символ (!@#$%^&*)", passed: /[!@#$%^&*]/.test(password) },
+                  ].map((rule) => (
+                    <div
+                      key={rule.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        fontSize: "11px",
+                        color: rule.passed ? "#10b981" : "var(--text-muted)",
+                        fontWeight: rule.passed ? 600 : 400,
+                        transition: "color 0.15s ease",
+                      }}
+                    >
+                      {rule.passed ? (
+                        <CheckCircle2 size={13} color="#10b981" style={{ flexShrink: 0 }} />
+                      ) : (
+                        <Circle size={13} color="var(--border)" style={{ flexShrink: 0 }} />
+                      )}
+                      <span>• {rule.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Подтверждение пароля (только при регистрации) */}

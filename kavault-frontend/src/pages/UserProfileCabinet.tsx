@@ -21,11 +21,12 @@ import {
   Palette,
   Camera,
   Upload,
-  Dices,
   Film,
   Link2,
   Trash2,
   Check,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import { api } from "../api/axios";
 import { useApp, syncNicknameEverywhere } from "../context/AppContext";
@@ -43,7 +44,6 @@ import {
   loadProfileCustomization,
   saveProfileCustomization,
   syncProfileFromServer,
-  getRandomCosmetics,
 } from "../utils/profileCosmetics";
 
 interface UserProfileCabinetProps {
@@ -467,18 +467,6 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
     showToast("Фон сброшен на базовую тему");
   };
 
-  // Случайный стиль оформления (Shuffle / Dice)
-  const handleShuffleStyle = () => {
-    const randomized = getRandomCosmetics();
-    const nextCustom: UserProfileCustomization = {
-      ...customization,
-      ...randomized,
-    };
-    setCustomization(nextCustom);
-    saveProfileCustomization(nextCustom);
-    showToast("🎲 Примерен случайный стиль оформления!");
-  };
-
   // Сохранение никнейма
   const handleSaveNickname = async () => {
     const clean = editNickname.trim();
@@ -507,8 +495,16 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
       showToast("Введите текущий пароль", "error");
       return;
     }
-    if (newPassword.length < 6) {
-      showToast("Новый пароль должен быть не менее 6 символов", "error");
+    const passRules = [
+      { label: "не менее 8 символов", passed: newPassword.length >= 8 },
+      { label: "хотя бы одну заглавную букву (A-Z)", passed: /[A-Z]/.test(newPassword) },
+      { label: "хотя бы одну строчную букву (a-z)", passed: /[a-z]/.test(newPassword) },
+      { label: "хотя бы одну цифру (0-9)", passed: /[0-9]/.test(newPassword) },
+      { label: "хотя бы один специальный символ (!@#$%^&*)", passed: /[!@#$%^&*]/.test(newPassword) },
+    ];
+    const failed = passRules.filter((r) => !r.passed);
+    if (failed.length > 0) {
+      showToast(`Пароль должен содержать: ${failed.map((f) => f.label).join(", ")}`, "error");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -1568,7 +1564,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 <span>Живой профиль</span>
               </div>
 
-              {/* Кнопки быстрых действий на баннере */}
+              {/* Кнопка сохранения стиля на баннере */}
               <div
                 style={{
                   position: "absolute",
@@ -1579,41 +1575,17 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   gap: "6px",
                 }}
               >
-                <button
-                  type="button"
-                  onClick={handleShuffleStyle}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "5px",
-                    padding: "5px 10px",
-                    borderRadius: "8px",
-                    backgroundColor: "rgba(0,0,0,0.65)",
-                    border: "1px solid rgba(168, 85, 247, 0.4)",
-                    color: "#c084fc",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    backdropFilter: "blur(8px)",
-                    transition: "all 0.15s ease",
-                  }}
-                  title="Сгенерировать случайное сочетание героя, рамки и баннера"
-                >
-                  <Dices size={13} />
-                  <span>Случайный</span>
-                </button>
-
                 <Button
                   onClick={() => handleSaveCosmetics()}
                   style={{
-                    padding: "5px 12px",
-                    fontSize: "11px",
+                    padding: "6px 14px",
+                    fontSize: "12px",
                     fontWeight: 700,
                     borderRadius: "8px",
-                    gap: "5px",
+                    gap: "6px",
                   }}
                 >
-                  <Save size={13} /> Сохранить
+                  <Save size={14} /> Сохранить стиль
                 </Button>
               </div>
             </div>
@@ -2669,7 +2641,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   <Input
                     type={showPassword ? "text" : "password"}
                     icon={<Lock size={16} />}
-                    placeholder="От 6 символов"
+                    placeholder="Минимум 8 символов"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                   />
@@ -2687,6 +2659,52 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     onChange={(e) => setConfirmPassword(e.target.value)}
                   />
                 </div>
+
+                {/* Чеклист требований к паролю */}
+                {newPassword.length > 0 && (
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: "10px",
+                      backgroundColor: "rgba(255, 255, 255, 0.03)",
+                      border: "1px solid var(--border)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                      gridColumn: "1 / -1",
+                    }}
+                  >
+                    <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-secondary)" }}>
+                      Пароль должен содержать:
+                    </div>
+                    {[
+                      { id: "len", label: "не менее 8 символов", passed: newPassword.length >= 8 },
+                      { id: "upper", label: "хотя бы одну заглавную букву (A-Z)", passed: /[A-Z]/.test(newPassword) },
+                      { id: "lower", label: "хотя бы одну строчную букву (a-z)", passed: /[a-z]/.test(newPassword) },
+                      { id: "num", label: "хотя бы одну цифру (0-9)", passed: /[0-9]/.test(newPassword) },
+                      { id: "special", label: "хотя бы один специальный символ (!@#$%^&*)", passed: /[!@#$%^&*]/.test(newPassword) },
+                    ].map((rule) => (
+                      <div
+                        key={rule.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          fontSize: "11px",
+                          color: rule.passed ? "#10b981" : "var(--text-muted)",
+                          fontWeight: rule.passed ? 600 : 400,
+                        }}
+                      >
+                        {rule.passed ? (
+                          <CheckCircle2 size={12} color="#10b981" style={{ flexShrink: 0 }} />
+                        ) : (
+                          <Circle size={12} color="var(--border)" style={{ flexShrink: 0 }} />
+                        )}
+                        <span>• {rule.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="kv-pass-actions">
