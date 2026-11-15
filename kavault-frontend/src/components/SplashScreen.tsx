@@ -211,7 +211,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         />
       )}
 
-      {/* Видео заставки */}
+      {/* Видео заставки (оригинальный 4K поток без сжатия) */}
       <video
         ref={videoRef}
         playsInline
@@ -225,9 +225,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           objectFit: "contain",
           backgroundColor: "#000000",
           pointerEvents: "none",
+          transform: "translateZ(0)",
+          WebkitBackfaceVisibility: "hidden",
+          backfaceVisibility: "hidden",
         }}
       >
-        <source src="/splash.webm" type="video/webm" />
         <source src="/splash.mp4" type="video/mp4" />
       </video>
 
