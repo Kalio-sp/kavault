@@ -1,6 +1,9 @@
 const { app, BrowserWindow, shell } = require("electron");
 const path = require("path");
 
+// Разрешаем автовоспроизведение звука заставки без необходимости клика пользователя
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1280,

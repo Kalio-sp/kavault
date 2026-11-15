@@ -5,7 +5,7 @@ interface SplashScreenProps {
 }
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
-  // Обязательная заставка — показывается всегда при каждом входе и обновлении страницы
+  // Обязательная заставка — воспроизводится при каждом запуске и обновлении
   const [visible, setVisible] = useState(true);
   const [fading, setFading] = useState(false);
 
@@ -33,6 +33,26 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     }, 600);
   };
 
+  // Функция гарантированного включения звука
+  const ensureSound = () => {
+    try {
+      if (isCustomAudio) {
+        if (audioRef.current) {
+          audioRef.current.muted = false;
+          audioRef.current.volume = 1.0;
+          if (audioRef.current.paused) {
+            audioRef.current.play().catch(() => {});
+          }
+        }
+      } else {
+        if (videoRef.current) {
+          videoRef.current.muted = false;
+          videoRef.current.volume = 1.0;
+        }
+      }
+    } catch {}
+  };
+
   useEffect(() => {
     const handleReplay = () => {
       setFading(false);
@@ -41,16 +61,14 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.currentTime = 0;
-          if (isCustomAudio) {
-            videoRef.current.muted = true;
-          } else {
-            videoRef.current.muted = false;
-          }
+          videoRef.current.muted = isCustomAudio;
+          videoRef.current.volume = 1.0;
           videoRef.current.play().catch(() => {});
         }
         if (audioRef.current && isCustomAudio) {
           audioRef.current.currentTime = 0;
           audioRef.current.muted = false;
+          audioRef.current.volume = 1.0;
           audioRef.current.play().catch(() => {});
         }
       }, 50);
@@ -66,61 +84,91 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     const video = videoRef.current;
     if (!video) return;
 
+    // Пытаемся воспроизвести сразу с включенным звуком
     if (isCustomAudio) {
       video.muted = true;
       video.play().catch(() => {});
       if (audioRef.current) {
         audioRef.current.currentTime = 0;
         audioRef.current.muted = false;
+        audioRef.current.volume = 1.0;
         audioRef.current.play().catch(() => {
-          // Если браузер ограничил автоплей звука без жеста — включаем muted
           if (audioRef.current) audioRef.current.muted = true;
         });
       }
     } else {
       video.muted = false;
+      video.volume = 1.0;
       const playPromise = video.play();
 
       if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // Если строгая политика браузера блокирует звук до первого взаимодействия —
-          // играем без зависания, а при первом тапе/клике разблокируем звук
-          video.muted = true;
-          video.play().catch(() => {});
-        });
+        playPromise
+          .then(() => {
+            // Успешно запустилось со звуком
+          })
+          .catch(() => {
+            // Если браузер заблокировал unmuted autoplay на холодном старте —
+            // запускаем видео и сразу вешаем слушатели на любое движение мыши/тач/клавишу
+            video.muted = true;
+            video.play().catch(() => {});
+          });
       }
     }
 
-    // Резервный таймер завершения на случай сбоя видеопотока (~5.6 сек)
+    // Слушатели на ЛЮБОЕ движение мыши, курсора, тач, скролл, нажатие клавиши или фокус
+    const events = [
+      "pointerdown",
+      "mousedown",
+      "touchstart",
+      "touchend",
+      "keydown",
+      "wheel",
+      "scroll",
+      "pointermove",
+      "mousemove",
+      "focus",
+    ];
+
+    const unlockHandler = () => {
+      ensureSound();
+    };
+
+    events.forEach((ev) => {
+      window.addEventListener(ev, unlockHandler, { passive: true, capture: true });
+    });
+
+    // Периодическая попытка включить звук (для браузеров, где разрешение появилось после первого кадра)
+    const unmuteInterval = setInterval(() => {
+      if (videoRef.current && videoRef.current.muted) {
+        videoRef.current.muted = false;
+        videoRef.current.play().catch(() => {
+          if (videoRef.current) videoRef.current.muted = true;
+        });
+      } else {
+        clearInterval(unmuteInterval);
+      }
+    }, 400);
+
+    // Таймер завершения заставки (~5.5 сек)
     timerRef.current = setTimeout(() => {
       handleComplete();
     }, 5600);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      clearInterval(unmuteInterval);
+      events.forEach((ev) => {
+        window.removeEventListener(ev, unlockHandler, { capture: true } as any);
+      });
     };
   }, [visible, isCustomAudio, soundChoice]);
-
-  // Разблокировка звука при любом тапе/клике по экрану, если браузер потребовал жест
-  const handleUserInteract = () => {
-    if (isCustomAudio) {
-      if (audioRef.current && audioRef.current.muted) {
-        audioRef.current.muted = false;
-        if (audioRef.current.paused) audioRef.current.play().catch(() => {});
-      }
-    } else {
-      if (videoRef.current && videoRef.current.muted) {
-        videoRef.current.muted = false;
-      }
-    }
-  };
 
   if (!visible) return null;
 
   return (
     <div
-      onClick={handleUserInteract}
-      onTouchStart={handleUserInteract}
+      onClick={ensureSound}
+      onTouchStart={ensureSound}
       style={{
         position: "fixed",
         inset: 0,
