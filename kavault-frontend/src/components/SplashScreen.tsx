@@ -6,6 +6,9 @@ interface SplashScreenProps {
 
 const getSplashSrc = () => {
   try {
+    if (typeof window !== "undefined" && window.location.protocol.startsWith("http")) {
+      return "/splash.mp4";
+    }
     const base = import.meta.env.BASE_URL || "./";
     return `${base.replace(/\/$/, "")}/splash.mp4`;
   } catch {
@@ -62,49 +65,37 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     if (!video) return;
 
     video.currentTime = 0;
-    
-    // На iOS Safari прямое воспроизведение со звуком всегда блокируется политикой WebKit
-    // Запускаем muted для мгновенного плавного старта, а звук разблокируется
-    // автоматически либо при первом касании
-    const isAppleMobile = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isAppleMobile) {
-      video.muted = true;
-    } else {
-      video.volume = 1.0;
-      video.muted = false;
-    }
+    video.defaultMuted = true;
+    video.muted = true;
 
-    // Первичная попытка запуска
-    const playPromise = video.play();
-
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          // Если запустилось на десктопе со звуком — отлично
-        })
-        .catch(() => {
-          // Если браузер заблокировал звук до жеста — продолжаем без звука
-          if (videoRef.current) {
-            videoRef.current.muted = true;
-            videoRef.current.play().catch(() => {
-              // Если даже без звука не удалось запустить — сразу переходим в приложение
-              handleComplete();
-            });
-          }
+    const startPlayback = () => {
+      if (!videoRef.current) return;
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Автовоспроизведение на iOS ожидается до первого жеста
         });
-    }
+      }
+    };
 
-    // Фоновая разблокировка звука при первом же касании, если воспроизводилось без звука
-    const unlockSound = () => {
-      if (videoRef.current && videoRef.current.muted) {
+    startPlayback();
+    video.addEventListener("loadedmetadata", startPlayback, { once: true });
+    video.addEventListener("canplay", startPlayback, { once: true });
+
+    // Фоновая разблокировка звука при первом же касании / клике
+    const unlockSoundAndPlay = () => {
+      if (videoRef.current) {
+        if (videoRef.current.paused) {
+          videoRef.current.play().catch(() => {});
+        }
         videoRef.current.muted = false;
         videoRef.current.volume = 1.0;
       }
     };
 
-    window.addEventListener("pointerdown", unlockSound, { passive: true });
-    window.addEventListener("touchstart", unlockSound, { passive: true });
-    window.addEventListener("keydown", unlockSound, { passive: true });
+    window.addEventListener("pointerdown", unlockSoundAndPlay, { passive: true });
+    window.addEventListener("touchstart", unlockSoundAndPlay, { passive: true });
+    window.addEventListener("keydown", unlockSoundAndPlay, { passive: true });
 
     // Резервный таймер завершения заставки (~5.5 сек)
     timerRef.current = setTimeout(() => {
@@ -113,13 +104,17 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
-      window.removeEventListener("pointerdown", unlockSound);
-      window.removeEventListener("touchstart", unlockSound);
-      window.removeEventListener("keydown", unlockSound);
+      window.removeEventListener("pointerdown", unlockSoundAndPlay);
+      window.removeEventListener("touchstart", unlockSoundAndPlay);
+      window.removeEventListener("keydown", unlockSoundAndPlay);
+      video.removeEventListener("loadedmetadata", startPlayback);
+      video.removeEventListener("canplay", startPlayback);
     };
   }, [visible]);
 
   if (!visible) return null;
+
+  const splashSrc = getSplashSrc();
 
   return (
     <div
@@ -140,7 +135,17 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     >
       {/* 4K видеопоток оригинального качества со звуком */}
       <video
-        ref={videoRef}
+        ref={(el) => {
+          if (el) {
+            videoRef.current = el;
+            el.setAttribute("playsinline", "true");
+            el.setAttribute("webkit-playsinline", "true");
+            el.setAttribute("muted", "true");
+            el.defaultMuted = true;
+            el.muted = true;
+          }
+        }}
+        src={splashSrc}
         playsInline
         autoPlay
         muted
@@ -160,7 +165,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
           backfaceVisibility: "hidden",
         }}
       >
-        <source src={getSplashSrc()} type="video/mp4" />
+        <source src={splashSrc} type="video/mp4" />
         <source src="./splash.mp4" type="video/mp4" />
         <source src="/splash.mp4" type="video/mp4" />
       </video>
