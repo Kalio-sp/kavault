@@ -26,6 +26,24 @@ export class SocialController {
     return this.socialService.getPublicLeaderboard(search, lang);
   }
 
+  // Публичный просмотр профиля пользователя (для друзей и топа)
+  @Get('user-profile/:id')
+  getUserProfile(@Param('id') targetId: string, @Request() req: any) {
+    let viewerId: string | null = null;
+    try {
+      const authHeader = req?.headers?.authorization;
+      if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+          if (payload?.sub) viewerId = payload.sub;
+        }
+      }
+    } catch {}
+    return this.socialService.getUserPublicProfile(targetId, viewerId);
+  }
+
   // Предпросмотр публичной ссылки на подборку (без требования авторизации)
   @Get('decks/public/:slug')
   getPublicDeck(@Param('slug') slug: string) {

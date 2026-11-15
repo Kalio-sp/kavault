@@ -5,8 +5,9 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Увеличиваем лимит JSON для импорта больших колод Anki/CSV и публичных наборов
-  app.useBodyParser('json', { limit: '5mb' });
+  // Увеличиваем лимит JSON для аватарок, GIF, баннеров и импорта колод
+  app.useBodyParser('json', { limit: '50mb' });
+  app.useBodyParser('urlencoded', { limit: '50mb', extended: true });
 
   // Разрешаем запросы от любых клиентов (браузер, Electron, iPhone по Wi-Fi)
   app.enableCors({

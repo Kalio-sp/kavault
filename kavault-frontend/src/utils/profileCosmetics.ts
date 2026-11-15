@@ -551,6 +551,9 @@ export const MONOGRAM_COLORS = [
 
 const STORAGE_PREFIX = "kavault_profile_custom_";
 
+// Оперативная память для профиля (гарантирует сохранение больших GIF и фонов даже при переполнении localStorage)
+const memoryProfileCache: Record<string, UserProfileCustomization> = {};
+
 export function getProfileUserKey(): string {
   try {
     const username = localStorage.getItem("kavault_username") || "";
@@ -585,19 +588,26 @@ export function getDefaultCustomization(): UserProfileCustomization {
 
 export function loadProfileCustomization(userKey?: string): UserProfileCustomization {
   const key = userKey || getProfileUserKey();
+  if (memoryProfileCache[key]) {
+    return memoryProfileCache[key];
+  }
   try {
     const raw = localStorage.getItem(`${STORAGE_PREFIX}${key}`);
     if (raw) {
       const parsed = JSON.parse(raw);
-      return {
+      const res = {
         ...getDefaultCustomization(),
         ...parsed,
       };
+      memoryProfileCache[key] = res;
+      return res;
     }
   } catch (e) {
     console.error("Failed to load profile customization", e);
   }
-  return getDefaultCustomization();
+  const def = getDefaultCustomization();
+  memoryProfileCache[key] = def;
+  return def;
 }
 
 export function syncProfileFromServer(serverCustom: any, userKey?: string): UserProfileCustomization {
@@ -610,14 +620,34 @@ export function syncProfileFromServer(serverCustom: any, userKey?: string): User
     ...current,
     ...serverCustom,
   };
+
+  // Кэшируем в памяти для мгновенного доступа
+  memoryProfileCache[key] = merged;
+
+  // Пытаемся сохранить в localStorage с защитой от квоты
   try {
     localStorage.setItem(`${STORAGE_PREFIX}${key}`, JSON.stringify(merged));
+  } catch (e) {
+    console.warn("localStorage quota exceeded on sync, storing lightweight copy", e);
+    try {
+      const fallback = { ...merged };
+      if (fallback.customAvatarUrl && fallback.customAvatarUrl.startsWith("data:") && fallback.customAvatarUrl.length > 250000) {
+        delete fallback.customAvatarUrl;
+      }
+      if (fallback.customBannerUrl && fallback.customBannerUrl.startsWith("data:") && fallback.customBannerUrl.length > 250000) {
+        delete fallback.customBannerUrl;
+      }
+      localStorage.setItem(`${STORAGE_PREFIX}${key}`, JSON.stringify(fallback));
+    } catch {}
+  }
+
+  // Оповещаем все компоненты интерфейса
+  try {
     window.dispatchEvent(
       new CustomEvent("kavault_profile_updated", { detail: merged }),
     );
-  } catch (e) {
-    console.error("Failed to sync profile customization from server", e);
-  }
+  } catch {}
+
   return merged;
 }
 
@@ -626,22 +656,46 @@ export function saveProfileCustomization(
   userKey?: string,
 ): void {
   const key = userKey || getProfileUserKey();
+
+  // 1. Немедленно кэшируем в памяти
+  memoryProfileCache[key] = custom;
+
+  // 2. Оповещаем всё приложение об изменении профиля
   try {
-    localStorage.setItem(`${STORAGE_PREFIX}${key}`, JSON.stringify(custom));
-    // Оповещаем всё приложение об изменении профиля
     window.dispatchEvent(
       new CustomEvent("kavault_profile_updated", { detail: custom }),
     );
+  } catch (err) {
+    console.warn("Failed to dispatch profile update event", err);
+  }
 
-    // Синхронизируем с бэкендом, если пользователь авторизован
+  // 3. Сохраняем в localStorage с защитой от QuotaExceededError
+  try {
+    localStorage.setItem(`${STORAGE_PREFIX}${key}`, JSON.stringify(custom));
+  } catch (e) {
+    console.warn("localStorage quota exceeded on save, preserving lightweight version", e);
+    try {
+      const fallback = { ...custom };
+      if (fallback.customAvatarUrl && fallback.customAvatarUrl.startsWith("data:") && fallback.customAvatarUrl.length > 250000) {
+        delete fallback.customAvatarUrl;
+      }
+      if (fallback.customBannerUrl && fallback.customBannerUrl.startsWith("data:") && fallback.customBannerUrl.length > 250000) {
+        delete fallback.customBannerUrl;
+      }
+      localStorage.setItem(`${STORAGE_PREFIX}${key}`, JSON.stringify(fallback));
+    } catch {}
+  }
+
+  // 4. Синхронизируем с бэкендом (всегда вызывается независимо от localStorage!)
+  try {
     const token = localStorage.getItem("access_token");
     if (token) {
       api.patch("/social/profile-customization", custom).catch((err) => {
         console.warn("Failed to sync customization to server", err);
       });
     }
-  } catch (e) {
-    console.error("Failed to save profile customization", e);
+  } catch (netErr) {
+    console.warn("Network request failed in saveProfileCustomization", netErr);
   }
 }
 

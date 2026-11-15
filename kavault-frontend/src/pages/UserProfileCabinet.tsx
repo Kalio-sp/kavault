@@ -96,11 +96,13 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
 
   // Выбор подраздела кастомизации: Аватар | Рамка | Баннер
   const [cosmeticsSubTab, setCosmeticsSubTab] = useState<"avatar" | "frame" | "banner">("avatar");
+  const [avatarTabMode, setAvatarTabMode] = useState<"presets" | "custom">("presets");
   const [bannerTabMode, setBannerTabMode] = useState<"presets" | "custom">("presets");
   const [bannerFilter, setBannerFilter] = useState<string>("all");
   const [frameFilter, setFrameFilter] = useState<string>("all");
   const [avatarFilter, setAvatarFilter] = useState<string>("all");
   const [bannerUrlInput, setBannerUrlInput] = useState("");
+  const [avatarUrlInput, setAvatarUrlInput] = useState("");
 
   // Данные социального профиля и MMR
   const [socialData, setSocialData] = useState<SocialSummary | null>(null);
@@ -217,34 +219,106 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
     showToast("✨ Стиль профиля успешно обновлен!");
   };
 
-  // Загрузка кастомного аватара
+  // Загрузка кастомного аватара (поддерживает PNG, JPG, WebP и анимированные GIF до 15 МБ)
   const handleAvatarFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      showToast("Пожалуйста, выберите файл изображения (PNG, JPG, WEBP)", "error");
+      showToast("Пожалуйста, выберите файл изображения или GIF", "error");
       return;
     }
 
-    if (file.size > 3 * 1024 * 1024) {
-      showToast("Размер изображения не должен превышать 3 МБ", "error");
+    if (file.size > 15 * 1024 * 1024) {
+      showToast("Размер файла не должен превышать 15 МБ", "error");
       return;
     }
+
+    const isGif = file.type === "image/gif";
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      const nextCustom: UserProfileCustomization = {
-        ...customization,
-        avatarType: "custom",
-        customAvatarUrl: base64,
+      const rawUrl = event.target?.result as string;
+
+      // Для GIF сохраняем исходный поток данных без конвертации
+      if (isGif) {
+        const nextCustom: UserProfileCustomization = {
+          ...customization,
+          avatarType: "custom",
+          customAvatarUrl: rawUrl,
+        };
+        setCustomization(nextCustom);
+        saveProfileCustomization(nextCustom);
+        showToast("✨ Анимированный GIF-аватар установлен!");
+        return;
+      }
+
+      // Для статичных фото оптимизируем размер для быстрой загрузки
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxDim = 384;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            const ratio = Math.min(maxDim / w, maxDim / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, 0, 0, w, h);
+            const optimized = canvas.toDataURL("image/webp", 0.92);
+            const nextCustom: UserProfileCustomization = {
+              ...customization,
+              avatarType: "custom",
+              customAvatarUrl: optimized.length < rawUrl.length ? optimized : rawUrl,
+            };
+            setCustomization(nextCustom);
+            saveProfileCustomization(nextCustom);
+            showToast("📸 Фото-аватар оптимизирован и установлен!");
+            return;
+          }
+        } catch {}
+        const nextCustom: UserProfileCustomization = {
+          ...customization,
+          avatarType: "custom",
+          customAvatarUrl: rawUrl,
+        };
+        setCustomization(nextCustom);
+        saveProfileCustomization(nextCustom);
+        showToast("📸 Новый аватар загружен и сохранен!");
       };
-      setCustomization(nextCustom);
-      saveProfileCustomization(nextCustom);
-      showToast("📸 Новый аватар загружен и сохранен!");
+      img.src = rawUrl;
     };
     reader.readAsDataURL(file);
+  };
+
+  // Установка аватара по прямой ссылке (GIF / WebP / PNG / Giphy / Tenor / Discord)
+  const handleApplyAvatarUrl = () => {
+    const trimmed = avatarUrlInput.trim();
+    if (!trimmed) {
+      showToast("Вставьте ссылку на картинку или GIF", "info");
+      return;
+    }
+    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+      showToast("Ссылка должна начинаться с https://", "error");
+      return;
+    }
+    const nextCustom: UserProfileCustomization = {
+      ...customization,
+      avatarType: "custom",
+      customAvatarUrl: trimmed,
+    };
+    setCustomization(nextCustom);
+    saveProfileCustomization(nextCustom);
+    setAvatarUrlInput("");
+    showToast("✨ Аватар (GIF / фото) по ссылке установлен!");
   };
 
   // Загрузка кастомного баннера (поддерживает изображения, GIF, WebP и видео MP4/WebM)
@@ -1623,12 +1697,18 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                   }}
                 >
                   <button
-                    onClick={() => handleSaveCosmetics({ avatarType: "preset" })}
+                    onClick={() => {
+                      setAvatarTabMode("presets");
+                      handleSaveCosmetics({ avatarType: "preset" });
+                    }}
                     style={{
                       padding: "6px 14px",
                       borderRadius: "8px",
                       border: "none",
-                      backgroundColor: customization.avatarType === "preset" ? "var(--accent, #3b82f6)" : "transparent",
+                      backgroundColor:
+                        avatarTabMode === "presets" && customization.avatarType === "preset"
+                          ? "var(--accent, #3b82f6)"
+                          : "transparent",
                       color: "#ffffff",
                       fontSize: "12px",
                       fontWeight: 700,
@@ -1638,12 +1718,15 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                     Герои ({AVATAR_PRESETS.length})
                   </button>
                   <button
-                    onClick={() => avatarFileInputRef.current?.click()}
+                    onClick={() => setAvatarTabMode("custom")}
                     style={{
                       padding: "6px 14px",
                       borderRadius: "8px",
                       border: "none",
-                      backgroundColor: customization.avatarType === "custom" ? "var(--accent, #3b82f6)" : "transparent",
+                      backgroundColor:
+                        avatarTabMode === "custom" || customization.avatarType === "custom"
+                          ? "var(--accent, #3b82f6)"
+                          : "transparent",
                       color: "#ffffff",
                       fontSize: "12px",
                       fontWeight: 700,
@@ -1659,143 +1742,287 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 </div>
               </div>
 
-              {/* Фильтры категорий героев */}
-              {customization.avatarType === "preset" && (
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                  {["all", "Cyberpunk", "Japanese", "Anime", "VIP", "Chill", "Dev"].map((tag) => (
-                    <button
-                      key={tag}
-                      onClick={() => setAvatarFilter(tag)}
-                      style={{
-                        padding: "4px 10px",
-                        borderRadius: "8px",
-                        border: "1px solid",
-                        borderColor: avatarFilter === tag ? "var(--accent, #3b82f6)" : "rgba(255,255,255,0.08)",
-                        backgroundColor: avatarFilter === tag ? "rgba(59, 130, 246, 0.15)" : "transparent",
-                        color: avatarFilter === tag ? "#60a5fa" : "var(--text-muted)",
-                        fontSize: "11px",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {tag === "all" ? "Все герои" : tag}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Сетка пресетов аватарок (16 персонажей) */}
-              {customization.avatarType === "preset" && (
-                <div className="kv-presets-grid">
-                  {AVATAR_PRESETS.filter((p) => avatarFilter === "all" || p.tag.toLowerCase() === avatarFilter.toLowerCase()).map((preset) => {
-                    const isSelected =
-                      customization.avatarType === "preset" &&
-                      customization.avatarPresetId === preset.id;
-                    return (
-                      <div
-                        key={preset.id}
-                        onClick={() =>
-                          handleSaveCosmetics({
-                            avatarType: "preset",
-                            avatarPresetId: preset.id,
-                          })
-                        }
+              {/* РЕЖИМ 1: КОЛЛЕКЦИЯ ГЕРОЕВ */}
+              {avatarTabMode === "presets" && customization.avatarType === "preset" && (
+                <>
+                  {/* Фильтры категорий героев */}
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                    {["all", "Cyberpunk", "Japanese", "Anime", "VIP", "Chill", "Dev"].map((tag) => (
+                      <button
+                        key={tag}
+                        onClick={() => setAvatarFilter(tag)}
                         style={{
-                          padding: "10px 8px",
-                          borderRadius: "12px",
-                          backgroundColor: isSelected
-                            ? "rgba(59, 130, 246, 0.15)"
-                            : "var(--surface-raised, rgba(255,255,255,0.04))",
-                          border: isSelected
-                            ? "2px solid var(--accent, #3b82f6)"
-                            : "1px solid var(--border, rgba(255,255,255,0.06))",
+                          padding: "4px 10px",
+                          borderRadius: "8px",
+                          border: "1px solid",
+                          borderColor: avatarFilter === tag ? "var(--accent, #3b82f6)" : "rgba(255,255,255,0.08)",
+                          backgroundColor: avatarFilter === tag ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                          color: avatarFilter === tag ? "#60a5fa" : "var(--text-muted)",
+                          fontSize: "11px",
+                          fontWeight: 600,
                           cursor: "pointer",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: "6px",
-                          transition: "all 0.15s ease",
-                          textAlign: "center",
-                          boxShadow: isSelected ? "0 0 16px rgba(59, 130, 246, 0.4)" : "none",
                         }}
                       >
-                        <div
-                          style={{
-                            width: "46px",
-                            height: "46px",
-                            borderRadius: "50%",
-                            background: preset.gradient,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "23px",
-                            boxShadow: isSelected ? "0 0 12px rgba(59, 130, 246, 0.6)" : "none",
-                          }}
-                        >
-                          {preset.emoji}
-                        </div>
-                        <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-primary)" }}>
-                          {preset.name}
-                        </div>
-                        <div style={{ fontSize: "9.5px", color: "var(--text-muted)" }}>
-                          {preset.tag}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Режим своего фото */}
-              {customization.avatarType === "custom" && customization.customAvatarUrl && (
-                <div className="kv-custom-avatar-card">
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
-                    <img
-                      src={customization.customAvatarUrl}
-                      alt="Custom"
-                      style={{ width: "52px", height: "52px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-                    />
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
-                        Кастомный аватар активен
-                      </div>
-                      <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                        Поддерживаются фото и анимированные GIF
-                      </div>
-                    </div>
+                        {tag === "all" ? "Все герои" : tag}
+                      </button>
+                    ))}
                   </div>
 
-                  <div className="kv-custom-avatar-actions">
+                  {/* Сетка пресетов аватарок (16 персонажей) */}
+                  <div className="kv-presets-grid">
+                    {AVATAR_PRESETS.filter((p) => avatarFilter === "all" || p.tag.toLowerCase() === avatarFilter.toLowerCase()).map((preset) => {
+                      const isSelected =
+                        customization.avatarType === "preset" &&
+                        customization.avatarPresetId === preset.id;
+                      return (
+                        <div
+                          key={preset.id}
+                          onClick={() =>
+                            handleSaveCosmetics({
+                              avatarType: "preset",
+                              avatarPresetId: preset.id,
+                            })
+                          }
+                          style={{
+                            padding: "10px 8px",
+                            borderRadius: "12px",
+                            backgroundColor: isSelected
+                              ? "rgba(59, 130, 246, 0.15)"
+                              : "var(--surface-raised, rgba(255,255,255,0.04))",
+                            border: isSelected
+                              ? "2px solid var(--accent, #3b82f6)"
+                              : "1px solid var(--border, rgba(255,255,255,0.06))",
+                            cursor: "pointer",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "6px",
+                            transition: "all 0.15s ease",
+                            textAlign: "center",
+                            boxShadow: isSelected ? "0 0 16px rgba(59, 130, 246, 0.4)" : "none",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "46px",
+                              height: "46px",
+                              borderRadius: "50%",
+                              background: preset.gradient,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "23px",
+                              boxShadow: isSelected ? "0 0 12px rgba(59, 130, 246, 0.6)" : "none",
+                            }}
+                          >
+                            {preset.emoji}
+                          </div>
+                          <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-primary)" }}>
+                            {preset.name}
+                          </div>
+                          <div style={{ fontSize: "9.5px", color: "var(--text-muted)" }}>
+                            {preset.tag}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* РЕЖИМ 2: СВОЙ АВАТАР (GIF, КАРТИНКА ИЛИ ПРЯМАЯ ССЫЛКА) */}
+              {(avatarTabMode === "custom" || customization.avatarType === "custom") && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  {/* Карточка активного кастомного аватара */}
+                  {customization.avatarType === "custom" && customization.customAvatarUrl && (
+                    <div className="kv-custom-avatar-card">
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+                        <img
+                          src={customization.customAvatarUrl}
+                          alt="Custom Avatar"
+                          style={{
+                            width: "52px",
+                            height: "52px",
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                            flexShrink: 0,
+                            border: "2px solid var(--accent, #3b82f6)",
+                            boxShadow: "0 0 12px rgba(59, 130, 246, 0.4)",
+                          }}
+                        />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
+                            Кастомный аватар активен ✨
+                          </div>
+                          <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                            Синхронизирован с вашим аккаунтом KaVault
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="kv-custom-avatar-actions">
+                        <button
+                          onClick={() => avatarFileInputRef.current?.click()}
+                          style={{
+                            padding: "8px 14px",
+                            borderRadius: "8px",
+                            backgroundColor: "var(--accent, #3b82f6)",
+                            color: "#fff",
+                            border: "none",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Заменить файл
+                        </button>
+                        <button
+                          onClick={() => {
+                            setAvatarTabMode("presets");
+                            handleSaveCosmetics({ avatarType: "preset", customAvatarUrl: undefined });
+                          }}
+                          style={{
+                            padding: "8px 14px",
+                            borderRadius: "8px",
+                            backgroundColor: "rgba(255, 255, 255, 0.08)",
+                            color: "var(--text-secondary)",
+                            border: "none",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Сбросить на персонажа
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Загрузка файла с устройства */}
+                  <div
+                    style={{
+                      padding: "16px",
+                      borderRadius: "12px",
+                      backgroundColor: "rgba(255, 255, 255, 0.03)",
+                      border: "1px dashed rgba(255, 255, 255, 0.2)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "10px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "12px",
+                        backgroundColor: "rgba(59, 130, 246, 0.15)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "var(--accent, #3b82f6)",
+                      }}
+                    >
+                      <Camera size={24} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
+                        Загрузите аватар любого формата
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "3px" }}>
+                        Поддерживаются статические картинки (PNG, JPG, WebP) и <strong>живые анимированные GIF</strong> до 15 МБ
+                      </div>
+                    </div>
+
                     <button
+                      type="button"
                       onClick={() => avatarFileInputRef.current?.click()}
                       style={{
-                        padding: "8px 14px",
-                        borderRadius: "8px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "9px 18px",
+                        borderRadius: "10px",
                         backgroundColor: "var(--accent, #3b82f6)",
-                        color: "#fff",
+                        color: "#ffffff",
                         border: "none",
-                        fontSize: "12px",
-                        fontWeight: 600,
+                        fontSize: "13px",
+                        fontWeight: 700,
                         cursor: "pointer",
+                        boxShadow: "0 4px 14px rgba(59, 130, 246, 0.4)",
                       }}
                     >
-                      Заменить
+                      <Upload size={16} />
+                      <span>Выбрать файл с устройства</span>
                     </button>
-                    <button
-                      onClick={() => handleSaveCosmetics({ avatarType: "preset", customAvatarUrl: undefined })}
-                      style={{
-                        padding: "8px 14px",
-                        borderRadius: "8px",
-                        backgroundColor: "rgba(255, 255, 255, 0.08)",
-                        color: "var(--text-secondary)",
-                        border: "none",
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Сбросить
-                    </button>
+                  </div>
+
+                  {/* Вставка прямой ссылки на GIF или картинку */}
+                  <div
+                    style={{
+                      padding: "14px 16px",
+                      borderRadius: "12px",
+                      backgroundColor: "var(--surface-raised, #18181b)",
+                      border: "1px solid var(--border, rgba(255,255,255,0.08))",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                    }}
+                  >
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
+                      Или вставьте прямую ссылку на аватар (URL)
+                    </div>
+                    <div style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
+                      Подходят прямые ссылки на анимированные GIF (Tenor, Giphy, Imgur, Discord) или картинки PNG/JPG
+                    </div>
+
+                    <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
+                      <input
+                        type="url"
+                        placeholder="https://media.tenor.com/.../avatar.gif"
+                        value={avatarUrlInput}
+                        onChange={(e) => setAvatarUrlInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleApplyAvatarUrl();
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          backgroundColor: "var(--surface, #121214)",
+                          border: "1px solid var(--border, rgba(255,255,255,0.12))",
+                          color: "var(--text-primary, #ffffff)",
+                          fontSize: "13px",
+                          outline: "none",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyAvatarUrl}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "8px 14px",
+                          borderRadius: "8px",
+                          backgroundColor: "var(--accent, #3b82f6)",
+                          color: "#ffffff",
+                          border: "none",
+                          fontSize: "12.5px",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <Sparkles size={14} />
+                        <span>Применить</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

@@ -26,6 +26,8 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
+import { UserAvatarBadge } from "../components/UserAvatarBadge";
+import { UserProfileModal } from "../components/UserProfileModal";
 import type { Language } from "../i18n/translations";
 
 interface RankTierInfo {
@@ -48,6 +50,7 @@ interface LeaderboardEntry {
   resourcesCount: number;
   passagesCount: number;
   joinedAt?: string;
+  profileCustomization?: any;
 }
 
 interface MmrLogEntry {
@@ -65,6 +68,7 @@ interface MySocialSummary {
   rankTier: RankTierInfo;
   globalRank: number | null;
   studyLanguage: string;
+  profileCustomization?: any;
   friendsCount: number;
   pendingIncomingCount: number;
   recentLogs: MmrLogEntry[];
@@ -80,6 +84,7 @@ interface FriendUserItem {
   studyLanguage: string;
   cardsCount: number;
   resourcesCount: number;
+  profileCustomization?: any;
 }
 
 interface SearchUserResult {
@@ -92,6 +97,7 @@ interface SearchUserResult {
   resourcesCount: number;
   friendshipId: string | null;
   relationStatus: "NONE" | "FRIENDS" | "PENDING_SENT" | "PENDING_RECEIVED";
+  profileCustomization?: any;
 }
 
 const LANG_FLAGS: Record<string, string> = {
@@ -422,6 +428,9 @@ export function SocialHub({ publicOnly = false }: { publicOnly?: boolean }) {
   const [searchResults, setSearchResults] = useState<SearchUserResult[]>([]);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [friendActionMsg, setFriendActionMsg] = useState("");
+
+  // Просмотр профиля пользователя (модальное окно)
+  const [inspectedUser, setInspectedUser] = useState<any | null>(null);
 
   const fetchPublicBoard = useCallback(async () => {
     setLoadingBoard(true);
@@ -954,13 +963,17 @@ export function SocialHub({ publicOnly = false }: { publicOnly?: boolean }) {
                   return (
                     <Card
                       key={entry.id}
+                      onClick={() => setInspectedUser(entry)}
+                      title="Нажмите, чтобы открыть профиль"
                       style={{
                         padding: "16px",
                         borderColor: `${borders[idx]}88`,
                         backgroundColor: "var(--surface)",
                         display: "flex",
                         flexDirection: "column",
-                        gap: "8px",
+                        gap: "10px",
+                        cursor: "pointer",
+                        transition: "transform 0.15s ease, box-shadow 0.15s ease",
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -978,14 +991,28 @@ export function SocialHub({ publicOnly = false }: { publicOnly?: boolean }) {
                           {entry.rankTier.emoji} {entry.rankTier.title}
                         </span>
                       </div>
-                      <div style={{ fontSize: "17px", fontWeight: 700 }}>
-                        {LANG_FLAGS[entry.studyLanguage] || "🌐"} @{entry.nickname}
-                        {summary?.id === entry.id && (
-                          <span style={{ marginLeft: "8px" }}>
-                            <Badge variant="accent">{txt.youBadge}</Badge>
-                          </span>
-                        )}
+
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <UserAvatarBadge
+                          customization={entry.profileCustomization}
+                          size={40}
+                          username={entry.nickname}
+                        />
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: "16px", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            @{entry.nickname}
+                            {summary?.id === entry.id && (
+                              <span style={{ marginLeft: "8px" }}>
+                                <Badge variant="accent">{txt.youBadge}</Badge>
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
+                            {LANG_FLAGS[entry.studyLanguage] || "🌐"} • Нажмите для профиля
+                          </div>
+                        </div>
                       </div>
+
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                         <span style={{ fontSize: "22px", fontWeight: 800, color: borders[idx] }}>
                           {entry.mmr} MMR
@@ -1084,11 +1111,15 @@ export function SocialHub({ publicOnly = false }: { publicOnly?: boolean }) {
                         return (
                           <tr
                             key={entry.id}
+                            onClick={() => setInspectedUser(entry)}
+                            title="Нажмите, чтобы открыть профиль"
                             style={{
                               borderBottom: "1px solid var(--border-subtle)",
                               backgroundColor: isMe
                                 ? "rgba(59, 130, 246, 0.08)"
                                 : "transparent",
+                              cursor: "pointer",
+                              transition: "background-color 0.15s ease",
                             }}
                           >
                             <td style={{ padding: "12px 14px", fontWeight: 700 }}>
@@ -1101,17 +1132,22 @@ export function SocialHub({ publicOnly = false }: { publicOnly?: boolean }) {
                                     : `#${entry.rank}`}
                             </td>
                             <td style={{ padding: "12px 14px", fontWeight: 600 }}>
-                              <span style={{ marginRight: "6px" }}>
-                                {LANG_FLAGS[entry.studyLanguage] || "🌐"}
-                              </span>
-                              @{entry.nickname}
-                              {isMe && (
-                                <span style={{ marginLeft: "8px" }}>
+                              <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                                <UserAvatarBadge
+                                  customization={entry.profileCustomization}
+                                  size={28}
+                                  username={entry.nickname}
+                                />
+                                <span>@{entry.nickname}</span>
+                                <span style={{ fontSize: "12px", opacity: 0.8 }}>
+                                  {LANG_FLAGS[entry.studyLanguage] || "🌐"}
+                                </span>
+                                {isMe && (
                                   <Badge variant="accent">
                                     {txt.youBadge}
                                   </Badge>
-                                </span>
-                              )}
+                                )}
+                              </div>
                             </td>
                             <td style={{ padding: "12px 14px" }}>
                               <span
@@ -1214,15 +1250,33 @@ export function SocialHub({ publicOnly = false }: { publicOnly?: boolean }) {
                           flexWrap: "wrap",
                         }}
                       >
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: "14px" }}>
-                            {LANG_FLAGS[u.studyLanguage] || "🌐"} @{u.nickname}{" "}
-                            <span style={{ color: u.rankTier.color, fontSize: "12.5px", marginLeft: "6px" }}>
-                              {u.rankTier.emoji} {u.mmr} MMR
-                            </span>
-                          </div>
-                          <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                            {u.cardsCount} {txt.cardsShort} • {u.resourcesCount} {txt.resShort}
+                        <div
+                          onClick={() => setInspectedUser(u)}
+                          title="Нажмите для просмотра профиля"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            cursor: "pointer",
+                            flex: 1,
+                            minWidth: "180px",
+                          }}
+                        >
+                          <UserAvatarBadge
+                            customization={u.profileCustomization}
+                            size={34}
+                            username={u.nickname}
+                          />
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: "14px" }}>
+                              {LANG_FLAGS[u.studyLanguage] || "🌐"} @{u.nickname}{" "}
+                              <span style={{ color: u.rankTier.color, fontSize: "12.5px", marginLeft: "6px" }}>
+                                {u.rankTier.emoji} {u.mmr} MMR
+                              </span>
+                            </div>
+                            <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                              {u.cardsCount} {txt.cardsShort} • {u.resourcesCount} {txt.resShort}
+                            </div>
                           </div>
                         </div>
 
@@ -1400,10 +1454,26 @@ export function SocialHub({ publicOnly = false }: { publicOnly?: boolean }) {
                             : "var(--bg-surface)",
                         }}
                       >
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div
+                          onClick={() => setInspectedUser(entry)}
+                          title="Нажмите для просмотра профиля"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            cursor: "pointer",
+                            flex: 1,
+                            minWidth: 0,
+                          }}
+                        >
                           <span style={{ fontWeight: 800, width: "26px" }}>#{entry.rank}</span>
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: "14px" }}>
+                          <UserAvatarBadge
+                            customization={entry.profileCustomization}
+                            size={34}
+                            username={entry.nickname}
+                          />
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {LANG_FLAGS[entry.studyLanguage] || "🌐"} @{entry.nickname}
                               {entry.isSelf && (
                                 <span style={{ marginLeft: "8px" }}>
@@ -1574,6 +1644,19 @@ export function SocialHub({ publicOnly = false }: { publicOnly?: boolean }) {
           </div>
         )}
       </div>
+
+      {/* Модальное окно просмотра профиля пользователя / друга / топа */}
+      {inspectedUser && (
+        <UserProfileModal
+          userId={inspectedUser.id}
+          initialData={inspectedUser}
+          onClose={() => setInspectedUser(null)}
+          onFriendshipUpdated={() => {
+            fetchPersonalSocial();
+            fetchPublicBoard();
+          }}
+        />
+      )}
     </div>
   );
 }

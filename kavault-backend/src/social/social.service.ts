@@ -371,6 +371,7 @@ export class SocialService {
         nickname: true,
         mmr: true,
         studyLanguage: true,
+        profileCustomization: true,
         createdAt: true,
         _count: {
           select: {
@@ -397,6 +398,7 @@ export class SocialService {
         mmr: u.mmr,
         rankTier: getTaskRankTier(u.mmr),
         studyLanguage: u.studyLanguage || 'ja',
+        profileCustomization: u.profileCustomization,
         cardsCount: u._count.japaneseCards,
         resourcesCount: u._count.resources,
         passagesCount: u._count.studyPassages,
@@ -433,6 +435,7 @@ export class SocialService {
         nickname: true,
         mmr: true,
         studyLanguage: true,
+        profileCustomization: true,
         _count: {
           select: {
             japaneseCards: true,
@@ -452,6 +455,7 @@ export class SocialService {
         mmr: u.mmr,
         rankTier: getTaskRankTier(u.mmr),
         studyLanguage: u.studyLanguage || 'ja',
+        profileCustomization: u.profileCustomization,
         cardsCount: u._count.japaneseCards,
         resourcesCount: u._count.resources,
         passagesCount: u._count.studyPassages,
@@ -477,6 +481,7 @@ export class SocialService {
         nickname: true,
         mmr: true,
         studyLanguage: true,
+        profileCustomization: true,
         _count: {
           select: { japaneseCards: true, resources: true },
         },
@@ -519,6 +524,7 @@ export class SocialService {
         mmr: m.mmr,
         rankTier: getTaskRankTier(m.mmr),
         studyLanguage: m.studyLanguage || 'ja',
+        profileCustomization: m.profileCustomization,
         cardsCount: m._count.japaneseCards,
         resourcesCount: m._count.resources,
         friendshipId: rel?.id || null,
@@ -541,6 +547,7 @@ export class SocialService {
             nickname: true,
             mmr: true,
             studyLanguage: true,
+            profileCustomization: true,
             _count: { select: { japaneseCards: true, resources: true } },
           },
         },
@@ -550,6 +557,7 @@ export class SocialService {
             nickname: true,
             mmr: true,
             studyLanguage: true,
+            profileCustomization: true,
             _count: { select: { japaneseCards: true, resources: true } },
           },
         },
@@ -564,6 +572,7 @@ export class SocialService {
         nickname: string | null;
         mmr: number;
         studyLanguage: string;
+        profileCustomization?: any;
         _count: { japaneseCards: number; resources: number };
       },
     ) => ({
@@ -573,6 +582,7 @@ export class SocialService {
       mmr: peer.mmr,
       rankTier: getTaskRankTier(peer.mmr),
       studyLanguage: peer.studyLanguage || 'ja',
+      profileCustomization: peer.profileCustomization,
       cardsCount: peer._count.japaneseCards,
       resourcesCount: peer._count.resources,
     });
@@ -959,6 +969,106 @@ export class SocialService {
       totalCardsInDeck: cardsList.length,
       totalPassagesInDeck: passagesList.length,
       language: deck.language,
+    };
+  }
+
+  async getUserPublicProfile(targetUserId: string, viewerId?: string | null) {
+    if (!targetUserId) throw new NotFoundException('Пользователь не найден');
+
+    const cleanTarget = targetUserId.trim();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanTarget);
+
+    const user = await this.prisma.user.findFirst({
+      where: isUuid
+        ? {
+            OR: [
+              { id: cleanTarget },
+              { nickname: { equals: cleanTarget, mode: 'insensitive' } },
+            ],
+          }
+        : { nickname: { equals: cleanTarget, mode: 'insensitive' } },
+      select: {
+        id: true,
+        nickname: true,
+        email: true,
+        mmr: true,
+        studyLanguage: true,
+        profileCustomization: true,
+        unlockedAchievements: true,
+        createdAt: true,
+        _count: {
+          select: {
+            japaneseCards: true,
+            resources: true,
+            studyPassages: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    const isCreator = isCreatorEmail(user.email || '');
+    let globalRank: number | null = null;
+    if (!isCreator) {
+      const higherCount = await this.prisma.user.count({
+        where: {
+          ...this.leaderboardExcludeCreatorWhere,
+          OR: [
+            { mmr: { gt: user.mmr } },
+            { mmr: user.mmr, id: { lt: user.id } },
+          ],
+        },
+      });
+      globalRank = higherCount + 1;
+    }
+
+    let relationStatus: 'SELF' | 'NONE' | 'FRIENDS' | 'PENDING_SENT' | 'PENDING_RECEIVED' = 'NONE';
+    let friendshipId: string | null = null;
+
+    if (viewerId) {
+      if (viewerId === user.id) {
+        relationStatus = 'SELF';
+      } else {
+        const friendship = await this.prisma.friendship.findFirst({
+          where: {
+            OR: [
+              { requesterId: viewerId, addresseeId: user.id },
+              { requesterId: user.id, addresseeId: viewerId },
+            ],
+          },
+        });
+        if (friendship) {
+          friendshipId = friendship.id;
+          if (friendship.status === 'ACCEPTED') relationStatus = 'FRIENDS';
+          else if (friendship.requesterId === viewerId) relationStatus = 'PENDING_SENT';
+          else relationStatus = 'PENDING_RECEIVED';
+        }
+      }
+    }
+
+    return {
+      id: user.id,
+      nickname: user.nickname || 'KaVault Learner',
+      mmr: user.mmr,
+      rankTier: getTaskRankTier(user.mmr),
+      globalRank: isCreator ? null : globalRank,
+      isCreator,
+      studyLanguage: user.studyLanguage || 'ja',
+      profileCustomization: user.profileCustomization,
+      unlockedAchievements: Array.isArray(user.unlockedAchievements)
+        ? user.unlockedAchievements
+        : [],
+      createdAt: user.createdAt,
+      stats: {
+        cardsCount: user._count.japaneseCards,
+        resourcesCount: user._count.resources,
+        passagesCount: user._count.studyPassages,
+      },
+      relationStatus,
+      friendshipId,
     };
   }
 }
