@@ -24,6 +24,10 @@
     "directories": {
       "output": "release"
     },
+    "asarUnpack": [
+      "dist/splash.mp4",
+      "dist/splash_sound.mp3"
+    ],
     "files": [
       "dist/**/*",
       "electron/**/*",
