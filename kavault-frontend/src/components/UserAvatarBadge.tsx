@@ -9,7 +9,7 @@ interface UserAvatarBadgeProps {
   customization?: Partial<UserProfileCustomization>;
   size?: number; // диаметр в пикселях (по умолч. 48)
   username?: string;
-  showOnlineDot?: boolean;
+  showOnlineDot?: boolean; // deprecated, online dot removed for all users
   className?: string;
   style?: React.CSSProperties;
   onClick?: () => void;
@@ -19,7 +19,6 @@ export const UserAvatarBadge: React.FC<UserAvatarBadgeProps> = ({
   customization,
   size = 48,
   username = "User",
-  showOnlineDot = false,
   className = "",
   style = {},
   onClick,
@@ -36,7 +35,6 @@ export const UserAvatarBadge: React.FC<UserAvatarBadgeProps> = ({
     AVATAR_FRAMES.find((f) => f.id === frameId) || AVATAR_FRAMES[0];
 
   const fontSize = Math.max(12, Math.round(size * 0.46));
-  const dotSize = Math.max(7, Math.round(size * 0.22));
 
   return (
     <div
@@ -112,24 +110,6 @@ export const UserAvatarBadge: React.FC<UserAvatarBadgeProps> = ({
           </span>
         )}
       </div>
-
-      {/* Зеленый онлайн индикатор */}
-      {showOnlineDot && (
-        <span
-          style={{
-            position: "absolute",
-            bottom: "0px",
-            right: "0px",
-            width: `${dotSize}px`,
-            height: `${dotSize}px`,
-            borderRadius: "50%",
-            backgroundColor: "#10b981",
-            border: "2px solid var(--surface, #111)",
-            boxShadow: "0 0 6px #10b981",
-          }}
-          title="В сети"
-        />
-      )}
     </div>
   );
 };

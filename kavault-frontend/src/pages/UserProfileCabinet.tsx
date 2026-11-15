@@ -1008,7 +1008,6 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 customization={customization}
                 size={80}
                 username={nickname || "User"}
-                showOnlineDot
                 onClick={() => setCabinetTab("cosmetics")}
               />
               <button
@@ -1529,7 +1528,6 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
                 customization={customization}
                 size={56}
                 username={nickname || "User"}
-                showOnlineDot
               />
               <div>
                 <div style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: 700 }}>

@@ -31,6 +31,7 @@ import {
   LISTENING_DIALOGUES,
   LISTENING_PROMPTS,
   SKILL_STUDIO_TEXTS,
+  type GrammarLesson,
 } from "../data/languageCurriculum";
 import { speakText, stopSpeaking } from "../utils/audioPlayer";
 
@@ -104,6 +105,74 @@ const normalizeForDictation = (s: string) =>
    1. GRAMMAR STUDIO
    ═══════════════════════════════════════════════════════════ */
 
+// Короткие лаконичные обозначения грамматических правил для компактных чипов
+const GRAMMAR_SHORT_NAMES: Record<string, { ru: string; en: string }> = {
+  // Japanese JLPT
+  "ja-n5-01": { ru: "は · が", en: "wa · ga" },
+  "ja-n5-02": { ru: "〜ます", en: "~masu" },
+  "ja-n5-03": { ru: "〜たいです", en: "~tai desu" },
+  "ja-n5-04": { ru: "で · に", en: "de · ni" },
+  "ja-n4-01": { ru: "〜ています", en: "~te imasu" },
+  "ja-n4-02": { ru: "〜から · 〜ので", en: "~kara · ~node" },
+  "ja-n4-03": { ru: "〜てください", en: "~te kudasai" },
+  "ja-n4-04": { ru: "〜ことができる", en: "~koto ga dekiru" },
+  "ja-n3-01": { ru: "〜ながら", en: "~nagara" },
+  "ja-n3-02": { ru: "〜たら", en: "~tara" },
+  "ja-n3-03": { ru: "〜ようになる", en: "~you ni naru" },
+  "ja-n3-04": { ru: "〜ために · 〜のに", en: "~tame ni · ~noni" },
+  "ja-n2-01": { ru: "〜わけにはいかない", en: "~wake ni wa ikanai" },
+  "ja-n2-02": { ru: "〜ざるを得ない", en: "~zaru o enai" },
+  "ja-n1-01": { ru: "〜極まりない", en: "~kiwamarinai" },
+  "ja-n1-02": { ru: "〜かのごとく", en: "~ka no gotoku" },
+
+  // English CEFR
+  "en-a1-01": { ru: "Present Simple", en: "Present Simple" },
+  "en-a1-02": { ru: "There is / are", en: "There is / are" },
+  "en-a1-03": { ru: "Can / Could", en: "Can / Could" },
+  "en-a1-04": { ru: "In · On · At", en: "In · On · At" },
+  "en-a2-01": { ru: "Present Perfect", en: "Present Perfect" },
+  "en-a2-02": { ru: "Modals (must/should)", en: "Modals (must/should)" },
+  "en-a2-03": { ru: "Past vs Pres. Perf.", en: "Past vs Pres. Perf." },
+  "en-a2-04": { ru: "Comparatives", en: "Comparatives" },
+  "en-b1-01": { ru: "Conditionals 1 & 2", en: "Conditionals 1 & 2" },
+  "en-b1-02": { ru: "Passive Voice", en: "Passive Voice" },
+  "en-b1-03": { ru: "Used to", en: "Used to" },
+  "en-b1-04": { ru: "Passive Advanced", en: "Passive Adv." },
+  "en-b2-01": { ru: "Gerund vs Infinitive", en: "Gerund vs Inf." },
+  "en-b2-02": { ru: "Phrasal Verbs", en: "Phrasal Verbs" },
+  "en-b2-03": { ru: "3rd Conditional", en: "3rd Conditional" },
+  "en-b2-04": { ru: "Inversion", en: "Inversion" },
+
+  // German CEFR
+  "de-a1-01": { ru: "der · die · das", en: "der · die · das" },
+  "de-a1-02": { ru: "Verb Pos. 2", en: "Verb Pos. 2" },
+  "de-a1-03": { ru: "W-Fragen", en: "W-Fragen" },
+  "de-a1-04": { ru: "haben · sein", en: "haben · sein" },
+  "de-a2-01": { ru: "Kasus (Akk/Dat)", en: "Kasus (Akk/Dat)" },
+  "de-a2-02": { ru: "Nebensatz (weil/dass)", en: "Nebensatz (weil/dass)" },
+  "de-a2-03": { ru: "Modalverben", en: "Modalverben" },
+  "de-a2-04": { ru: "Wechselpräpositionen", en: "Wechselpräpos." },
+  "de-b1-01": { ru: "Perfekt (haben/sein)", en: "Perfekt" },
+  "de-b1-02": { ru: "Präfix-Verben", en: "Präfix-Verben" },
+  "de-b1-03": { ru: "Relativsätze", en: "Relativsätze" },
+  "de-b1-04": { ru: "Perfekt vs Prät.", en: "Perfekt vs Prät." },
+  "de-b2-01": { ru: "Konjunktiv II", en: "Konjunktiv II" },
+  "de-b2-02": { ru: "Passiv", en: "Passiv" },
+  "de-b2-03": { ru: "Je ... desto", en: "Je ... desto" },
+  "de-b2-04": { ru: "Funktionsverben", en: "Funktionsverben" },
+};
+
+function getGrammarShortName(lesson: GrammarLesson, uiLang: Language): string {
+  const mapped = GRAMMAR_SHORT_NAMES[lesson.id];
+  if (mapped) {
+    return uiLang === "en" ? mapped.en : mapped.ru;
+  }
+  if (lesson.pattern) {
+    return lesson.pattern.split("/")[0].split("+")[0].trim();
+  }
+  return lesson.title[uiLang] || lesson.id;
+}
+
 export function GrammarStudio({
   studyLanguage,
   selectedLevel,
@@ -139,7 +208,7 @@ export function GrammarStudio({
   const allLessons = GRAMMAR_LESSONS[studyLanguage] || [];
 
   const [grammarLevel, setGrammarLevel] = useState<string>(
-    selectedLevel !== "ALL" ? selectedLevel : "ALL"
+    selectedLevel !== "ALL" ? selectedLevel : (studyLanguage === "ja" ? "N5" : "A1")
   );
   const [grammarSearch, setGrammarSearch] = useState<string>("");
 
@@ -243,60 +312,59 @@ export function GrammarStudio({
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
       {/* Уроки грамматики */}
       <Card style={{ padding: "var(--space-6)" }}>
+        {/* ── КОМПАКТНЫЙ ЗАГОЛОВОК И ПОИСК ── */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             flexWrap: "wrap",
-            gap: "12px",
-            marginBottom: "var(--space-4)",
+            gap: "10px",
+            marginBottom: "12px",
           }}
         >
-          <h3
-            style={{
-              margin: 0,
-              fontSize: "17px",
-              fontWeight: 600,
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            <GraduationCap size={20} color={accentColor} /> {labels.curatedTitle}
-          </h3>
-          <Badge variant="accent">
-            {lessons.length} из {allLessons.length} правил
-          </Badge>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "16px",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <GraduationCap size={18} color={accentColor} style={{ flexShrink: 0 }} /> {labels.curatedTitle}
+            </h3>
+            <Badge variant="accent">
+              {lessons.length} из {allLessons.length} правил
+            </Badge>
+          </div>
+
+          <div style={{ width: "240px", maxWidth: "100%" }}>
+            <Input
+              icon={<Search size={14} />}
+              placeholder="Поиск правил..."
+              value={grammarSearch}
+              onChange={(e) => setGrammarSearch(e.target.value)}
+              style={{ padding: "6px 10px", fontSize: "12px" }}
+            />
+          </div>
         </div>
 
         {/* ── ФИЛЬТР ПО УРОВНЯМ ЯЗЫКА (N5, N4, N3, N2, N1) ── */}
         <div
+          className="kv-tab-strip-scroll"
           style={{
             display: "flex",
-            gap: "8px",
-            flexWrap: "wrap",
-            marginBottom: "14px",
-            alignItems: "center",
+            gap: "6px",
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            WebkitOverflowScrolling: "touch",
+            paddingBottom: "4px",
+            marginBottom: "10px",
           }}
         >
-          <button
-            type="button"
-            onClick={() => setGrammarLevel("ALL")}
-            style={{
-              padding: "7px 14px",
-              borderRadius: "10px",
-              border: `1.5px solid ${grammarLevel === "ALL" ? accentColor : "var(--border)"}`,
-              backgroundColor: grammarLevel === "ALL" ? accentColor : "var(--surface)",
-              color: grammarLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
-              fontSize: "12px",
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
-          >
-            Все уровни ({allLessons.length})
-          </button>
           {levelMetaList.map((lvl) => {
             const count = allLessons.filter((l) => l.level === lvl.id).length;
             const isActive = grammarLevel === lvl.id;
@@ -306,17 +374,18 @@ export function GrammarStudio({
                 type="button"
                 onClick={() => setGrammarLevel(lvl.id)}
                 style={{
-                  padding: "7px 14px",
-                  borderRadius: "10px",
+                  flexShrink: 0,
+                  padding: "5px 11px",
+                  borderRadius: "8px",
                   border: `1.5px solid ${isActive ? lvl.color : "var(--border)"}`,
                   backgroundColor: isActive ? lvl.color : "var(--surface)",
                   color: isActive ? "#ffffff" : "var(--text-primary)",
                   fontSize: "12px",
                   fontWeight: 700,
                   cursor: "pointer",
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
-                  gap: "6px",
+                  gap: "5px",
                   transition: "all 0.15s ease",
                 }}
               >
@@ -325,7 +394,7 @@ export function GrammarStudio({
                   style={{
                     fontSize: "10px",
                     fontWeight: 800,
-                    padding: "1px 6px",
+                    padding: "1px 5px",
                     borderRadius: "999px",
                     backgroundColor: isActive ? "rgba(255, 255, 255, 0.25)" : "var(--surface-raised)",
                     color: isActive ? "#ffffff" : "var(--text-muted)",
@@ -336,64 +405,83 @@ export function GrammarStudio({
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setGrammarLevel("ALL")}
+            style={{
+              flexShrink: 0,
+              padding: "5px 11px",
+              borderRadius: "8px",
+              border: `1.5px solid ${grammarLevel === "ALL" ? accentColor : "var(--border)"}`,
+              backgroundColor: grammarLevel === "ALL" ? accentColor : "var(--surface)",
+              color: grammarLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            Все ({allLessons.length})
+          </button>
         </div>
 
-        {/* ── БЫСТРЫЙ ПОИСК ПО ГРАММАТИКЕ ── */}
-        <div style={{ marginBottom: "16px" }}>
-          <Input
-            icon={<Search size={15} />}
-            placeholder="Поиск правил по конструкции, переводу или теме..."
-            value={grammarSearch}
-            onChange={(e) => setGrammarSearch(e.target.value)}
-          />
-        </div>
-
-        {/* ── ТАБЫ ВЫБОРА ПРАВИЛА ── */}
+        {/* ── КОМПАКТНЫЙ СЕЛЕКТОР ПРАВИЛ (БЕЗ ЗАСОРЕНИЯ ЭКРАНА) ── */}
         <div
+          className="kv-slim-scrollbar"
           style={{
             display: "flex",
-            gap: "8px",
+            gap: "6px",
             flexWrap: "wrap",
-            marginBottom: "var(--space-5)",
+            maxHeight: "96px",
+            overflowY: "auto",
+            padding: "5px",
+            borderRadius: "10px",
+            backgroundColor: "rgba(0, 0, 0, 0.18)",
+            border: "1px solid var(--border-subtle, rgba(255,255,255,0.06))",
+            marginBottom: "var(--space-4)",
           }}
         >
           {lessons.map((lesson) => {
             const active = lesson.id === activeLesson?.id;
             const lvlMeta = levelMetaList.find((l) => l.id === lesson.level);
             const tagColor = lvlMeta?.color || accentColor;
+            const shortName = getGrammarShortName(lesson, uiLang);
+
             return (
               <button
                 key={lesson.id}
                 type="button"
                 onClick={() => setSelectedId(lesson.id)}
+                title={lesson.title[uiLang]}
                 style={{
-                  padding: "7px 12px",
-                  borderRadius: "var(--radius-md)",
-                  border: active ? `2px solid ${tagColor}` : "1px solid var(--border)",
+                  padding: "5px 10px",
+                  borderRadius: "8px",
+                  border: active ? `1.5px solid ${tagColor}` : "1px solid var(--border)",
                   backgroundColor: active ? "var(--vibe-soft)" : "var(--surface-raised)",
                   color: active ? "var(--text-primary)" : "var(--text-secondary)",
-                  fontSize: "13px",
-                  fontWeight: active ? 600 : 500,
+                  fontSize: "12px",
+                  fontWeight: active ? 700 : 500,
                   cursor: "pointer",
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
                   gap: "6px",
                   transition: "all 0.15s ease",
+                  whiteSpace: "nowrap",
                 }}
               >
                 <span
                   style={{
-                    fontSize: "10px",
-                    fontWeight: 700,
-                    padding: "1px 5px",
+                    fontSize: "9px",
+                    fontWeight: 800,
+                    padding: "1px 4px",
                     borderRadius: "4px",
-                    backgroundColor: active ? tagColor : "var(--surface)",
+                    backgroundColor: active ? tagColor : "rgba(255,255,255,0.08)",
                     color: active ? "#fff" : "var(--text-muted)",
                   }}
                 >
                   {lesson.level}
                 </span>
-                <span>{lesson.title[uiLang] || lesson.pattern.split("/")[0].trim()}</span>
+                <span>{shortName}</span>
               </button>
             );
           })}
@@ -810,7 +898,7 @@ export function ReadingStudio({
   const labels = SKILL_STUDIO_TEXTS[uiLang].reading;
   const allPassages = READING_PASSAGES[studyLanguage] || [];
   const [readingLevel, setReadingLevel] = useState<string>(
-    selectedLevel !== "ALL" ? selectedLevel : "ALL"
+    selectedLevel !== "ALL" ? selectedLevel : (studyLanguage === "ja" ? "N5" : "A1")
   );
 
   const levelMetaList = useMemo(() => {
@@ -969,23 +1057,18 @@ export function ReadingStudio({
         </div>
 
         {/* Фильтр по уровням чтения */}
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px" }}>
-          <button
-            type="button"
-            onClick={() => setReadingLevel("ALL")}
-            style={{
-              padding: "6px 12px",
-              borderRadius: "8px",
-              border: `1.5px solid ${readingLevel === "ALL" ? accentColor : "var(--border)"}`,
-              backgroundColor: readingLevel === "ALL" ? accentColor : "var(--surface)",
-              color: readingLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
-              fontSize: "12px",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            Все тексты ({allPassages.length})
-          </button>
+        <div
+          className="kv-tab-strip-scroll"
+          style={{
+            display: "flex",
+            gap: "6px",
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            WebkitOverflowScrolling: "touch",
+            paddingBottom: "4px",
+            marginBottom: "12px",
+          }}
+        >
           {levelMetaList.map((lvl) => {
             const count = allPassages.filter((p) => p.level === lvl.id).length;
             const isActive = readingLevel === lvl.id;
@@ -995,7 +1078,8 @@ export function ReadingStudio({
                 type="button"
                 onClick={() => setReadingLevel(lvl.id)}
                 style={{
-                  padding: "6px 12px",
+                  flexShrink: 0,
+                  padding: "5px 11px",
                   borderRadius: "8px",
                   border: `1.5px solid ${isActive ? lvl.color : "var(--border)"}`,
                   backgroundColor: isActive ? lvl.color : "var(--surface)",
@@ -1003,9 +1087,9 @@ export function ReadingStudio({
                   fontSize: "12px",
                   fontWeight: 700,
                   cursor: "pointer",
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
-                  gap: "6px",
+                  gap: "5px",
                 }}
               >
                 <span>{lvl.badge}</span>
@@ -1013,6 +1097,23 @@ export function ReadingStudio({
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setReadingLevel("ALL")}
+            style={{
+              flexShrink: 0,
+              padding: "5px 11px",
+              borderRadius: "8px",
+              border: `1.5px solid ${readingLevel === "ALL" ? accentColor : "var(--border)"}`,
+              backgroundColor: readingLevel === "ALL" ? accentColor : "var(--surface)",
+              color: readingLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            Все ({allPassages.length})
+          </button>
         </div>
 
         {/* Селектор текстов */}
@@ -1713,7 +1814,7 @@ export function ListeningStudio({
                     gap: "6px",
                   }}
                 >
-                  <Icon size={15} color={active ? accentColor : "var(--text-muted)"} />
+                  <Icon size={15} color={active ? accentColor : "var(--text-muted)"} style={{ flexShrink: 0 }} />
                   <span>{m.label}</span>
                 </button>
               );

@@ -844,18 +844,21 @@ export function JapaneseHub() {
         </Button>
       </div>
 
-      {/* ── 2. МОДУЛИ ОБУЧЕНИЯ (СЕГМЕНТИРОВАННЫЙ ТАБ-БАР БЕЗ ЛИШНИХ ЦИФР) ── */}
+      {/* ── 2. МОДУЛИ ОБУЧЕНИЯ (СЕГМЕНТИРОВАННЫЙ ТАБ-БАР) ── */}
       <div
+        className="kv-tab-strip-scroll"
         style={{
           position: "relative",
           zIndex: 2,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
+          display: "flex",
           gap: "6px",
-          padding: "4px",
+          padding: "5px",
           borderRadius: "14px",
           backgroundColor: "var(--surface)",
           border: "1px solid var(--border)",
+          overflowX: "auto",
+          scrollbarWidth: "none",
+          WebkitOverflowScrolling: "touch",
         }}
       >
         {(
@@ -875,11 +878,12 @@ export function JapaneseHub() {
               type="button"
               onClick={() => handleSelectSkillTab(tab.id)}
               style={{
-                display: "flex",
+                flex: "1 0 auto",
+                display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "7px",
-                padding: "9px 10px",
+                gap: "8px",
+                padding: "9px 14px",
                 borderRadius: "10px",
                 border: active ? `1.5px solid ${studyPalette.accentHex}` : "1px solid transparent",
                 backgroundColor: active ? "var(--vibe-soft)" : "transparent",
@@ -889,10 +893,11 @@ export function JapaneseHub() {
                 cursor: "pointer",
                 transition: "all 0.15s ease",
                 whiteSpace: "nowrap",
+                flexShrink: 0,
               }}
             >
-              <Icon size={16} />
-              <span>{tab.label}</span>
+              <Icon size={16} style={{ flexShrink: 0, minWidth: 16, minHeight: 16 }} />
+              <span style={{ whiteSpace: "nowrap" }}>{tab.label}</span>
             </button>
           );
         })}

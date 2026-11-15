@@ -274,7 +274,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               customization={customization}
               size={76}
               username={profile?.nickname || "User"}
-              showOnlineDot
             />
           </div>
         </div>

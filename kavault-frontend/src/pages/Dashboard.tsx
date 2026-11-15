@@ -496,7 +496,6 @@ export function Dashboard() {
                   customization={profileCustom}
                   size={isMobile ? 66 : 76}
                   username={nickname || username || "Explorer"}
-                  showOnlineDot
                 />
               </div>
 

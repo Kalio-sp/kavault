@@ -363,7 +363,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 customization={profileCustom}
                 size={34}
                 username={nickname || "User"}
-                showOnlineDot
               />
               <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
                 <div
@@ -681,7 +680,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 customization={profileCustom}
                 size={38}
                 username={nickname || "User"}
-                showOnlineDot
               />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
