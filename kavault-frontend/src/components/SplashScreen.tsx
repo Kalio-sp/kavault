@@ -5,23 +5,12 @@ interface SplashScreenProps {
 }
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
-  // Обязательная заставка — воспроизводится при каждом запуске и обновлении
+  // Обязательная заставка при каждом старте и обновлении
   const [visible, setVisible] = useState(true);
   const [fading, setFading] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const [soundChoice] = useState(() => {
-    try {
-      return localStorage.getItem("kavault_splash_sound") || "splash_cyber_master";
-    } catch {
-      return "splash_cyber_master";
-    }
-  });
-
-  const isCustomAudio = soundChoice !== "splash_cyber_master";
 
   const handleComplete = () => {
     if (fading) return;
@@ -33,26 +22,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     }, 600);
   };
 
-  // Функция гарантированного включения звука
-  const ensureSound = () => {
-    try {
-      if (isCustomAudio) {
-        if (audioRef.current) {
-          audioRef.current.muted = false;
-          audioRef.current.volume = 1.0;
-          if (audioRef.current.paused) {
-            audioRef.current.play().catch(() => {});
-          }
-        }
-      } else {
-        if (videoRef.current) {
-          videoRef.current.muted = false;
-          videoRef.current.volume = 1.0;
-        }
-      }
-    } catch {}
-  };
-
   useEffect(() => {
     const handleReplay = () => {
       setFading(false);
@@ -61,22 +30,20 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.currentTime = 0;
-          videoRef.current.muted = isCustomAudio;
-          videoRef.current.volume = 1.0;
-          videoRef.current.play().catch(() => {});
-        }
-        if (audioRef.current && isCustomAudio) {
-          audioRef.current.currentTime = 0;
-          audioRef.current.muted = false;
-          audioRef.current.volume = 1.0;
-          audioRef.current.play().catch(() => {});
+          videoRef.current.muted = false;
+          videoRef.current.play().catch(() => {
+            if (videoRef.current) {
+              videoRef.current.muted = true;
+              videoRef.current.play().catch(() => {});
+            }
+          });
         }
       }, 50);
     };
 
     window.addEventListener("kavault_replay_splash", handleReplay);
     return () => window.removeEventListener("kavault_replay_splash", handleReplay);
-  }, [isCustomAudio]);
+  }, []);
 
   useEffect(() => {
     if (!visible) return;
@@ -84,91 +51,50 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Пытаемся воспроизвести сразу с включенным звуком
-    if (isCustomAudio) {
-      video.muted = true;
-      video.play().catch(() => {});
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.muted = false;
-        audioRef.current.volume = 1.0;
-        audioRef.current.play().catch(() => {
-          if (audioRef.current) audioRef.current.muted = true;
-        });
-      }
-    } else {
-      video.muted = false;
-      video.volume = 1.0;
-      const playPromise = video.play();
+    // Гарантированный запуск видеопотока
+    video.muted = false;
+    const playPromise = video.play();
 
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            // Успешно запустилось со звуком
-          })
-          .catch(() => {
-            // Если браузер заблокировал unmuted autoplay на холодном старте —
-            // запускаем видео и сразу вешаем слушатели на любое движение мыши/тач/клавишу
-            video.muted = true;
-            video.play().catch(() => {});
-          });
-      }
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Если строгая политика браузера запрещает unmuted autoplay на первом кадре —
+        // продолжаем воспроизведение видео в muted режиме, чтобы анимация НЕ останавливалась
+        if (videoRef.current) {
+          videoRef.current.muted = true;
+          videoRef.current.play().catch(() => {});
+        }
+      });
     }
 
-    // Слушатели на ЛЮБОЕ движение мыши, курсора, тач, скролл, нажатие клавиши или фокус
-    const events = [
-      "pointerdown",
-      "mousedown",
-      "touchstart",
-      "touchend",
-      "keydown",
-      "wheel",
-      "scroll",
-      "pointermove",
-      "mousemove",
-      "focus",
-    ];
-
-    const unlockHandler = () => {
-      ensureSound();
+    // Слушатели валидных жестов пользователя для мгновенного снятия mute
+    const unlockSound = () => {
+      if (videoRef.current) {
+        videoRef.current.muted = false;
+        videoRef.current.volume = 1.0;
+      }
     };
 
-    events.forEach((ev) => {
-      window.addEventListener(ev, unlockHandler, { passive: true, capture: true });
-    });
+    window.addEventListener("pointerdown", unlockSound, { passive: true });
+    window.addEventListener("touchstart", unlockSound, { passive: true });
+    window.addEventListener("keydown", unlockSound, { passive: true });
 
-    // Периодическая попытка включить звук (для браузеров, где разрешение появилось после первого кадра)
-    const unmuteInterval = setInterval(() => {
-      if (videoRef.current && videoRef.current.muted) {
-        videoRef.current.muted = false;
-        videoRef.current.play().catch(() => {
-          if (videoRef.current) videoRef.current.muted = true;
-        });
-      } else {
-        clearInterval(unmuteInterval);
-      }
-    }, 400);
-
-    // Таймер завершения заставки (~5.5 сек)
+    // Резервный таймер завершения на случай аппаратного сбоя видеодекодера (6.2 сек)
     timerRef.current = setTimeout(() => {
       handleComplete();
-    }, 5600);
+    }, 6200);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
-      clearInterval(unmuteInterval);
-      events.forEach((ev) => {
-        window.removeEventListener(ev, unlockHandler, { capture: true } as any);
-      });
+      window.removeEventListener("pointerdown", unlockSound);
+      window.removeEventListener("touchstart", unlockSound);
+      window.removeEventListener("keydown", unlockSound);
     };
-  }, [visible, isCustomAudio, soundChoice]);
+  }, [visible]);
 
   if (!visible) return null;
 
   return (
     <div
-      onClick={ensureSound}
-      onTouchStart={ensureSound}
       style={{
         position: "fixed",
         inset: 0,
@@ -184,20 +110,12 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         cursor: "default",
       }}
     >
-      {/* Альтернативный аудио-элемент при выборе дополнительного трека */}
-      {isCustomAudio && (
-        <audio
-          ref={audioRef}
-          src={`/sounds/${soundChoice}.mp3`}
-          preload="auto"
-        />
-      )}
-
-      {/* Оригинальный 4K видеопоток без потери качества */}
+      {/* 4K видеопоток оригинального качества */}
       <video
         ref={videoRef}
         playsInline
         autoPlay
+        muted
         preload="auto"
         onEnded={handleComplete}
         style={{
