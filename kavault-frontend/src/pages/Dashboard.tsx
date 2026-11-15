@@ -728,21 +728,15 @@ export function Dashboard() {
             <Card
               key={sk.id}
               onClick={() => navigate(`/japanese?tab=${sk.id}`)}
+              variant="interactive"
               style={{
                 padding: "12px 14px",
-                cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 gap: "10px",
-                background: "var(--vibe-banner-bg)",
+                background: "linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%), var(--vibe-banner-bg)",
                 borderColor: "var(--vibe-banner-border)",
-                transition: "transform 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
+                boxShadow: "0 6px 20px -2px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.09)",
               }}
             >
               <span style={{ fontSize: "20px", lineHeight: 1 }}>{sk.emoji}</span>
@@ -787,18 +781,12 @@ export function Dashboard() {
         {/* Карточка 1: Ресурсы (если вкл. программирование) ИЛИ Освоение языка */}
         {showProgramming ? (
           <Card
+            variant="interactive"
+            className="kv-depth-glow-blue"
             style={{
               padding: "var(--space-5)",
-              cursor: "pointer",
-              transition: "transform 0.2s ease, border-color 0.2s ease",
             }}
             onClick={() => navigate("/developer")}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--accent)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--border)";
-            }}
           >
             <div
               style={{
@@ -845,18 +833,12 @@ export function Dashboard() {
           </Card>
         ) : (
           <Card
+            variant="interactive"
+            className="kv-depth-glow-blue"
             style={{
               padding: "var(--space-5)",
-              cursor: "pointer",
-              transition: "transform 0.2s ease, border-color 0.2s ease",
             }}
             onClick={() => navigate("/tracker")}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = studyPalette.secondaryHex;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--border)";
-            }}
           >
             <div
               style={{
@@ -905,18 +887,12 @@ export function Dashboard() {
 
         {/* Карточка 2: Слова выбранного языка */}
         <Card
+          variant="interactive"
+          className="kv-depth-glow-purple"
           style={{
             padding: "var(--space-5)",
-            cursor: "pointer",
-            transition: "transform 0.2s ease, border-color 0.2s ease",
           }}
           onClick={() => navigate("/japanese")}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = studyPalette.accentHex;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "var(--border)";
-          }}
         >
           <div
             style={{
@@ -964,13 +940,13 @@ export function Dashboard() {
 
         {/* Карточка 3: Повторение SRS карточек */}
         <Card
+          variant="interactive"
+          className="kv-depth-glow-cyan"
           style={{
             padding: "var(--space-5)",
-            cursor: "pointer",
-            transition: "transform 0.2s ease, border-color 0.2s ease",
             borderColor: metrics.dueCardsCount > 0 ? "var(--vibe-banner-border)" : "var(--border)",
             backgroundColor:
-              metrics.dueCardsCount > 0 ? "var(--vibe-soft)" : "var(--surface)",
+              metrics.dueCardsCount > 0 ? "var(--vibe-soft)" : undefined,
           }}
           onClick={() => navigate("/review")}
         >
@@ -1026,18 +1002,12 @@ export function Dashboard() {
 
         {/* Карточка 4: Стрик обучения */}
         <Card
+          variant="interactive"
+          className="kv-depth-glow-amber"
           style={{
             padding: "var(--space-5)",
-            cursor: "pointer",
-            transition: "transform 0.2s ease, border-color 0.2s ease",
           }}
           onClick={() => navigate("/tracker")}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "#f59e0b";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "var(--border)";
-          }}
         >
           <div
             style={{
@@ -1086,10 +1056,12 @@ export function Dashboard() {
 
       {/* ── ВИДЖЕТ ДОСТИЖЕНИЙ KAVAULT ── */}
       <Card
+        variant="elevated"
         style={{
           padding: "var(--space-6)",
-          background: "linear-gradient(135deg, rgba(234, 179, 8, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)",
-          border: "1px solid rgba(234, 179, 8, 0.25)",
+          background: "linear-gradient(135deg, rgba(234, 179, 8, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%), var(--surface)",
+          border: "1px solid rgba(234, 179, 8, 0.3)",
+          boxShadow: "0 10px 32px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 35px -10px rgba(245, 158, 11, 0.16)",
           display: "flex",
           flexDirection: "column",
           gap: "16px",
@@ -1417,6 +1389,7 @@ export function Dashboard() {
       >
         {/* Реальный Donut Chart Прогресса */}
         <Card
+          variant="elevated"
           style={{
             padding: "var(--space-6)",
             display: "flex",
@@ -1551,6 +1524,7 @@ export function Dashboard() {
 
         {/* Реальные Задачи на сегодня */}
         <Card
+          variant="elevated"
           style={{
             padding: "var(--space-6)",
             display: "flex",

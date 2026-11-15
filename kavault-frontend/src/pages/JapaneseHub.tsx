@@ -844,63 +844,57 @@ export function JapaneseHub() {
         </Button>
       </div>
 
-      {/* ── 2. МОДУЛИ ОБУЧЕНИЯ (СЕГМЕНТИРОВАННЫЙ ТАБ-БАР) ── */}
+      {/* ── 2. МОДУЛИ ОБУЧЕНИЯ (2 СТОЛБЦА НА МОБИЛЬНОМ, 5 НА ПК) ── */}
       <div
-        className="kv-tab-strip-scroll"
         style={{
           position: "relative",
           zIndex: 2,
-          display: "flex",
-          gap: "6px",
           padding: "5px",
           borderRadius: "14px",
           backgroundColor: "var(--surface)",
           border: "1px solid var(--border)",
-          overflowX: "auto",
-          scrollbarWidth: "none",
-          WebkitOverflowScrolling: "touch",
         }}
       >
-        {(
-          [
-            { id: "alphabet", icon: Languages, label: studioText.tabs.alphabet?.label || "Азбука" },
-            { id: "vocabulary", icon: Layers, label: studioText.tabs.vocabulary.label },
-            { id: "grammar", icon: GraduationCap, label: studioText.tabs.grammar.label },
-            { id: "reading", icon: BookOpen, label: studioText.tabs.reading.label },
-            { id: "listening", icon: Headphones, label: studioText.tabs.listening.label },
-          ] as const
-        ).map((tab) => {
-          const Icon = tab.icon;
-          const active = skillTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => handleSelectSkillTab(tab.id)}
-              style={{
-                flex: "1 0 auto",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-                padding: "9px 14px",
-                borderRadius: "10px",
-                border: active ? `1.5px solid ${studyPalette.accentHex}` : "1px solid transparent",
-                backgroundColor: active ? "var(--vibe-soft)" : "transparent",
-                color: active ? studyPalette.accentHex : "var(--text-secondary)",
-                fontSize: "13px",
-                fontWeight: active ? 800 : 600,
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-                whiteSpace: "nowrap",
-                flexShrink: 0,
-              }}
-            >
-              <Icon size={16} style={{ flexShrink: 0, minWidth: 16, minHeight: 16 }} />
-              <span style={{ whiteSpace: "nowrap" }}>{tab.label}</span>
-            </button>
-          );
-        })}
+        <div className="kv-module-tabs-grid">
+          {(
+            [
+              { id: "alphabet", icon: Languages, label: studioText.tabs.alphabet?.label || "Азбука" },
+              { id: "vocabulary", icon: Layers, label: studioText.tabs.vocabulary.label },
+              { id: "grammar", icon: GraduationCap, label: studioText.tabs.grammar.label },
+              { id: "reading", icon: BookOpen, label: studioText.tabs.reading.label },
+              { id: "listening", icon: Headphones, label: studioText.tabs.listening.label },
+            ] as const
+          ).map((tab) => {
+            const Icon = tab.icon;
+            const active = skillTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => handleSelectSkillTab(tab.id)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  padding: "10px 14px",
+                  borderRadius: "10px",
+                  border: active ? `1.5px solid ${studyPalette.accentHex}` : "1px solid transparent",
+                  backgroundColor: active ? "var(--vibe-soft)" : "transparent",
+                  color: active ? studyPalette.accentHex : "var(--text-secondary)",
+                  fontSize: "13px",
+                  fontWeight: active ? 800 : 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <Icon size={16} style={{ flexShrink: 0, minWidth: 16, minHeight: 16 }} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── 3. ПУТЬ ПО УРОВНЯМ ЯЗЫКА (ДЛЯ ЛЕКСИКИ, ГРАММАТИКИ, ЧТЕНИЯ И АУДИО — СКРЫТО В АЗБУКЕ) ── */}
@@ -936,9 +930,8 @@ export function JapaneseHub() {
           </div>
 
           <div
+            className="kv-level-grid-2col"
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
               gap: "8px",
               width: "100%",
             }}

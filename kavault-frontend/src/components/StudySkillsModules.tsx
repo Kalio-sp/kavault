@@ -352,17 +352,11 @@ export function GrammarStudio({
           </div>
         </div>
 
-        {/* ── ФИЛЬТР ПО УРОВНЯМ ЯЗЫКА (N5, N4, N3, N2, N1) ── */}
+        {/* ── ФИЛЬТР ПО УРОВНЯМ ЯЗЫКА (2 СТОЛБЦА НА МОБИЛЬНОМ, БЕЗ СКРОЛЛА) ── */}
         <div
-          className="kv-tab-strip-scroll"
+          className="kv-level-grid-2col"
           style={{
-            display: "flex",
-            gap: "6px",
-            overflowX: "auto",
-            scrollbarWidth: "none",
-            WebkitOverflowScrolling: "touch",
-            paddingBottom: "4px",
-            marginBottom: "10px",
+            marginBottom: "12px",
           }}
         >
           {levelMetaList.map((lvl) => {
@@ -374,8 +368,7 @@ export function GrammarStudio({
                 type="button"
                 onClick={() => setGrammarLevel(lvl.id)}
                 style={{
-                  flexShrink: 0,
-                  padding: "5px 11px",
+                  padding: "7px 11px",
                   borderRadius: "8px",
                   border: `1.5px solid ${isActive ? lvl.color : "var(--border)"}`,
                   backgroundColor: isActive ? lvl.color : "var(--surface)",
@@ -385,7 +378,8 @@ export function GrammarStudio({
                   cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "5px",
+                  justifyContent: "center",
+                  gap: "6px",
                   transition: "all 0.15s ease",
                 }}
               >
@@ -394,7 +388,7 @@ export function GrammarStudio({
                   style={{
                     fontSize: "10px",
                     fontWeight: 800,
-                    padding: "1px 5px",
+                    padding: "1px 6px",
                     borderRadius: "999px",
                     backgroundColor: isActive ? "rgba(255, 255, 255, 0.25)" : "var(--surface-raised)",
                     color: isActive ? "#ffffff" : "var(--text-muted)",
@@ -409,8 +403,7 @@ export function GrammarStudio({
             type="button"
             onClick={() => setGrammarLevel("ALL")}
             style={{
-              flexShrink: 0,
-              padding: "5px 11px",
+              padding: "7px 11px",
               borderRadius: "8px",
               border: `1.5px solid ${grammarLevel === "ALL" ? accentColor : "var(--border)"}`,
               backgroundColor: grammarLevel === "ALL" ? accentColor : "var(--surface)",
@@ -418,6 +411,9 @@ export function GrammarStudio({
               fontSize: "12px",
               fontWeight: 700,
               cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
               transition: "all 0.15s ease",
             }}
           >
@@ -1056,16 +1052,10 @@ export function ReadingStudio({
           </div>
         </div>
 
-        {/* Фильтр по уровням чтения */}
+        {/* Фильтр по уровням чтения (2 столбца на мобильном, без скролла) */}
         <div
-          className="kv-tab-strip-scroll"
+          className="kv-level-grid-2col"
           style={{
-            display: "flex",
-            gap: "6px",
-            overflowX: "auto",
-            scrollbarWidth: "none",
-            WebkitOverflowScrolling: "touch",
-            paddingBottom: "4px",
             marginBottom: "12px",
           }}
         >
@@ -1078,8 +1068,7 @@ export function ReadingStudio({
                 type="button"
                 onClick={() => setReadingLevel(lvl.id)}
                 style={{
-                  flexShrink: 0,
-                  padding: "5px 11px",
+                  padding: "7px 11px",
                   borderRadius: "8px",
                   border: `1.5px solid ${isActive ? lvl.color : "var(--border)"}`,
                   backgroundColor: isActive ? lvl.color : "var(--surface)",
@@ -1089,7 +1078,9 @@ export function ReadingStudio({
                   cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "5px",
+                  justifyContent: "center",
+                  gap: "6px",
+                  transition: "all 0.15s ease",
                 }}
               >
                 <span>{lvl.badge}</span>
@@ -1101,8 +1092,7 @@ export function ReadingStudio({
             type="button"
             onClick={() => setReadingLevel("ALL")}
             style={{
-              flexShrink: 0,
-              padding: "5px 11px",
+              padding: "7px 11px",
               borderRadius: "8px",
               border: `1.5px solid ${readingLevel === "ALL" ? accentColor : "var(--border)"}`,
               backgroundColor: readingLevel === "ALL" ? accentColor : "var(--surface)",
@@ -1110,6 +1100,10 @@ export function ReadingStudio({
               fontSize: "12px",
               fontWeight: 700,
               cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.15s ease",
             }}
           >
             Все ({allPassages.length})

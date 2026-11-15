@@ -3,16 +3,22 @@ import React from "react";
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   style?: React.CSSProperties;
+  className?: string;
+  variant?: "default" | "elevated" | "interactive";
 }
 
-export function Card({ children, style, ...props }: CardProps) {
+export function Card({
+  children,
+  style,
+  className = "",
+  variant = "default",
+  ...props
+}: CardProps) {
+  const variantClass = variant !== "default" ? `kv-card-${variant}` : "";
   return (
     <div
+      className={`kv-card ${variantClass} ${className}`.trim()}
       style={{
-        backgroundColor: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-lg)",
-        padding: "var(--space-6)",
         ...style,
       }}
       {...props}

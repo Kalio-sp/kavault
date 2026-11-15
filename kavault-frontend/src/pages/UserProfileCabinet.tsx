@@ -587,7 +587,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
           max-width: 860px;
           margin: 0 auto;
           box-sizing: border-box;
-          overflow-x: hidden;
+          overflow-x: clip;
         }
 
         /* Табы: на мобильном показывается короткий лейбл, на ПК — полный */
@@ -1509,157 +1509,256 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
       ══════════════════════════════════════════════════════════════════ */}
       {cabinetTab === "cosmetics" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
-          {/* Интерактивная плашка статуса стиля и быстрых действий */}
+          {/* ══════════════════════════════════════════════════════════════════
+              ЗАКРЕПЛЕННЫЙ ПРЕДПРОСМОТР ПРОФИЛЯ ПРИ КАСТОМИЗАЦИИ (STICKY LIVE PROFILE)
+          ══════════════════════════════════════════════════════════════════ */}
           <div
+            className="kv-sticky-cosmetics-bar"
             style={{
-              padding: "14px 16px",
-              borderRadius: "14px",
-              backgroundColor: "var(--surface, #121214)",
-              border: "1px solid var(--border, rgba(255,255,255,0.08))",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "12px",
+              position: "sticky",
+              top: "10px",
+              zIndex: 35,
+              borderRadius: "16px",
+              overflow: "hidden",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              backgroundColor: "rgba(18, 18, 22, 0.94)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              boxShadow: "0 12px 36px -4px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+              marginBottom: "4px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              <UserAvatarBadge
+            {/* Живой баннер профиля с кнопками */}
+            <div style={{ position: "relative", height: "76px", width: "100%", overflow: "hidden" }}>
+              <BannerRenderer
                 customization={customization}
-                size={56}
-                username={nickname || "User"}
+                style={{ height: "100%", width: "100%", position: "absolute", inset: 0 }}
               />
-              <div>
-                <div style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: 700 }}>
-                  Предпросмотр профиля
-                </div>
-                <div style={{ fontSize: "15px", fontWeight: 800, color: "var(--text-primary)" }}>
-                  {nickname || "Аноним"}
-                </div>
-                <div style={{ fontSize: "11px", color: "var(--accent, #3b82f6)", marginTop: "1px" }}>
-                  {customization.avatarType === "custom" ? "Своё фото" : "Герой"} •{" "}
-                  {AVATAR_FRAMES.find((f) => f.id === customization.avatarFrameId)?.name || "Рамка"} •{" "}
-                  {customization.bannerThemeId === "custom"
-                    ? "Свой баннер"
-                    : BANNER_THEMES.find((b) => b.id === customization.bannerThemeId)?.name || "Баннер"}
-                </div>
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(18,18,22,0.88) 100%)",
+                  pointerEvents: "none",
+                }}
+              />
+
+              {/* Метка «Живой предпросмотр» */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "8px",
+                  left: "12px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: "3px 8px",
+                  borderRadius: "999px",
+                  backgroundColor: "rgba(0, 0, 0, 0.65)",
+                  backdropFilter: "blur(8px)",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  color: "#ffffff",
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  border: "1px solid rgba(255, 255, 255, 0.15)",
+                }}
+              >
+                <Sparkles size={11} color="#ec4899" />
+                <span>Живой профиль</span>
+              </div>
+
+              {/* Кнопки быстрых действий на баннере */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "8px",
+                  right: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={handleShuffleStyle}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    padding: "5px 10px",
+                    borderRadius: "8px",
+                    backgroundColor: "rgba(0,0,0,0.65)",
+                    border: "1px solid rgba(168, 85, 247, 0.4)",
+                    color: "#c084fc",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    backdropFilter: "blur(8px)",
+                    transition: "all 0.15s ease",
+                  }}
+                  title="Сгенерировать случайное сочетание героя, рамки и баннера"
+                >
+                  <Dices size={13} />
+                  <span>Случайный</span>
+                </button>
+
+                <Button
+                  onClick={() => handleSaveCosmetics()}
+                  style={{
+                    padding: "5px 12px",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    borderRadius: "8px",
+                    gap: "5px",
+                  }}
+                >
+                  <Save size={13} /> Сохранить
+                </Button>
               </div>
             </div>
 
-            <div className="kv-preview-actions">
-              <button
-                type="button"
-                onClick={handleShuffleStyle}
+            {/* Нижняя часть закрепленного блока: аватарка + имя + переключатель Аватар/Рамка/Баннер */}
+            <div
+              style={{
+                padding: "8px 12px 10px 12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "10px",
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                <div style={{ marginTop: "-22px", position: "relative", zIndex: 5, flexShrink: 0 }}>
+                  <UserAvatarBadge
+                    customization={customization}
+                    size={50}
+                    username={nickname || "User"}
+                  />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 800,
+                      color: "var(--text-primary)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {nickname || "Аноним"}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "var(--accent, #3b82f6)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {customization.avatarType === "custom" ? "Своё фото" : "Герой"} •{" "}
+                    {AVATAR_FRAMES.find((f) => f.id === customization.avatarFrameId)?.name || "Рамка"} •{" "}
+                    {customization.bannerThemeId === "custom"
+                      ? "Свой баннер"
+                      : BANNER_THEMES.find((b) => b.id === customization.bannerThemeId)?.name || "Баннер"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Навигационные табы выбора: Аватар / Рамка / Баннер прямо в закрепленной панели */}
+              <div
+                className="kv-cosmetics-subtabs"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px",
-                  padding: "9px 14px",
+                  gap: "4px",
+                  padding: "3px",
                   borderRadius: "10px",
-                  backgroundColor: "rgba(168, 85, 247, 0.15)",
-                  border: "1px solid rgba(168, 85, 247, 0.35)",
-                  color: "#c084fc",
-                  fontSize: "12.5px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  transition: "all 0.15s ease",
+                  backgroundColor: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  flexShrink: 0,
                 }}
-                title="Сгенерировать случайное сочетание героя, рамки и баннера"
               >
-                <Dices size={15} />
-                <span>Случайный образ</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setCosmeticsSubTab("avatar")}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    border: "none",
+                    backgroundColor:
+                      cosmeticsSubTab === "avatar"
+                        ? "var(--accent, #3b82f6)"
+                        : "transparent",
+                    color: cosmeticsSubTab === "avatar" ? "#ffffff" : "var(--text-secondary)",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <User size={13} />
+                  <span>Аватар</span>
+                </button>
 
-              <Button onClick={() => handleSaveCosmetics()} className="kv-action-btn">
-                <Save size={15} /> Сохранить стиль
-              </Button>
+                <button
+                  type="button"
+                  onClick={() => setCosmeticsSubTab("frame")}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    border: "none",
+                    backgroundColor:
+                      cosmeticsSubTab === "frame"
+                        ? "var(--accent, #3b82f6)"
+                        : "transparent",
+                    color: cosmeticsSubTab === "frame" ? "#ffffff" : "var(--text-secondary)",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <Sparkles size={13} />
+                  <span>Рамка</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCosmeticsSubTab("banner")}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    border: "none",
+                    backgroundColor:
+                      cosmeticsSubTab === "banner"
+                        ? "var(--accent, #3b82f6)"
+                        : "transparent",
+                    color: cosmeticsSubTab === "banner" ? "#ffffff" : "var(--text-secondary)",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <ImageIcon size={13} />
+                  <span>Баннер</span>
+                </button>
+              </div>
             </div>
-          </div>
-
-          {/* НАВИГАЦИОННЫЕ КНОПКИ ВЫБОРА: АВАТАР / РАМКА / БАННЕР */}
-          <div className="kv-cosmetics-subtabs">
-            <button
-              type="button"
-              onClick={() => setCosmeticsSubTab("avatar")}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "6px",
-                padding: "9px 6px",
-                borderRadius: "10px",
-                border: "none",
-                backgroundColor:
-                  cosmeticsSubTab === "avatar"
-                    ? "var(--accent, #3b82f6)"
-                    : "transparent",
-                color: cosmeticsSubTab === "avatar" ? "#ffffff" : "var(--text-secondary)",
-                fontSize: "12.5px",
-                fontWeight: 700,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <User size={15} />
-              <span>Аватар</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCosmeticsSubTab("frame")}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "6px",
-                padding: "9px 6px",
-                borderRadius: "10px",
-                border: "none",
-                backgroundColor:
-                  cosmeticsSubTab === "frame"
-                    ? "var(--accent, #3b82f6)"
-                    : "transparent",
-                color: cosmeticsSubTab === "frame" ? "#ffffff" : "var(--text-secondary)",
-                fontSize: "12.5px",
-                fontWeight: 700,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <Sparkles size={15} />
-              <span>Рамка</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCosmeticsSubTab("banner")}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "6px",
-                padding: "9px 6px",
-                borderRadius: "10px",
-                border: "none",
-                backgroundColor:
-                  cosmeticsSubTab === "banner"
-                    ? "var(--accent, #3b82f6)"
-                    : "transparent",
-                color: cosmeticsSubTab === "banner" ? "#ffffff" : "var(--text-secondary)",
-                fontSize: "12.5px",
-                fontWeight: 700,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <ImageIcon size={15} />
-              <span>Баннер</span>
-            </button>
           </div>
 
           {/* ══════════════════════════════════════════════════════════════════
