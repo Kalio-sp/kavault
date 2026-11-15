@@ -27,6 +27,8 @@ import {
   Sliders,
   RefreshCw,
   BookOpen,
+  Play,
+  Film,
 } from "lucide-react";
 import { useApp, syncNicknameEverywhere } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
@@ -109,6 +111,12 @@ export function Settings() {
   });
   const [soundEffects, setSoundEffects] = useState(() => {
     return localStorage.getItem("kavault_sound_fx") !== "false";
+  });
+  const [splashEnabled, setSplashEnabled] = useState(() => {
+    return localStorage.getItem("kavault_splash_enabled") !== "false";
+  });
+  const [splashSound, setSplashSound] = useState(() => {
+    return localStorage.getItem("kavault_splash_sound") || "splash_cyber_master";
   });
 
   // Статистика хранилища
@@ -1149,6 +1157,158 @@ export function Settings() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Экран загрузки и вступительная заставка */}
+          <div className="kv-card">
+            <div className="kv-group-header">
+              <div className="kv-group-icon" style={{ background: "rgba(168, 85, 247, 0.12)", color: "#c084fc" }}>
+                <Film size={18} />
+              </div>
+              <div className="kv-group-text">
+                <h3 className="kv-group-title">Экран загрузки (Splash Screen)</h3>
+                <p className="kv-group-desc">Фирменная анимация KAVAULT и звуковой дизайн при запуске</p>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {/* Кнопка предпросмотра заставки */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "12px 16px",
+                  borderRadius: "12px",
+                  backgroundColor: "rgba(255, 255, 255, 0.02)",
+                  border: "1px solid var(--border)",
+                  flexWrap: "wrap",
+                  gap: "10px",
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: "14px" }}>
+                    Воспроизведение заставки
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                    Посмотреть видео-заставку со звуком в полном экране
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => {
+                    window.dispatchEvent(
+                      new CustomEvent("kavault_replay_splash", { detail: splashSound })
+                    );
+                  }}
+                  style={{
+                    gap: "6px",
+                    padding: "8px 16px",
+                    fontWeight: 700,
+                    background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+                  }}
+                >
+                  <Play size={14} fill="currentColor" /> Воспроизвести сейчас
+                </Button>
+              </div>
+
+              {/* Выбор звуковой темы для заставки */}
+              <div>
+                <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-secondary)", marginBottom: "8px" }}>
+                  Звуковое сопровождение заставки:
+                </div>
+                <div className="kv-grid-1-3">
+                  {[
+                    {
+                      id: "splash_cyber_master",
+                      title: "Cybernetic Master",
+                      badge: "Рекомендуемый",
+                      desc: "Нарастающий суб-бас, неоновый разгон и кристальный звон",
+                    },
+                    {
+                      id: "splash_neon_synth",
+                      title: "Neon Synth",
+                      badge: "Синтезатор",
+                      desc: "Ретро-футуристичные аккорды и чистый аналоговый тембр",
+                    },
+                    {
+                      id: "splash_cinematic_impact",
+                      title: "Cinematic Impact",
+                      badge: "Кино",
+                      desc: "Глубокий атмосферный гул и мощный кинематографичный бас",
+                    },
+                  ].map((track) => {
+                    const isSelected = splashSound === track.id;
+                    return (
+                      <div
+                        key={track.id}
+                        onClick={() => {
+                          setSplashSound(track.id);
+                          localStorage.setItem("kavault_splash_sound", track.id);
+                          showToast(`Звук: ${track.title}`);
+                        }}
+                        className={`kv-touch-card ${isSelected ? "selected" : ""}`}
+                        style={{ flexDirection: "column", alignItems: "flex-start", gap: "6px" }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
+                          <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
+                            {track.title}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              padding: "2px 6px",
+                              borderRadius: "6px",
+                              backgroundColor: isSelected ? "rgba(168, 85, 247, 0.2)" : "rgba(255, 255, 255, 0.05)",
+                              color: isSelected ? "#c084fc" : "var(--text-muted)",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {track.badge}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: "11px", color: "var(--text-muted)", lineHeight: "1.3" }}>
+                          {track.desc}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Переключатель показа при каждом старте */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "10px 14px",
+                  borderRadius: "10px",
+                  backgroundColor: "rgba(255, 255, 255, 0.02)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
+                    Показывать заставку при запуске
+                  </div>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                    Воспроизводить экран загрузки перед входом в приложение
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={splashEnabled}
+                  onChange={(e) => {
+                    const val = e.target.checked;
+                    setSplashEnabled(val);
+                    localStorage.setItem("kavault_splash_enabled", String(val));
+                    showToast(val ? "Заставка включена при старте" : "Заставка выключена");
+                  }}
+                  style={{ width: "18px", height: "18px", accentColor: "#a855f7", cursor: "pointer" }}
+                />
+              </div>
             </div>
           </div>
 

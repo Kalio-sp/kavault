@@ -7,6 +7,7 @@ import { AppProvider, useApp } from "./context/AppContext";
 import { DialogProvider } from "./context/DialogContext";
 import { AchievementProvider } from "./context/AchievementContext";
 import { AchievementToast } from "./components/AchievementToast";
+import { SplashScreen } from "./components/SplashScreen";
 
 const lazyNamed = <T extends Record<string, any>>(
   loader: () => Promise<T>,
@@ -98,6 +99,7 @@ function CreatorGuard({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <AppProvider>
+      <SplashScreen />
       <DialogProvider>
         <AchievementProvider>
           <AchievementToast />
