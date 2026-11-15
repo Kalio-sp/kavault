@@ -62,28 +62,39 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     if (!video) return;
 
     video.currentTime = 0;
-    video.volume = 1.0;
-    video.muted = false;
+    
+    // На iOS Safari прямое воспроизведение со звуком всегда блокируется политикой WebKit
+    // Запускаем muted для мгновенного плавного старта, а звук разблокируется
+    // автоматически либо при первом касании
+    const isAppleMobile = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isAppleMobile) {
+      video.muted = true;
+    } else {
+      video.volume = 1.0;
+      video.muted = false;
+    }
 
-    // Первичная попытка прямого воспроизведения со звуком
+    // Первичная попытка запуска
     const playPromise = video.play();
 
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
-          // Звук успешно запущен браузером без ограничений
+          // Если запустилось на десктопе со звуком — отлично
         })
         .catch(() => {
-          // Если браузер заблокировал звук до первого касания —
-          // воспроизводим видео без звука, чтобы анимация не останавливалась
+          // Если браузер заблокировал звук до жеста — продолжаем без звука
           if (videoRef.current) {
             videoRef.current.muted = true;
-            videoRef.current.play().catch(() => {});
+            videoRef.current.play().catch(() => {
+              // Если даже без звука не удалось запустить — сразу переходим в приложение
+              handleComplete();
+            });
           }
         });
     }
 
-    // Фоновая разблокировка звука при первом же касании, если браузер заблокировал unmuted play
+    // Фоновая разблокировка звука при первом же касании, если воспроизводилось без звука
     const unlockSound = () => {
       if (videoRef.current && videoRef.current.muted) {
         videoRef.current.muted = false;
@@ -95,10 +106,10 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     window.addEventListener("touchstart", unlockSound, { passive: true });
     window.addEventListener("keydown", unlockSound, { passive: true });
 
-    // Резервный таймер завершения заставки (~6.0 сек)
+    // Резервный таймер завершения заставки (~5.5 сек)
     timerRef.current = setTimeout(() => {
       handleComplete();
-    }, 6000);
+    }, 5500);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -132,6 +143,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         ref={videoRef}
         playsInline
         autoPlay
+        muted
         preload="auto"
         onEnded={handleComplete}
         onError={() => {
