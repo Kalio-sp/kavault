@@ -46,19 +46,19 @@ jobs:
           cd kavault-frontend
           npx cap sync android
 
-      - name: Build Android APK via Gradle
+      - name: Build Android Release APK via Gradle
         run: |
           cd kavault-frontend/android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
       - name: Publish KAVAULT APK to GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cp kavault-frontend/android/app/build/outputs/apk/debug/app-debug.apk KAVAULT.apk
+          cp kavault-frontend/android/app/build/outputs/apk/release/app-release.apk KAVAULT.apk
           if gh release view latest >/dev/null 2>&1; then
             gh release upload latest KAVAULT.apk --clobber
           else
-            gh release create latest KAVAULT.apk --title "KAVAULT Latest" --notes "Automated KAVAULT build"
+            gh release create latest KAVAULT.apk --title "KAVAULT Latest" --notes "Official signed KAVAULT release"
           fi

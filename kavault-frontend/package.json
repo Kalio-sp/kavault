@@ -1,7 +1,9 @@
 {
   "name": "kavault-frontend",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.5.0",
+  "description": "KAVAULT — Personal Knowledge & Learning Engine",
+  "author": "KAVAULT Security",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -18,6 +20,7 @@
   "build": {
     "appId": "dev.kavault.app",
     "productName": "KAVAULT",
+    "copyright": "Copyright © 2026 KAVAULT Security",
     "directories": {
       "output": "release"
     },
@@ -30,10 +33,12 @@
     ],
     "win": {
       "target": [
-        "dir",
         "nsis"
       ],
-      "icon": "electron/icon.ico"
+      "icon": "electron/icon.ico",
+      "legalTrademarks": "KAVAULT™",
+      "requestedExecutionLevel": "asInvoker",
+      "verifyUpdateCodeSignature": false
     },
     "nsis": {
       "oneClick": true,
