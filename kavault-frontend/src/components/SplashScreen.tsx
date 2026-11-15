@@ -5,7 +5,7 @@ interface SplashScreenProps {
 }
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
-  // Обязательная заставка при каждом старте и обновлении
+  // Обязательная заставка при каждом входе и обновлении
   const [visible, setVisible] = useState(true);
   const [fading, setFading] = useState(false);
 
@@ -31,6 +31,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         if (videoRef.current) {
           videoRef.current.currentTime = 0;
           videoRef.current.muted = false;
+          videoRef.current.volume = 1.0;
           videoRef.current.play().catch(() => {
             if (videoRef.current) {
               videoRef.current.muted = true;
@@ -51,43 +52,36 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Гарантированный запуск видеопотока
+    video.currentTime = 0;
+    video.volume = 1.0;
     video.muted = false;
+
+    // Запуск со звуком без необходимости каких-либо тапов или кликов
     const playPromise = video.play();
 
     if (playPromise !== undefined) {
       playPromise.catch(() => {
-        // Если строгая политика браузера запрещает unmuted autoplay на первом кадре —
-        // продолжаем воспроизведение видео в muted режиме, чтобы анимация НЕ останавливалась
+        // Если строгая политика браузера потребовала muted на видеотеге —
+        // запускаем видео без пауз и подключаем звук через параллельный аудиопоток
         if (videoRef.current) {
           videoRef.current.muted = true;
           videoRef.current.play().catch(() => {});
         }
+        try {
+          const snd = new Audio("/splash_sound.mp3");
+          snd.volume = 1.0;
+          snd.play().catch(() => {});
+        } catch {}
       });
     }
 
-    // Слушатели валидных жестов пользователя для мгновенного снятия mute
-    const unlockSound = () => {
-      if (videoRef.current) {
-        videoRef.current.muted = false;
-        videoRef.current.volume = 1.0;
-      }
-    };
-
-    window.addEventListener("pointerdown", unlockSound, { passive: true });
-    window.addEventListener("touchstart", unlockSound, { passive: true });
-    window.addEventListener("keydown", unlockSound, { passive: true });
-
-    // Резервный таймер завершения на случай аппаратного сбоя видеодекодера (6.2 сек)
+    // Резервный таймер завершения заставки (~6.0 сек)
     timerRef.current = setTimeout(() => {
       handleComplete();
-    }, 6200);
+    }, 6000);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
-      window.removeEventListener("pointerdown", unlockSound);
-      window.removeEventListener("touchstart", unlockSound);
-      window.removeEventListener("keydown", unlockSound);
     };
   }, [visible]);
 
@@ -110,12 +104,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         cursor: "default",
       }}
     >
-      {/* 4K видеопоток оригинального качества */}
+      {/* 4K видеопоток оригинального качества с включенным звуком */}
       <video
         ref={videoRef}
         playsInline
         autoPlay
-        muted
         preload="auto"
         onEnded={handleComplete}
         style={{
