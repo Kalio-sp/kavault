@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   Search,
@@ -70,14 +71,20 @@ export const LevelWordsModal: React.FC<LevelWordsModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [playingWord, setPlayingWord] = useState<string | null>(null);
 
-  // Close on Escape key
+  // Close on Escape key & Lock body scroll
   useEffect(() => {
     if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
   // Reset form when modal opens
@@ -145,23 +152,21 @@ export const LevelWordsModal: React.FC<LevelWordsModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 9999,
+        zIndex: 99999,
         backgroundColor: "rgba(0, 0, 0, 0.78)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
         display: "flex",
-        alignItems: "flex-start",
+        alignItems: "center",
         justifyContent: "center",
         padding: "16px",
-        paddingTop: "max(24px, env(safe-area-inset-top, 24px))",
-        paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))",
-        overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
+        paddingTop: "max(16px, env(safe-area-inset-top, 16px))",
+        paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
         animation: "fadeIn 0.2s ease-out",
       }}
       onClick={onClose}
@@ -171,8 +176,7 @@ export const LevelWordsModal: React.FC<LevelWordsModalProps> = ({
         style={{
           width: "100%",
           maxWidth: "800px",
-          marginTop: "0",
-          marginBottom: "auto",
+          margin: "auto",
           borderRadius: "22px",
           overflow: "hidden",
           backgroundColor: "var(--surface, #121214)",
@@ -180,7 +184,7 @@ export const LevelWordsModal: React.FC<LevelWordsModalProps> = ({
           boxShadow: `0 24px 70px rgba(0, 0, 0, 0.85), 0 0 1px ${levelMeta.color}60`,
           display: "flex",
           flexDirection: "column",
-          maxHeight: "calc(100dvh - 48px)",
+          maxHeight: "min(88vh, calc(100dvh - 32px))",
           animation: "scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
           flexShrink: 0,
         }}
@@ -679,6 +683,7 @@ export const LevelWordsModal: React.FC<LevelWordsModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

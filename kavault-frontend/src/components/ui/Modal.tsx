@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Card } from "./Card";
 import { Button } from "./Button";
@@ -21,6 +22,9 @@ export function Modal({
   useEffect(() => {
     if (!isOpen) return;
 
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
@@ -28,7 +32,10 @@ export function Modal({
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -40,23 +47,22 @@ export function Modal({
     xl: "920px",
   };
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{
         position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "var(--overlay-bg)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
+        inset: 0,
+        backgroundColor: "var(--overlay-bg, rgba(0, 0, 0, 0.75))",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 100,
-        padding: "var(--space-4)",
+        zIndex: 99999,
+        padding: "16px",
+        paddingTop: "max(16px, env(safe-area-inset-top, 16px))",
+        paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
         animation: "kavaultFadeIn 0.2s ease-out",
       }}
     >
@@ -69,11 +75,12 @@ export function Modal({
           flexDirection: "column",
           gap: "var(--space-4)",
           boxShadow:
-            "0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--border)",
+            "0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 0 1px var(--border)",
           border: "1px solid var(--border)",
           animation: "kavaultScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
-          maxHeight: "90vh",
+          maxHeight: "min(90vh, calc(100dvh - 32px))",
           overflowY: "auto",
+          margin: "auto",
         }}
       >
         <div
@@ -111,6 +118,7 @@ export function Modal({
 
         <div>{children}</div>
       </Card>
-    </div>
+    </div>,
+    document.body
   );
 }

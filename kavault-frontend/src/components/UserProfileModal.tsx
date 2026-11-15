@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
   X,
@@ -67,6 +68,16 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       isMounted = false;
     };
   }, [userId, initialData]);
+
+  // Lock body scroll while modal is open
+  useEffect(() => {
+    if (!userId) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [userId]);
 
   if (!userId) return null;
 
@@ -155,23 +166,21 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   const joinedDate = formatDate(profile?.createdAt || profile?.joinedAt);
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 9999,
-        backgroundColor: "rgba(0, 0, 0, 0.75)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
+        zIndex: 99999,
+        backgroundColor: "rgba(0, 0, 0, 0.78)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
         display: "flex",
-        alignItems: "flex-start",
+        alignItems: "center",
         justifyContent: "center",
         padding: "16px",
-        paddingTop: "max(24px, env(safe-area-inset-top, 24px))",
-        paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))",
-        overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
+        paddingTop: "max(16px, env(safe-area-inset-top, 16px))",
+        paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
         animation: "fadeIn 0.2s ease-out",
       }}
       onClick={onClose}
@@ -181,16 +190,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         style={{
           width: "100%",
           maxWidth: "520px",
-          marginTop: "0",
-          marginBottom: "auto",
+          margin: "auto",
           borderRadius: "20px",
           overflow: "hidden",
           backgroundColor: "var(--surface, #121214)",
           border: "1px solid var(--border, rgba(255, 255, 255, 0.12))",
-          boxShadow: "0 24px 60px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255,255,255,0.2)",
+          boxShadow: "0 24px 60px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255,255,255,0.2)",
           display: "flex",
           flexDirection: "column",
-          maxHeight: "calc(100dvh - 48px)",
+          maxHeight: "min(88vh, calc(100dvh - 32px))",
           animation: "scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
           flexShrink: 0,
         }}
@@ -659,6 +667,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

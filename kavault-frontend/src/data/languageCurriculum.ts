@@ -810,6 +810,139 @@ export const GRAMMAR_LESSONS: Record<StudyLanguage, GrammarLesson[]> = {
         },
       },
     },
+    {
+      id: "ja-n2-wake-niwa-ikanai",
+      level: "N2",
+      pattern: "V-る + わけにはいかない / V-ない + わけにはいかない",
+      title: {
+        ru: "Моральный запрет (не могу себе позволить / обязан сделать)",
+        en: "Cannot afford to / Bound to (〜わけにはいかない)",
+        ja: "心理的・道義的な不可能性「〜わけにはいかない」",
+      },
+      explanation: {
+        ru: "Выражает невозможность поступить так по социальным, моральным или этическим причинам («я не имею права подвести команду», «завтра важный экзамен, поэтому я не могу прогулять»). С отрицанием (ないわけにはいかない) означает «нельзя не сделать» = «обязан сделать».",
+        en: "Expresses that one cannot do something due to social or moral obligations ('cannot afford to do X'). In the double negative, it means 'must do'.",
+        ja: "社会的・道徳的な理由や責任から「そうするわけにはいかない」「しないわけにはいかない（しなければならない）」を表します。",
+      },
+      examples: [
+        {
+          target: "大事な 会議が あるので、休む わけには いきません。",
+          reading: "だいじな かいぎが あるので、やすむ わけには いきません。",
+          tr: { ru: "Предстоит важное совещание, поэтому я не могу позволить себе взять выходной.", en: "Since there is an important meeting, I cannot afford to take the day off.", ja: "責任上休めない状況を表します。" },
+        },
+        {
+          target: "頼まれた 以上、やらない わけには いかない。",
+          reading: "たのまれた いじょう、やらない わけには いかない。",
+          tr: { ru: "Раз уж меня попросили, я обязан это выполнить.", en: "Since I was asked, I simply have to do it.", ja: "引き受けた以上断れない心理です。" },
+        },
+      ],
+      quiz: {
+        prompt: "みんなが 待っているから、途中で 諦める わけ＿＿ いきません。",
+        options: ["には", "では", "とは"],
+        correctIdx: 0,
+        hint: {
+          ru: "Устойчивая конструкция: わけには いかない.",
+          en: "The standard phrase is わけには いかない.",
+          ja: "「〜わけにはいかない」が定型文です。",
+        },
+      },
+    },
+    {
+      id: "ja-n2-zaru-wo-enai",
+      level: "N2",
+      pattern: "V-ない-stem + ざるを得ない",
+      title: {
+        ru: "Вынужденная необходимость (ничего другого не остаётся кроме...)",
+        en: "Have No Choice But (〜ざるを得ない)",
+        ja: "やむを得ない義務「〜ざるを得ない」",
+      },
+      explanation: {
+        ru: "Означает «не хочется, но обстоятельства вынуждают поступить именно так» («ничего другого не остаётся кроме как...»). Образуется от основы глагола на ない (する → せざるを得ない).",
+        en: "Expresses doing something against one's real preference because circumstances leave no alternative ('cannot help but / have no choice but to').",
+        ja: "本意ではないが、事情から判断してそうするしかない状況を表します（する→せざるを得ない）。",
+      },
+      examples: [
+        {
+          target: "証拠が 見つかった 以上、事実を 認めざるを 得ない。",
+          reading: "しょうこが みつかった いじょう、じじつを みとめざるを えない。",
+          tr: { ru: "Раз доказательства найдены, остаётся лишь признать факт.", en: "Now that evidence has been found, we have no choice but to admit the truth.", ja: "事実を認めざるを得ない客観的な状況です。" },
+        },
+      ],
+      quiz: {
+        prompt: "台風で 電車が 止まったため、ホテルに 泊まら＿＿ 得ない。",
+        options: ["ざるを", "ないを", "ずには"],
+        correctIdx: 0,
+        hint: {
+          ru: "Формула: глагол 泊まる → 泊まら + ざるを + 得ない.",
+          en: "Form: Verb stem 泊まら + ざるを + 得ない.",
+          ja: "未然形に「ざるを得ない」を接続します。",
+        },
+      },
+    },
+    {
+      id: "ja-n1-kiwamarinai",
+      level: "N1",
+      pattern: "な-adj / い-adj 語幹 + 極まりない / 極まる",
+      title: {
+        ru: "Высшая степень эмоциональной оценки (крайне / предельно)",
+        en: "Extremely / Boundless (〜極まりない)",
+        ja: "感情の高まり・限界「〜極まりない」",
+      },
+      explanation: {
+        ru: "Книжная, возвышенная конструкция уровня N1 для выражения предельной степени качества, часто с оттенком недовольства, опасности или восхищения («крайне безответственно», «в высшей степени неблагоразумно»).",
+        en: "Formal, literary expression denoting the absolute peak of a state or attitude ('extremely / boundless / utmost').",
+        ja: "極めてその状態であることを強調する硬い文語的表現です（例：無責任極まりない）。",
+      },
+      examples: [
+        {
+          target: "連絡も なしに 欠席するとは、無責任 極まりない。",
+          reading: "れんらくも なしに けっせきするとは、むせきにん きわまりない。",
+          tr: { ru: "Не явиться без предупреждения — это в высшей степени безответственно.", en: "To be absent without any notice is utterly irresponsible.", ja: "極めて無責任であるという強い批判です。" },
+        },
+      ],
+      quiz: {
+        prompt: "そんな 危険な 場所へ 一人で 行くなんて、無謀＿＿。",
+        options: ["極まりない", "にすぎない", "どころではない"],
+        correctIdx: 0,
+        hint: {
+          ru: "Высшая степень безрассудства: 無謀 + 極まりない.",
+          en: "Utmost recklessness is expressed by 極まりない.",
+          ja: "無謀の極みを示す「無謀極まりない」を選びます。",
+        },
+      },
+    },
+    {
+      id: "ja-n1-gotoku",
+      level: "N1",
+      pattern: "〜かのごとし / 〜かのごとく + V / 〜かのごとき + N",
+      title: {
+        ru: "Образное сравнение высокого стиля (подобно / словно)",
+        en: "As if / Like (〜かのごとく)",
+        ja: "比喩の格調高い表現「〜かのごとく」",
+      },
+      explanation: {
+        ru: "Торжественный книжный синоним повседневного ように. Используется в художественной литературе, эссе и речах для поэтичного или образного сравнения («время летит словно стрела», «он стоял недвижим, будто скала»).",
+        en: "A solemn, elevated literary equivalent of ように ('as though / like / akin to').",
+        ja: "「〜のようだ」の格調高い文語表現で、比喩を強調する際に用います。",
+      },
+      examples: [
+        {
+          target: "光陰 矢の ごとし。",
+          reading: "こういん やの ごとし。",
+          tr: { ru: "Время летит подобно стреле (классическая пословица).", en: "Time flies like an arrow.", ja: "時間の経過の早さを例えています。" },
+        },
+      ],
+      quiz: {
+        prompt: "彼は 嵐の＿＿ 走り去っていった。",
+        options: ["ごとく", "わけに", "ばかりに"],
+        correctIdx: 0,
+        hint: {
+          ru: "Литературное уподобление «словно буря»: 嵐の + ごとく.",
+          en: "Literary simile 'like a storm' uses ごとく.",
+          ja: "比喩の副詞的用法「〜のごとく」です。",
+        },
+      },
+    },
   ],
   en: [
     {

@@ -19,11 +19,12 @@ import {
   RotateCw,
   Turtle,
   Zap,
+  Search,
 } from "lucide-react";
 import { api } from "../api/axios";
 import { useApp } from "../context/AppContext";
 import type { Language } from "../i18n/translations";
-import type { StudyLanguage } from "../data/studyVibes";
+import { STUDY_LEVELS, type StudyLanguage } from "../data/studyVibes";
 import {
   GRAMMAR_LESSONS,
   READING_PASSAGES,
@@ -135,14 +136,41 @@ export function GrammarStudio({
 }) {
   const { setLocalMmr } = useApp();
   const labels = SKILL_STUDIO_TEXTS[uiLang].grammar;
-  const allLessons = GRAMMAR_LESSONS[studyLanguage];
-  const lessons = useMemo(() => {
-    if (selectedLevel === "ALL") return allLessons;
-    const filtered = allLessons.filter((l) => l.level === selectedLevel);
-    return filtered.length > 0 ? filtered : allLessons;
-  }, [allLessons, selectedLevel]);
+  const allLessons = GRAMMAR_LESSONS[studyLanguage] || [];
 
-  const [selectedId, setSelectedId] = useState(lessons[0].id);
+  const [grammarLevel, setGrammarLevel] = useState<string>(
+    selectedLevel !== "ALL" ? selectedLevel : "ALL"
+  );
+  const [grammarSearch, setGrammarSearch] = useState<string>("");
+
+  useEffect(() => {
+    if (selectedLevel !== "ALL") {
+      setGrammarLevel(selectedLevel);
+    }
+  }, [selectedLevel]);
+
+  const levelMetaList = useMemo(() => {
+    return STUDY_LEVELS[studyLanguage] || [];
+  }, [studyLanguage]);
+
+  const lessons = useMemo(() => {
+    let list = allLessons;
+    if (grammarLevel !== "ALL") {
+      list = list.filter((l) => l.level === grammarLevel);
+    }
+    if (grammarSearch.trim()) {
+      const q = grammarSearch.toLowerCase();
+      list = list.filter(
+        (l) =>
+          l.pattern.toLowerCase().includes(q) ||
+          (l.title[uiLang] && l.title[uiLang].toLowerCase().includes(q)) ||
+          (l.explanation[uiLang] && l.explanation[uiLang].toLowerCase().includes(q))
+      );
+    }
+    return list.length > 0 ? list : allLessons;
+  }, [allLessons, grammarLevel, grammarSearch, uiLang]);
+
+  const [selectedId, setSelectedId] = useState(allLessons[0]?.id || "");
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [addingPattern, setAddingPattern] = useState<string | null>(null);
   const [mmrEarnedBanner, setMmrEarnedBanner] = useState<number | null>(null);
@@ -150,23 +178,25 @@ export function GrammarStudio({
   // Custom grammar form
   const [noteTitle, setNoteTitle] = useState("");
   const [noteLevel, setNoteLevel] = useState(
-    selectedLevel !== "ALL" ? selectedLevel : studyLanguage === "ja" ? "N5" : "A1",
+    grammarLevel !== "ALL" ? grammarLevel : studyLanguage === "ja" ? "N5" : "A1",
   );
   const [noteContent, setNoteContent] = useState("");
   const [noteExample, setNoteExample] = useState("");
   const [savingNote, setSavingNote] = useState(false);
 
   useEffect(() => {
-    setSelectedId(lessons[0].id);
-    setQuizAnswers({});
-    if (selectedLevel !== "ALL") {
-      setNoteLevel(selectedLevel);
+    if (lessons.length > 0 && !lessons.some((l) => l.id === selectedId)) {
+      setSelectedId(lessons[0].id);
     }
-  }, [studyLanguage, selectedLevel, lessons]);
+    setQuizAnswers({});
+    if (grammarLevel !== "ALL") {
+      setNoteLevel(grammarLevel);
+    }
+  }, [studyLanguage, grammarLevel, lessons]);
 
   const activeLesson = useMemo(
-    () => lessons.find((l) => l.id === selectedId) || lessons[0],
-    [lessons, selectedId],
+    () => lessons.find((l) => l.id === selectedId) || lessons[0] || allLessons[0],
+    [lessons, selectedId, allLessons],
   );
 
   const grammarNotes = useMemo(
@@ -174,9 +204,9 @@ export function GrammarStudio({
       customPassages.filter(
         (p) =>
           p.kind === "GRAMMAR" &&
-          (selectedLevel === "ALL" || p.level === selectedLevel),
+          (grammarLevel === "ALL" || p.level === grammarLevel),
       ),
-    [customPassages, selectedLevel],
+    [customPassages, grammarLevel],
   );
 
   const handleSaveCustomRule = async (e: React.FormEvent) => {
@@ -206,8 +236,8 @@ export function GrammarStudio({
     await onRefreshPassages();
   };
 
-  const selectedQuizIdx = quizAnswers[activeLesson.id];
-  const isRuleAdded = existingWords.has(activeLesson.pattern);
+  const selectedQuizIdx = quizAnswers[activeLesson?.id || ""];
+  const isRuleAdded = activeLesson ? existingWords.has(activeLesson.pattern) : false;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
@@ -236,11 +266,89 @@ export function GrammarStudio({
             <GraduationCap size={20} color={accentColor} /> {labels.curatedTitle}
           </h3>
           <Badge variant="accent">
-            {lessons.length} rules
+            {lessons.length} из {allLessons.length} правил
           </Badge>
         </div>
 
-        {/* Табы выбора правила */}
+        {/* ── ФИЛЬТР ПО УРОВНЯМ ЯЗЫКА (N5, N4, N3, N2, N1) ── */}
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            flexWrap: "wrap",
+            marginBottom: "14px",
+            alignItems: "center",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setGrammarLevel("ALL")}
+            style={{
+              padding: "7px 14px",
+              borderRadius: "10px",
+              border: `1.5px solid ${grammarLevel === "ALL" ? accentColor : "var(--border)"}`,
+              backgroundColor: grammarLevel === "ALL" ? accentColor : "var(--surface)",
+              color: grammarLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            Все уровни ({allLessons.length})
+          </button>
+          {levelMetaList.map((lvl) => {
+            const count = allLessons.filter((l) => l.level === lvl.id).length;
+            const isActive = grammarLevel === lvl.id;
+            return (
+              <button
+                key={lvl.id}
+                type="button"
+                onClick={() => setGrammarLevel(lvl.id)}
+                style={{
+                  padding: "7px 14px",
+                  borderRadius: "10px",
+                  border: `1.5px solid ${isActive ? lvl.color : "var(--border)"}`,
+                  backgroundColor: isActive ? lvl.color : "var(--surface)",
+                  color: isActive ? "#ffffff" : "var(--text-primary)",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span>{lvl.badge}</span>
+                <span
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: 800,
+                    padding: "1px 6px",
+                    borderRadius: "999px",
+                    backgroundColor: isActive ? "rgba(255, 255, 255, 0.25)" : "var(--surface-raised)",
+                    color: isActive ? "#ffffff" : "var(--text-muted)",
+                  }}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── БЫСТРЫЙ ПОИСК ПО ГРАММАТИКЕ ── */}
+        <div style={{ marginBottom: "16px" }}>
+          <Input
+            icon={<Search size={15} />}
+            placeholder="Поиск правил по конструкции, переводу или теме..."
+            value={grammarSearch}
+            onChange={(e) => setGrammarSearch(e.target.value)}
+          />
+        </div>
+
+        {/* ── ТАБЫ ВЫБОРА ПРАВИЛА ── */}
         <div
           style={{
             display: "flex",
@@ -250,7 +358,9 @@ export function GrammarStudio({
           }}
         >
           {lessons.map((lesson) => {
-            const active = lesson.id === activeLesson.id;
+            const active = lesson.id === activeLesson?.id;
+            const lvlMeta = levelMetaList.find((l) => l.id === lesson.level);
+            const tagColor = lvlMeta?.color || accentColor;
             return (
               <button
                 key={lesson.id}
@@ -259,7 +369,7 @@ export function GrammarStudio({
                 style={{
                   padding: "7px 12px",
                   borderRadius: "var(--radius-md)",
-                  border: active ? `2px solid ${accentColor}` : "1px solid var(--border)",
+                  border: active ? `2px solid ${tagColor}` : "1px solid var(--border)",
                   backgroundColor: active ? "var(--vibe-soft)" : "var(--surface-raised)",
                   color: active ? "var(--text-primary)" : "var(--text-secondary)",
                   fontSize: "13px",
@@ -268,6 +378,7 @@ export function GrammarStudio({
                   display: "flex",
                   alignItems: "center",
                   gap: "6px",
+                  transition: "all 0.15s ease",
                 }}
               >
                 <span
@@ -276,13 +387,13 @@ export function GrammarStudio({
                     fontWeight: 700,
                     padding: "1px 5px",
                     borderRadius: "4px",
-                    backgroundColor: active ? accentColor : "var(--surface)",
+                    backgroundColor: active ? tagColor : "var(--surface)",
                     color: active ? "#fff" : "var(--text-muted)",
                   }}
                 >
                   {lesson.level}
                 </span>
-                <span>{lesson.pattern.split("/")[0].trim()}</span>
+                <span>{lesson.title[uiLang] || lesson.pattern.split("/")[0].trim()}</span>
               </button>
             );
           })}
@@ -697,14 +808,22 @@ export function ReadingStudio({
 }) {
   const { setLocalMmr } = useApp();
   const labels = SKILL_STUDIO_TEXTS[uiLang].reading;
-  const allPassages = READING_PASSAGES[studyLanguage];
-  const passages = useMemo(() => {
-    if (selectedLevel === "ALL") return allPassages;
-    const filtered = allPassages.filter((p) => p.level === selectedLevel);
-    return filtered.length > 0 ? filtered : allPassages;
-  }, [allPassages, selectedLevel]);
+  const allPassages = READING_PASSAGES[studyLanguage] || [];
+  const [readingLevel, setReadingLevel] = useState<string>(
+    selectedLevel !== "ALL" ? selectedLevel : "ALL"
+  );
 
-  const [selectedId, setSelectedId] = useState(passages[0].id);
+  const levelMetaList = useMemo(() => {
+    return STUDY_LEVELS[studyLanguage] || [];
+  }, [studyLanguage]);
+
+  const passages = useMemo(() => {
+    if (readingLevel === "ALL") return allPassages;
+    const filtered = allPassages.filter((p) => p.level === readingLevel);
+    return filtered.length > 0 ? filtered : allPassages;
+  }, [allPassages, readingLevel]);
+
+  const [selectedId, setSelectedId] = useState(allPassages[0]?.id || "");
   const [speed, setSpeed] = useState(0.95);
   const [showHints, setShowHints] = useState(true);
   const [showTrans, setShowTrans] = useState(true);
@@ -725,9 +844,11 @@ export function ReadingStudio({
     seqAbortRef.current = true;
     stopSpeaking();
     setSpeakingIdx(null);
-    setSelectedId(passages[0].id);
+    if (passages.length > 0 && !passages.some((p) => p.id === selectedId)) {
+      setSelectedId(passages[0].id);
+    }
     setQuizChoice({});
-  }, [studyLanguage, selectedLevel, passages]);
+  }, [studyLanguage, readingLevel, passages]);
 
   useEffect(() => {
     return () => {
@@ -845,6 +966,53 @@ export function ReadingStudio({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Фильтр по уровням чтения */}
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px" }}>
+          <button
+            type="button"
+            onClick={() => setReadingLevel("ALL")}
+            style={{
+              padding: "6px 12px",
+              borderRadius: "8px",
+              border: `1.5px solid ${readingLevel === "ALL" ? accentColor : "var(--border)"}`,
+              backgroundColor: readingLevel === "ALL" ? accentColor : "var(--surface)",
+              color: readingLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            Все тексты ({allPassages.length})
+          </button>
+          {levelMetaList.map((lvl) => {
+            const count = allPassages.filter((p) => p.level === lvl.id).length;
+            const isActive = readingLevel === lvl.id;
+            return (
+              <button
+                key={lvl.id}
+                type="button"
+                onClick={() => setReadingLevel(lvl.id)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "8px",
+                  border: `1.5px solid ${isActive ? lvl.color : "var(--border)"}`,
+                  backgroundColor: isActive ? lvl.color : "var(--surface)",
+                  color: isActive ? "#ffffff" : "var(--text-primary)",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                <span>{lvl.badge}</span>
+                <span style={{ fontSize: "10px", fontWeight: 800 }}>{count}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Селектор текстов */}
@@ -1321,15 +1489,23 @@ export function ListeningStudio({
 }) {
   const { setLocalMmr } = useApp();
   const labels = SKILL_STUDIO_TEXTS[uiLang].listening;
-  const allDialogues = LISTENING_DIALOGUES[studyLanguage];
+  const allDialogues = LISTENING_DIALOGUES[studyLanguage] || [];
+  const [dlgLevel, setDlgLevel] = useState<string>(
+    selectedLevel !== "ALL" ? selectedLevel : "ALL"
+  );
+
+  const levelMetaList = useMemo(() => {
+    return STUDY_LEVELS[studyLanguage] || [];
+  }, [studyLanguage]);
+
   const dialogues = useMemo(() => {
-    if (selectedLevel === "ALL") return allDialogues;
-    const filtered = allDialogues.filter((d) => d.level === selectedLevel);
+    if (dlgLevel === "ALL") return allDialogues;
+    const filtered = allDialogues.filter((d) => d.level === dlgLevel);
     return filtered.length > 0 ? filtered : allDialogues;
-  }, [allDialogues, selectedLevel]);
+  }, [allDialogues, dlgLevel]);
 
   const [mode, setMode] = useState<"dialogues" | "quiz" | "dictation">("dialogues");
-  const [selectedDlgId, setSelectedDlgId] = useState(dialogues[0].id);
+  const [selectedDlgId, setSelectedDlgId] = useState(allDialogues[0]?.id || "");
   const [slowMode, setSlowMode] = useState(false);
   const [showTranscript, setShowTranscript] = useState(true);
   const [playingLineIdx, setPlayingLineIdx] = useState<number | null>(null);
@@ -1351,14 +1527,16 @@ export function ListeningStudio({
     dlgAbortRef.current = true;
     stopSpeaking();
     setPlayingLineIdx(null);
-    setSelectedDlgId(dialogues[0].id);
+    if (dialogues.length > 0 && !dialogues.some((d) => d.id === selectedDlgId)) {
+      setSelectedDlgId(dialogues[0].id);
+    }
     setQuizIndex(0);
     setPickedOption(null);
     setDictInput("");
     setDictChecked(null);
     setScore(0);
     setStreak(0);
-  }, [studyLanguage, selectedLevel, dialogues]);
+  }, [studyLanguage, dlgLevel, dialogues]);
 
   useEffect(() => {
     return () => {
@@ -1562,6 +1740,53 @@ export function ListeningStudio({
       {/* Режим 1: Живые диалоги */}
       {mode === "dialogues" && (
         <Card style={{ padding: "var(--space-6)" }}>
+          {/* Фильтр по уровням диалогов */}
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px" }}>
+            <button
+              type="button"
+              onClick={() => setDlgLevel("ALL")}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "8px",
+                border: `1.5px solid ${dlgLevel === "ALL" ? accentColor : "var(--border)"}`,
+                backgroundColor: dlgLevel === "ALL" ? accentColor : "var(--surface)",
+                color: dlgLevel === "ALL" ? "#ffffff" : "var(--text-secondary)",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Все диалоги ({allDialogues.length})
+            </button>
+            {levelMetaList.map((lvl) => {
+              const count = allDialogues.filter((d) => d.level === lvl.id).length;
+              const isActive = dlgLevel === lvl.id;
+              return (
+                <button
+                  key={lvl.id}
+                  type="button"
+                  onClick={() => setDlgLevel(lvl.id)}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    border: `1.5px solid ${isActive ? lvl.color : "var(--border)"}`,
+                    backgroundColor: isActive ? lvl.color : "var(--surface)",
+                    color: isActive ? "#ffffff" : "var(--text-primary)",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <span>{lvl.badge}</span>
+                  <span style={{ fontSize: "10px", fontWeight: 800 }}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "var(--space-5)" }}>
             {dialogues.map((d) => {
               const active = d.id === activeDialogue.id;

@@ -128,18 +128,18 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
         />
       )}
 
-      {/* Деликатный градиент затемнения: для кастомных баннеров тонкий виньет по краям, для пресетов чистый вид */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: isCustom
-            ? "linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.25) 100%)"
-            : "linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.35) 100%)",
-          pointerEvents: "none",
-          zIndex: 1,
-        }}
-      />
+      {/* Деликатный градиент затемнения (только для пресетов, чтобы кастомные баннеры не теряли сочность цветов) */}
+      {!isCustom && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.35) 100%)",
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        />
+      )}
 
       {/* Контент поверх баннера */}
       <div

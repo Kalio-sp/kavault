@@ -371,52 +371,57 @@ export function Dashboard() {
           flexDirection: "column",
         }}
       >
-        {/* Баннерная обложка профиля с живой анимацией и культурным свечением */}
+        {/* Баннерная обложка профиля с живой анимацией */}
         <BannerRenderer
           customization={profileCustom}
           style={{ height: isMobile ? "110px" : "185px" }}
         >
-          <div
-            style={{
-              position: "absolute",
-              right: isMobile ? "-20px" : "-10px",
-              top: isMobile ? "-20px" : "-10px",
-              bottom: 0,
-              width: isMobile ? "240px" : "360px",
-              opacity: isMobile ? 0.75 : 0.9,
-              pointerEvents: "none",
-            }}
-          >
-            <CulturalHeroScene studyLanguage={studyLanguage} compact />
-          </div>
+          {/* Языковое оформление (сцена и плашка) отображается ТОЛЬКО если у пользователя нет кастомного баннера/темы */}
+          {!profileCustom?.customBannerUrl && (!profileCustom?.bannerThemeId || profileCustom.bannerThemeId === "default") && (
+            <>
+              <div
+                style={{
+                  position: "absolute",
+                  right: isMobile ? "-20px" : "-10px",
+                  top: isMobile ? "-20px" : "-10px",
+                  bottom: 0,
+                  width: isMobile ? "240px" : "360px",
+                  opacity: isMobile ? 0.75 : 0.9,
+                  pointerEvents: "none",
+                }}
+              >
+                <CulturalHeroScene studyLanguage={studyLanguage} compact />
+              </div>
 
-          {/* Плашка текущего языка (1 флаг без дублей) */}
-          <div
-            style={{
-              position: "absolute",
-              top: "10px",
-              left: "14px",
-              zIndex: 2,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "4px 10px",
-              borderRadius: "999px",
-              backgroundColor: "rgba(0, 0, 0, 0.6)",
-              backdropFilter: "blur(8px)",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              color: "#ffffff",
-              fontSize: "11px",
-              fontWeight: 700,
-              maxWidth: "calc(100% - 130px)",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            <span>{studyPalette.flag}</span>
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{studyText.vibeBadge}</span>
-          </div>
+              {/* Плашка текущего языка (1 флаг без дублей) */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "10px",
+                  left: "14px",
+                  zIndex: 2,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "4px 10px",
+                  borderRadius: "999px",
+                  backgroundColor: "rgba(0, 0, 0, 0.6)",
+                  backdropFilter: "blur(8px)",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  color: "#ffffff",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  maxWidth: "calc(100% - 130px)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                <span>{studyPalette.flag}</span>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{studyText.vibeBadge}</span>
+              </div>
+            </>
+          )}
 
           {/* Быстрая кнопка перехода в профиль прямо на баннере */}
           <Link

@@ -493,6 +493,22 @@ export function JapaneseHub() {
             if (evaluate) evaluateAchievements({ cards: retryList });
             return;
           } catch {}
+        } else {
+          // Автоматически синхронизируем новые слова программы с колодой пользователя
+          try {
+            const starterItems = getStarterCardsForStudy(studyLanguage, language);
+            const existingWordSet = new Set(list.map((c: any) => c.word.trim()));
+            const missing = starterItems.filter((sc) => !existingWordSet.has(sc.word.trim()));
+            if (missing.length > 0) {
+              await api.post("/japanese/bulk", { items: missing, language: studyLanguage });
+              const refreshed = await api.get(`/japanese?language=${studyLanguage}`);
+              const fullList = refreshed.data || list;
+              setCards(fullList);
+              setPassages(passResp.data || []);
+              if (evaluate) evaluateAchievements({ cards: fullList });
+              return;
+            }
+          } catch {}
         }
         setCards(list);
         setPassages(passResp.data || []);
@@ -1520,7 +1536,7 @@ export function JapaneseHub() {
                           gap: "6px",
                         }}
                       >
-                        <BookOpen size={14} /> Открыть слова уровня ({lvlCards.length}) →
+                        <BookOpen size={14} /> Открыть слова уровня →
                       </Button>
 
                       {lvlCards.length > 0 && (
