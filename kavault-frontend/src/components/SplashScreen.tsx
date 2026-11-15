@@ -4,6 +4,15 @@ interface SplashScreenProps {
   onFinish?: () => void;
 }
 
+const getSplashSrc = () => {
+  try {
+    const base = import.meta.env.BASE_URL || "./";
+    return `${base.replace(/\/$/, "")}/splash.mp4`;
+  } catch {
+    return "./splash.mp4";
+  }
+};
+
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   // Обязательная заставка при каждом старте и обновлении страницы
   const [visible, setVisible] = useState(true);
@@ -125,6 +134,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         autoPlay
         preload="auto"
         onEnded={handleComplete}
+        onError={() => {
+          handleComplete();
+        }}
         style={{
           width: "100%",
           height: "100%",
@@ -136,6 +148,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
           backfaceVisibility: "hidden",
         }}
       >
+        <source src={getSplashSrc()} type="video/mp4" />
+        <source src="./splash.mp4" type="video/mp4" />
         <source src="/splash.mp4" type="video/mp4" />
       </video>
     </div>

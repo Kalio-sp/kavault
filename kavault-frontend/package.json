@@ -33,6 +33,7 @@
     ],
     "win": {
       "target": [
+        "dir",
         "nsis"
       ],
       "icon": "electron/icon.ico",
