@@ -29,10 +29,7 @@ import { useAchievements } from "../context/AchievementContext";
 import { confirmModal } from "../context/DialogContext";
 import {
   getStarterCardsForStudy,
-  getMissingStarterCount,
   studyLanguageToPackType,
-  isPackClaimed,
-  markPackClaimed,
   unmarkPackClaimed,
 } from "../data/starterPacks";
 import {
@@ -58,6 +55,7 @@ import {
 import { AlphabetStudio } from "../components/AlphabetStudio";
 import { DeckImportModal } from "../components/DeckImportModal";
 import { DeckShareModal } from "../components/DeckShareModal";
+import { LevelWordsModal } from "../components/LevelWordsModal";
 import { speakText } from "../utils/audioPlayer";
 
 type HubSlot = "S1" | "S2";
@@ -458,12 +456,12 @@ export function JapaneseHub() {
   );
 
   const [cards, setCards] = useState<StudyCard[]>([]);
+  const [activeLevelModal, setActiveLevelModal] = useState<string | null>(null);
   const [passages, setPassages] = useState<StudyPassageRecord[]>([]);
   const [word, setWord] = useState("");
   const [reading, setReading] = useState("");
   const [meaning, setMeaning] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isImporting, setIsImporting] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
 
@@ -484,6 +482,18 @@ export function JapaneseHub() {
             .catch(() => ({ data: [] as StudyPassageRecord[] })),
         ]);
         const list = cardsResp.data || [];
+        if (list.length === 0) {
+          try {
+            const items = getStarterCardsForStudy(studyLanguage, language);
+            await api.post("/japanese/bulk", { items, language: studyLanguage });
+            const retry = await api.get(`/japanese?language=${studyLanguage}`);
+            const retryList = retry.data || [];
+            setCards(retryList);
+            setPassages(passResp.data || []);
+            if (evaluate) evaluateAchievements({ cards: retryList });
+            return;
+          } catch {}
+        }
         setCards(list);
         setPassages(passResp.data || []);
         if (evaluate) {
@@ -526,30 +536,6 @@ export function JapaneseHub() {
       language: studyLanguage,
     });
     await fetchCards(true);
-  };
-
-  const missingStarterCount = useMemo(
-    () => getMissingStarterCount(activeLangPack, cards),
-    [activeLangPack, cards],
-  );
-
-  const isStarterClaimed = useMemo(
-    () => isPackClaimed(activeLangPack, cards),
-    [activeLangPack, cards],
-  );
-
-  const handleLoadStarterPack = async () => {
-    try {
-      setIsImporting(true);
-      const items = getStarterCardsForStudy(studyLanguage, language);
-      await api.post("/japanese/bulk", { items, language: studyLanguage });
-      markPackClaimed(activeLangPack);
-      await fetchCards(true);
-    } catch (err) {
-      console.error("Ошибка загрузки стартового набора", err);
-    } finally {
-      setIsImporting(false);
-    }
   };
 
   useEffect(() => {
@@ -1250,29 +1236,6 @@ export function JapaneseHub() {
                 {currentSecText.deckTitle} ({filteredCards.length})
               </span>
 
-              {!isStarterClaimed && (
-                <Button
-                  variant="secondary"
-                  onClick={handleLoadStarterPack}
-                  disabled={isImporting}
-                  style={{
-                    padding: "4px 8px",
-                    fontSize: "11px",
-                    color: studyPalette.accentHex,
-                    borderColor: "var(--vibe-banner-border)",
-                    gap: "4px",
-                  }}
-                  title={studyText.starterFullBtn}
-                >
-                  <Sparkles size={12} />{" "}
-                  {isImporting
-                    ? t.jap.loadingBtn
-                    : cards.length > 0 && missingStarterCount > 0
-                      ? `Стартовый (+${missingStarterCount})`
-                      : "Стартовый набор"}
-                </Button>
-              )}
-
               <Button
                 variant="secondary"
                 onClick={() => setImportModalOpen(true)}
@@ -1337,160 +1300,296 @@ export function JapaneseHub() {
             </div>
           </div>
 
-          {/* СПИСОК КАРТОЧЕК */}
-          {filteredCards.length === 0 ? (
-            <Card
-              style={{
-                padding: "var(--space-6)",
-                textAlign: "center",
-                color: "var(--text-muted)",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "10px",
-              }}
-            >
-              <p style={{ margin: 0, fontSize: "14px" }}>
-                {searchQuery ? studyText.notFound : currentSecText.emptyText}
-              </p>
-              {!searchQuery && !isStarterClaimed && (
-                <Button
-                  onClick={handleLoadStarterPack}
-                  disabled={isImporting}
-                  style={{
-                    gap: "6px",
-                    backgroundColor: studyPalette.accentHex,
-                    color: "#ffffff",
-                    fontSize: "12px",
-                  }}
-                >
-                  <Sparkles size={14} />{" "}
-                  {isImporting ? t.jap.importingCardsBtn : studyText.starterFullBtn}
-                </Button>
-              )}
-            </Card>
-          ) : (
-            selectedLevel === "ALL" ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                {levelsMeta.map((lvl) => {
-                  const lvlCards = filteredCards.filter(
-                    (c) => (c.studyLevel || defaultLevel) === lvl.id,
-                  );
-                  if (lvlCards.length === 0) return null;
-                  return (
-                    <div
-                      key={lvl.id}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "8px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          flexWrap: "wrap",
-                          gap: "8px",
-                          padding: "8px 12px",
-                          borderRadius: "10px",
-                          backgroundColor: "var(--bg-surface)",
-                          border: `1px solid ${lvl.color}35`,
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                          <span
-                            style={{
-                              fontSize: "11px",
-                              padding: "2px 8px",
-                              borderRadius: "999px",
-                              backgroundColor: `${lvl.color}20`,
-                              color: lvl.color,
-                              border: `1px solid ${lvl.color}45`,
-                              fontWeight: 800,
-                            }}
-                          >
-                            {lvl.badge}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "13px",
-                              fontWeight: 700,
-                              color: "var(--text-primary)",
-                            }}
-                          >
-                            {lvl.title[language]}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "11px",
-                              color: "var(--text-muted)",
-                            }}
-                          >
-                            {lvlCards.length} {studyText.wordsUnit}
-                          </span>
-                        </div>
-
-                        <Button
-                          variant="secondary"
-                          onClick={() =>
-                            navigate(
-                              `/review?mode=${currentSecText.id.toLowerCase()}&level=${lvl.id}`,
-                            )
-                          }
-                          style={{
-                            gap: "5px",
-                            padding: "4px 10px",
-                            fontSize: "11px",
-                            borderColor: `${lvl.color}45`,
-                            color: lvl.color,
-                          }}
-                        >
-                          <Sparkles size={12} /> Повторить ({lvlCards.length})
-                        </Button>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-                          gap: "10px",
-                        }}
-                      >
-                        {lvlCards.map((item) => (
-                          <FlashcardItem
-                            key={item.id}
-                            item={item}
-                            slot={activeSlot}
-                            onDelete={handleDeleteCard}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
+          {/* СПИСОК УРОВНЕЙ ИЛИ РЕЗУЛЬТАТЫ ПОИСКА */}
+          {searchQuery.trim() ? (
+            <div>
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-                  gap: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "12px",
                 }}
               >
-                {filteredCards.map((item) => (
-                  <FlashcardItem
-                    key={item.id}
-                    item={item}
-                    slot={activeSlot}
-                    onDelete={handleDeleteCard}
-                  />
-                ))}
+                <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                  Результаты поиска по запросу «{searchQuery}» ({filteredCards.length}):
+                </span>
+                <button
+                  onClick={() => setSearchQuery("")}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--accent, #3b82f6)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Сбросить поиск
+                </button>
               </div>
-            )
+
+              {filteredCards.length === 0 ? (
+                <Card
+                  style={{
+                    padding: "var(--space-6)",
+                    textAlign: "center",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  <p style={{ margin: 0, fontSize: "14px" }}>{studyText.notFound}</p>
+                </Card>
+              ) : (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))",
+                    gap: "10px",
+                  }}
+                >
+                  {filteredCards.map((item) => (
+                    <FlashcardItem
+                      key={item.id}
+                      item={item}
+                      slot={activeSlot}
+                      onDelete={handleDeleteCard}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* КАРТОЧКИ УРОВНЕЙ ЯЗЫКА С БЫСТРЫМ ДОСТУПОМ К ОКНУ СЛОВ */
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                gap: "14px",
+              }}
+            >
+              {levelsMeta.map((lvl) => {
+                const lvlCards = cards.filter(
+                  (c) => (c.studyLevel || defaultLevel) === lvl.id,
+                );
+                const masteredCount = lvlCards.filter((c) => c.level >= 3).length;
+                const learningCount = lvlCards.filter((c) => c.level > 0 && c.level < 3).length;
+                const newCount = lvlCards.filter((c) => c.level === 0).length;
+
+                return (
+                  <div
+                    key={lvl.id}
+                    onClick={() => setActiveLevelModal(lvl.id)}
+                    style={{
+                      padding: "18px 20px",
+                      borderRadius: "18px",
+                      backgroundColor: "var(--surface, #141416)",
+                      border: `1px solid ${lvl.color}35`,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "14px",
+                      cursor: "pointer",
+                      transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                      boxShadow: "0 8px 24px -6px rgba(0, 0, 0, 0.45)",
+                      position: "relative",
+                      overflow: "hidden",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = `${lvl.color}80`;
+                      e.currentTarget.style.transform = "translateY(-3px)";
+                      e.currentTarget.style.boxShadow = `0 12px 30px -8px ${lvl.color}30`;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = `${lvl.color}35`;
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 8px 24px -6px rgba(0, 0, 0, 0.45)";
+                    }}
+                  >
+                    {/* Фоновое легкое свечение в углу */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "-20px",
+                        right: "-20px",
+                        width: "100px",
+                        height: "100px",
+                        borderRadius: "50%",
+                        background: `radial-gradient(circle, ${lvl.color}25 0%, transparent 70%)`,
+                        pointerEvents: "none",
+                      }}
+                    />
+
+                    {/* Верхняя плашка: Бейдж + Название уровня + Счетчик */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "10px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: 900,
+                            padding: "4px 10px",
+                            borderRadius: "10px",
+                            backgroundColor: `${lvl.color}20`,
+                            color: lvl.color,
+                            border: `1.5px solid ${lvl.color}`,
+                            letterSpacing: "0.03em",
+                          }}
+                        >
+                          {lvl.badge}
+                        </span>
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: "15px",
+                              fontWeight: 800,
+                              color: "var(--text-primary, #ffffff)",
+                              lineHeight: 1.25,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {lvl.title[language] || lvl.title.ru}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: "11px",
+                              color: "var(--text-muted, #94a3b8)",
+                              marginTop: "2px",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {lvl.subtitle[language] || lvl.subtitle.ru}
+                          </div>
+                        </div>
+                      </div>
+
+                      <span
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: 800,
+                          color: lvl.color,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {lvlCards.length} {studyText.wordsUnit}
+                      </span>
+                    </div>
+
+                    {/* Метрики освоения SRS */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        fontSize: "11px",
+                        color: "var(--text-secondary)",
+                        padding: "6px 10px",
+                        borderRadius: "8px",
+                        backgroundColor: "rgba(255, 255, 255, 0.03)",
+                      }}
+                    >
+                      <span>🏆 Освоено: <strong style={{ color: "#10b981" }}>{masteredCount}</strong></span>
+                      <span>⚡ В повторении: <strong style={{ color: "#38bdf8" }}>{learningCount}</strong></span>
+                      <span>🌱 Новых: <strong>{newCount}</strong></span>
+                    </div>
+
+                    {/* Кнопка открытия полноэкранного окна со словами этого уровня */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "auto" }}>
+                      <Button
+                        variant="primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveLevelModal(lvl.id);
+                        }}
+                        style={{
+                          flex: 1,
+                          backgroundColor: `${lvl.color}25`,
+                          color: lvl.color,
+                          border: `1px solid ${lvl.color}60`,
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          padding: "8px 12px",
+                          gap: "6px",
+                        }}
+                      >
+                        <BookOpen size={14} /> Открыть слова уровня ({lvlCards.length}) →
+                      </Button>
+
+                      {lvlCards.length > 0 && (
+                        <Button
+                          variant="secondary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/review?mode=${currentSecText.id.toLowerCase()}&level=${lvl.id}`);
+                          }}
+                          style={{
+                            padding: "8px 12px",
+                            fontSize: "12px",
+                            gap: "4px",
+                          }}
+                          title="Повторить этот уровень"
+                        >
+                          <Sparkles size={13} /> Повтор
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
+      )}
+
+      {/* ОКНО ПОЛНОГО ДОСТУПА КО ВСЕМ СЛОВАМ ВЫБРАННОГО УРОВНЯ */}
+      {activeLevelModal && (
+        <LevelWordsModal
+          isOpen={Boolean(activeLevelModal)}
+          onClose={() => setActiveLevelModal(null)}
+          levelMeta={(() => {
+            const m = levelsMeta.find((l) => l.id === activeLevelModal);
+            return {
+              id: activeLevelModal,
+              badge: m?.badge || activeLevelModal,
+              name: m?.title[language] || activeLevelModal,
+              desc: m?.subtitle[language] || "",
+              color: m?.color || "#3b82f6",
+            };
+          })()}
+          cards={cards
+            .filter((c) => (c.studyLevel || defaultLevel) === activeLevelModal)
+            .map((c) => ({
+              id: c.id,
+              word: c.word,
+              reading: c.reading,
+              meaning: c.meaning,
+              example: c.example,
+              type: c.type as any,
+              studyLevel: c.studyLevel,
+              level: c.level || 0,
+              nextReview: (c as any).nextReview || null,
+            }))}
+          onAddCard={async (newCard) => {
+            await api.post("/japanese", {
+              ...newCard,
+              language: studyLanguage,
+            });
+            await fetchCards(true);
+          }}
+          onDeleteCard={async (cardId) => {
+            await handleDeleteCard(cardId);
+          }}
+          studyLanguage={studyLanguage}
+          ttsLang={studyPalette.ttsLang}
+        />
       )}
 
       {/* ── МОДУЛЬ 2: ГРАММАТИКА ── */}

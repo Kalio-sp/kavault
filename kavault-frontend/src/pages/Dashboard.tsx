@@ -20,7 +20,7 @@ import {
   Crown,
   ChevronRight,
 } from "lucide-react";
-import { useApp } from "../context/AppContext";
+import { useApp, syncNicknameEverywhere } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
 import { api } from "../api/axios";
 import {
@@ -76,6 +76,7 @@ export function Dashboard() {
     studyPalette,
     isCreator,
     nickname,
+    setLocalNickname,
   } = useApp();
   const {
     achievements,
@@ -104,6 +105,16 @@ export function Dashboard() {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const handleNick = (e: any) => {
+      if (e.detail && typeof e.detail === "string") {
+        setUsername(e.detail);
+      }
+    };
+    window.addEventListener("kavault_nickname_updated", handleNick);
+    return () => window.removeEventListener("kavault_nickname_updated", handleNick);
   }, []);
 
   useEffect(() => {
@@ -188,7 +199,7 @@ export function Dashboard() {
         api
           .get<JapaneseCard[]>(`/japanese?language=${studyLanguage}`)
           .catch(() => ({ data: [] as JapaneseCard[] })),
-        api.get<{ email?: string }>("/auth/profile").catch(() => ({ data: {} as { email?: string } })),
+        api.get<{ email?: string; nickname?: string }>("/auth/profile").catch(() => ({ data: {} as { email?: string; nickname?: string } })),
         api.get("/stats/tracker").catch(() => ({ data: null })),
         api.get("/social/me").catch(() => ({ data: null })),
       ]);
@@ -201,9 +212,19 @@ export function Dashboard() {
         setSocialData((socialResp as any).data);
       }
 
+      const serverNick =
+        (socialResp as any)?.data?.nickname ||
+        profileResp.data?.nickname ||
+        localStorage.getItem("kavault_username");
+
       let currentUsername = username;
-      // Имя пользователя
-      if (!username) {
+      if (serverNick && typeof serverNick === "string" && serverNick.trim()) {
+        const cleanNick = serverNick.trim();
+        setUsername(cleanNick);
+        setLocalNickname(cleanNick);
+        syncNicknameEverywhere(cleanNick, profileResp.data?.email);
+        currentUsername = cleanNick;
+      } else if (!username) {
         const userEmail = profileResp.data?.email;
         if (userEmail) {
           const emailName = userEmail.split("@")[0];
@@ -353,16 +374,16 @@ export function Dashboard() {
         {/* Баннерная обложка профиля с живой анимацией и культурным свечением */}
         <BannerRenderer
           customization={profileCustom}
-          style={{ height: isMobile ? "96px" : "118px" }}
+          style={{ height: isMobile ? "110px" : "185px" }}
         >
           <div
             style={{
               position: "absolute",
-              right: "-20px",
-              top: "-20px",
+              right: isMobile ? "-20px" : "-10px",
+              top: isMobile ? "-20px" : "-10px",
               bottom: 0,
-              width: "280px",
-              opacity: 0.7,
+              width: isMobile ? "240px" : "360px",
+              opacity: isMobile ? 0.75 : 0.9,
               pointerEvents: "none",
             }}
           >

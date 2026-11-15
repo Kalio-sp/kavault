@@ -818,6 +818,20 @@ export const STUDY_LEVELS: Record<StudyLanguage, StudyLevelMeta[]> = {
       title: { ru: "JLPT N3 — Средний", en: "JLPT N3 — Intermediate", ja: "JLPT N3（中級）" },
       subtitle: { ru: "Сложные обороты, чтение статей и оттенки", en: "Natural speech, reading & nuance", ja: "自然表現・読解・複合文法" },
     },
+    {
+      id: "N2",
+      badge: "⚔️ N2",
+      color: "#8b5cf6",
+      title: { ru: "JLPT N2 — Продвинутый", en: "JLPT N2 — Upper-Intermediate", ja: "JLPT N2（上級応用）" },
+      subtitle: { ru: "Деловой японский, новости, уверенное понимание", en: "Business Japanese, news & media", ja: "ビジネス・時事・高度な読解" },
+    },
+    {
+      id: "N1",
+      badge: "👑 N1",
+      color: "#f59e0b",
+      title: { ru: "JLPT N1 — Мастерство", en: "JLPT N1 — Advanced Mastery", ja: "JLPT N1（最高峰・マスター）" },
+      subtitle: { ru: "Академические тексты, идиомы и тонкие нюансы", en: "Academic, idioms & literary nuances", ja: "学術論説・四字熟語・高度なニュアンス" },
+    },
   ],
   en: [
     {
@@ -848,6 +862,13 @@ export const STUDY_LEVELS: Record<StudyLanguage, StudyLevelMeta[]> = {
       title: { ru: "CEFR B2 — Продвинутый", en: "CEFR B2 — Upper-Int", ja: "CEFR B2（中上級）" },
       subtitle: { ru: "Сложные идиомы, дебаты и академический стиль", en: "Nuance, idioms & sharp expression", ja: "高度な語彙・イディオム・議論" },
     },
+    {
+      id: "C1",
+      badge: "👑 C1",
+      color: "#f59e0b",
+      title: { ru: "CEFR C1 — Мастерство", en: "CEFR C1 — Advanced Mastery", ja: "CEFR C1（最上級マスター）" },
+      subtitle: { ru: "Сложные идиомы, академический и литературный язык", en: "Sophisticated vocabulary & native eloquence", ja: "高度な学術・文学・洗練された語彙" },
+    },
   ],
   de: [
     {
@@ -877,6 +898,13 @@ export const STUDY_LEVELS: Record<StudyLanguage, StudyLevelMeta[]> = {
       color: "#ef4444",
       title: { ru: "Goethe B2 — Продвинутый", en: "Goethe B2 — Upper-Int", ja: "B2（中上級）" },
       subtitle: { ru: "Konjunktiv II, Passiv и деловой немецкий", en: "Konjunktiv II, passive & nuance", ja: "接続法II式と受動態の応用" },
+    },
+    {
+      id: "C1",
+      badge: "👑 C1",
+      color: "#8b5cf6",
+      title: { ru: "Goethe C1 — Мастерство", en: "Goethe C1 — Advanced Mastery", ja: "C1（最上級マスター）" },
+      subtitle: { ru: "Сложные синтаксические конструкции, стиль и идиомы", en: "Complex syntax, stylistic nuance & idioms", ja: "高度な構文・専門用語・洗練された表現" },
     },
   ],
 };

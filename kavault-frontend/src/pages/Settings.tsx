@@ -28,18 +28,13 @@ import {
   RefreshCw,
   BookOpen,
 } from "lucide-react";
-import { useApp } from "../context/AppContext";
+import { useApp, syncNicknameEverywhere } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
 import { api, getApiBaseURL } from "../api/axios";
 import { UserProfileCabinet } from "./UserProfileCabinet";
 import { confirmModal } from "../context/DialogContext";
 import {
-  STARTER_DEVELOPER_RESOURCES,
-  STARTER_GITHUB_REPOSITORIES,
-  getStarterCardsForStudy,
   studyLanguageToPackType,
-  isPackClaimed,
-  markPackClaimed,
   unmarkPackClaimed,
 } from "../data/starterPacks";
 import {
@@ -78,6 +73,7 @@ export function Settings() {
     studyLanguage,
     showProgramming,
     updateStudyPreferences,
+    setLocalNickname,
   } = useApp();
   const { evaluateAchievements } = useAchievements();
   const [updatingPrefs, setUpdatingPrefs] = useState(false);
@@ -199,11 +195,16 @@ export function Settings() {
 
         if (profileResp.data?.email) {
           setUserEmail(profileResp.data.email);
-          if (!username) {
-            const rawName = profileResp.data.email.split("@")[0];
-            const cap = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-            setUsername(cap);
-          }
+        }
+        const serverNick = profileResp.data?.nickname || localStorage.getItem("kavault_username");
+        if (serverNick) {
+          setUsername(serverNick);
+          setLocalNickname(serverNick);
+          syncNicknameEverywhere(serverNick, profileResp.data?.email);
+        } else if (profileResp.data?.email) {
+          const rawName = profileResp.data.email.split("@")[0];
+          const cap = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+          setUsername(cap);
         }
 
         const resourcesList = resResp.data || [];
@@ -233,7 +234,15 @@ export function Settings() {
   };
 
   /* Сохранение общих настроек */
-  const handleSaveGeneral = () => {
+  const handleSaveGeneral = async () => {
+    const cleanNick = username.trim();
+    if (cleanNick) {
+      setLocalNickname(cleanNick);
+      syncNicknameEverywhere(cleanNick, userEmail);
+      try {
+        await api.patch("/social/nickname", { nickname: cleanNick });
+      } catch {}
+    }
     localStorage.setItem("kavault_username", username);
     localStorage.setItem("kavault_goal_resources", goalResources);
     localStorage.setItem("kavault_goal_cards", goalCards);
@@ -418,53 +427,6 @@ export function Settings() {
       showToast(e.response?.data?.message || t.settings.toasts.deleteError, "error");
     } finally {
       setIsDeleting(false);
-    }
-  };
-
-  const [importingStarter, setImportingStarter] = useState<string | null>(null);
-
-  /* Загрузка стартовых наборов данных */
-  const handleLoadStarterPack = async (
-    packType: "language" | "developer" | "github" | "all",
-  ) => {
-    const activeLangPack = studyLanguageToPackType(studyLanguage);
-    try {
-      setImportingStarter(packType);
-      if (packType === "language" || packType === "all") {
-        const items = getStarterCardsForStudy(studyLanguage, language);
-        await api.post("/japanese/bulk", { items, language: studyLanguage });
-        markPackClaimed(activeLangPack);
-      }
-      if (showProgramming && (packType === "developer" || packType === "all")) {
-        await api.post("/resources/bulk", { items: STARTER_DEVELOPER_RESOURCES });
-        markPackClaimed("developer");
-      }
-      if (showProgramming && (packType === "github" || packType === "all")) {
-        await api.post("/resources/bulk", { items: STARTER_GITHUB_REPOSITORIES });
-        markPackClaimed("github");
-      }
-      showToast(t.settings.toasts.starterLoaded);
-      const [resResp, japResp] = await Promise.all([
-        showProgramming
-          ? api.get("/resources").catch(() => ({ data: [] }))
-          : Promise.resolve({ data: [] }),
-        api.get(`/japanese?language=${studyLanguage}`).catch(() => ({ data: [] })),
-      ]);
-      const resourcesList = resResp.data || [];
-      const cardsList = japResp.data || [];
-      const notesCount = resourcesList.filter((r: any) => Boolean(r.note)).length;
-      setUserResources(resourcesList);
-      setUserCards(cardsList);
-      setVaultStats({
-        resourcesCount: resourcesList.length,
-        cardsCount: cardsList.length,
-        totalNotes: notesCount,
-      });
-      evaluateAchievements({ resources: resourcesList, cards: cardsList });
-    } catch (e: any) {
-      showToast(e.response?.data?.message || t.settings.toasts.starterError, "error");
-    } finally {
-      setImportingStarter(null);
     }
   };
 
@@ -1446,99 +1408,6 @@ export function Settings() {
               <Button onClick={handleSaveGeneral} className="kv-action-btn">
                 <Save size={15} /> Сохранить цели
               </Button>
-            </div>
-          </div>
-
-          {/* Стартовые наборы карточек */}
-          <div className="kv-card">
-            <div className="kv-group-header">
-              <div className="kv-group-icon">
-                <Sparkles size={18} />
-              </div>
-              <div className="kv-group-text">
-                <h3 className="kv-group-title">Стартовые наборы материалов</h3>
-                <p className="kv-group-desc">Загрузите готовые колоды слов и материалы в один клик</p>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {/* Языковой набор */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "10px 12px",
-                  background: "var(--surface-raised)",
-                  borderRadius: "10px",
-                  gap: "10px",
-                  flexWrap: "wrap",
-                  width: "100%",
-                  boxSizing: "border-box",
-                }}
-              >
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
-                    Базовая колода ({STUDY_TEXTS[studyLanguage][language].name})
-                  </div>
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                    Слова и иероглифы начального уровня
-                  </div>
-                </div>
-
-                <Button
-                  variant={isPackClaimed(studyLanguageToPackType(studyLanguage)) ? "secondary" : "primary"}
-                  disabled={importingStarter === "language"}
-                  onClick={() => handleLoadStarterPack("language")}
-                  style={{ padding: "6px 14px", fontSize: "12px" }}
-                >
-                  {isPackClaimed(studyLanguageToPackType(studyLanguage))
-                    ? "✓ Загружено"
-                    : importingStarter === "language"
-                      ? "Загрузка..."
-                      : "📥 Загрузить"}
-                </Button>
-              </div>
-
-              {/* Набор для программирования */}
-              {showProgramming && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 12px",
-                    background: "var(--surface-raised)",
-                    borderRadius: "10px",
-                    gap: "10px",
-                    flexWrap: "wrap",
-                    width: "100%",
-                    boxSizing: "border-box",
-                  }}
-                >
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
-                      💻 Набор разработчика и GitHub
-                    </div>
-                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                      Подборка статей и полезных репозиториев
-                    </div>
-                  </div>
-
-                  <Button
-                    variant={isPackClaimed("developer") ? "secondary" : "primary"}
-                    disabled={importingStarter === "developer"}
-                    onClick={() => handleLoadStarterPack("developer")}
-                    style={{ padding: "6px 14px", fontSize: "12px" }}
-                  >
-                    {isPackClaimed("developer")
-                      ? "✓ Загружено"
-                      : importingStarter === "developer"
-                        ? "Загрузка..."
-                        : "📥 Загрузить"}
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
         </div>

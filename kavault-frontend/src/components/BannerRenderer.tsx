@@ -77,8 +77,10 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            objectPosition: "center center",
+            objectPosition: "center 35%",
             imageRendering: "auto",
+            WebkitBackfaceVisibility: "hidden",
+            transform: "translateZ(0)",
             zIndex: 0,
           }}
         />
@@ -126,14 +128,14 @@ export const BannerRenderer: React.FC<BannerRendererProps> = ({
         />
       )}
 
-      {/* Деликатный градиент затемнения: для кастомных баннеров тонкий виньет по краям, для пресетов стандартный */}
+      {/* Деликатный градиент затемнения: для кастомных баннеров тонкий виньет по краям, для пресетов чистый вид */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           background: isCustom
-            ? "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.3) 100%)"
-            : "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.65) 100%)",
+            ? "linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.25) 100%)"
+            : "linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.35) 100%)",
           pointerEvents: "none",
           zIndex: 1,
         }}

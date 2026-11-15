@@ -28,7 +28,7 @@ import {
   Check,
 } from "lucide-react";
 import { api } from "../api/axios";
-import { useApp } from "../context/AppContext";
+import { useApp, syncNicknameEverywhere } from "../context/AppContext";
 import { useAchievements } from "../context/AchievementContext";
 import { confirmModal } from "../context/DialogContext";
 import { Button } from "../components/ui/Button";
@@ -161,8 +161,10 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
 
         if (meRes.status === "fulfilled" && meRes.value.data) {
           setSocialData(meRes.value.data);
-          if (meRes.value.data.nickname && !nickname) {
+          if (meRes.value.data.nickname) {
             setEditNickname(meRes.value.data.nickname);
+            setLocalNickname(meRes.value.data.nickname);
+            syncNicknameEverywhere(meRes.value.data.nickname);
           }
           if (meRes.value.data.profileCustomization) {
             const synced = syncProfileFromServer(meRes.value.data.profileCustomization);
@@ -488,7 +490,7 @@ export const UserProfileCabinet: React.FC<UserProfileCabinetProps> = ({
     try {
       const resp = await api.patch("/social/nickname", { nickname: clean });
       setLocalNickname(resp.data.nickname);
-      localStorage.setItem("kavault_username", resp.data.nickname);
+      syncNicknameEverywhere(resp.data.nickname);
       showToast("✅ Никнейм успешно сохранен!");
     } catch (e: any) {
       const msg = e.response?.data?.message || "Ошибка при сохранении никнейма";

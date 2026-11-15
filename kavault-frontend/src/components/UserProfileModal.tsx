@@ -165,9 +165,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         justifyContent: "center",
         padding: "16px",
+        paddingTop: "max(24px, env(safe-area-inset-top, 24px))",
+        paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))",
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
         animation: "fadeIn 0.2s ease-out",
       }}
       onClick={onClose}
@@ -177,6 +181,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         style={{
           width: "100%",
           maxWidth: "520px",
+          marginTop: "0",
+          marginBottom: "auto",
           borderRadius: "20px",
           overflow: "hidden",
           backgroundColor: "var(--surface, #121214)",
@@ -184,8 +190,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           boxShadow: "0 24px 60px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255,255,255,0.2)",
           display: "flex",
           flexDirection: "column",
-          maxHeight: "92vh",
+          maxHeight: "calc(100dvh - 48px)",
           animation: "scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+          flexShrink: 0,
         }}
       >
         {/* ВЕРХНИЙ БАННЕР ПРОФИЛЯ */}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { api } from "../api/axios";
-import { useApp } from "../context/AppContext";
+import { useApp, syncNicknameEverywhere } from "../context/AppContext";
 import { Mail, Lock, ArrowRight, Eye, EyeOff, User, Trophy, X, Zap } from "lucide-react";
 
 type AuthMode = "login" | "register";
@@ -61,7 +61,7 @@ export function Login() {
       try {
         const res = await api.get("/auth/profile");
         const freshNick = res.data?.nickname || acc.nickname;
-        localStorage.setItem("kavault_username", freshNick);
+        syncNicknameEverywhere(freshNick, acc.email);
         window.dispatchEvent(new Event("kavault-auth-changed"));
         navigate("/dashboard");
         return;
@@ -74,6 +74,7 @@ export function Login() {
           return;
         }
         // При временных заминках сети всё равно переходим в профиль по сохраненному токену
+        syncNicknameEverywhere(acc.nickname, acc.email);
         window.dispatchEvent(new Event("kavault-auth-changed"));
         navigate("/dashboard");
       }
@@ -132,8 +133,8 @@ export function Login() {
         localStorage.setItem("access_token", finalToken);
         const loggedNick = response.data?.user?.nickname || response.data?.nickname;
         if (loggedNick) {
-          localStorage.setItem("kavault_username", loggedNick);
           finalNick = loggedNick;
+          syncNicknameEverywhere(loggedNick, email);
         }
         window.dispatchEvent(new Event("kavault-auth-changed"));
       } else {
@@ -142,8 +143,8 @@ export function Login() {
         localStorage.setItem("access_token", finalToken);
         const loggedNick = response.data?.user?.nickname || response.data?.nickname;
         if (loggedNick) {
-          localStorage.setItem("kavault_username", loggedNick);
           finalNick = loggedNick;
+          syncNicknameEverywhere(loggedNick, email);
         }
         window.dispatchEvent(new Event("kavault-auth-changed"));
       }

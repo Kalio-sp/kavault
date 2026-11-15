@@ -21,7 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 import { api } from "../api/axios";
-import { useApp } from "../context/AppContext";
+import { useApp, syncNicknameEverywhere } from "../context/AppContext";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -524,6 +524,7 @@ export function SocialHub({ publicOnly = false }: { publicOnly?: boolean }) {
         nickname: nickInput.trim(),
       });
       setLocalNickname(resp.data.nickname);
+      syncNicknameEverywhere(resp.data.nickname);
       setEditingNick(false);
       await Promise.all([fetchPersonalSocial(), fetchPublicBoard()]);
     } catch (err: any) {

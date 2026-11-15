@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   Clock,
   Circle,
-  Sparkles,
   Code2,
   Globe,
   Tag,
@@ -27,9 +26,6 @@ import { useAchievements } from "../context/AchievementContext";
 import { confirmModal } from "../context/DialogContext";
 import {
   STARTER_DEVELOPER_RESOURCES,
-  getMissingStarterCount,
-  isPackClaimed,
-  markPackClaimed,
   unmarkPackClaimed,
 } from "../data/starterPacks";
 import {
@@ -188,7 +184,6 @@ export function DeveloperHub() {
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [activeResource, setActiveResource] = useState<Resource | null>(null);
   const [noteText, setNoteText] = useState("");
-  const [isImporting, setIsImporting] = useState(false);
 
   const fetchResources = async (evaluate = false) => {
     try {
@@ -197,6 +192,18 @@ export function DeveloperHub() {
       const filtered = allData.filter(
         (r: Resource) => r.type !== "REPOSITORY",
       );
+      if (filtered.length === 0) {
+        try {
+          await api.post("/resources/bulk", { items: STARTER_DEVELOPER_RESOURCES });
+          const retryResp = await api.get("/resources");
+          const retryData = (retryResp.data || []).filter((r: Resource) => r.type !== "REPOSITORY");
+          setResources(retryData);
+          if (evaluate) {
+            evaluateAchievements({ resources: retryResp.data || [] });
+          }
+          return;
+        } catch {}
+      }
       setResources(filtered);
       if (evaluate) {
         evaluateAchievements({ resources: allData });
@@ -209,29 +216,6 @@ export function DeveloperHub() {
   useEffect(() => {
     fetchResources();
   }, []);
-
-  const missingStarterCount = useMemo(
-    () => getMissingStarterCount("developer", undefined, resources),
-    [resources],
-  );
-
-  const isStarterClaimed = useMemo(
-    () => isPackClaimed("developer", undefined, resources),
-    [resources],
-  );
-
-  const handleLoadStarterPack = async () => {
-    try {
-      setIsImporting(true);
-      await api.post("/resources/bulk", { items: STARTER_DEVELOPER_RESOURCES });
-      markPackClaimed("developer");
-      await fetchResources(true);
-    } catch (err) {
-      console.error("Ошибка загрузки стартового набора", err);
-    } finally {
-      setIsImporting(false);
-    }
-  };
 
   const stats = useMemo(() => {
     const toLearn = resources.filter((r) => r.status === "TO_LEARN").length;
@@ -484,26 +468,6 @@ export function DeveloperHub() {
               {t.dev.subtitle}
             </p>
           </div>
-
-          {!isStarterClaimed && (
-            <Button
-              onClick={handleLoadStarterPack}
-              disabled={isImporting}
-              style={{
-                gap: "8px",
-                background: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)",
-                color: "#ffffff",
-                boxShadow: "0 8px 22px -8px rgba(59, 130, 246, 0.6)",
-              }}
-            >
-              <Sparkles size={16} />
-              {isImporting
-                ? t.dev.importingBtn
-                : resources.length > 0 && missingStarterCount > 0
-                  ? `${t.dev.loadStarterBtn} (+${missingStarterCount})`
-                  : t.dev.loadStarterBtn}
-            </Button>
-          )}
         </div>
 
         {/* Мини-метрики базы */}
@@ -873,16 +837,6 @@ export function DeveloperHub() {
             <p style={{ margin: 0, fontSize: "15px" }}>
               {hasActiveFilters ? t.dev.noResources : t.dev.emptyDbText}
             </p>
-            {!hasActiveFilters && !isStarterClaimed && (
-              <Button
-                onClick={handleLoadStarterPack}
-                disabled={isImporting}
-                style={{ gap: "8px", marginTop: "6px" }}
-              >
-                <Sparkles size={16} />
-                {isImporting ? t.dev.importingFullBtn : t.dev.loadStarterFullBtn}
-              </Button>
-            )}
           </Card>
         ) : (
           <div

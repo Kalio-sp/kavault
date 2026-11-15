@@ -43,6 +43,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
     loadProfileCustomization(),
   );
 
+  const [localNick, setLocalNick] = useState(nickname);
+  useEffect(() => {
+    if (nickname) setLocalNick(nickname);
+  }, [nickname]);
+
+  useEffect(() => {
+    const onNick = (e: any) => {
+      if (e.detail && typeof e.detail === "string") {
+        setLocalNick(e.detail.trim());
+      }
+    };
+    window.addEventListener("kavault_nickname_updated", onNick);
+    return () => window.removeEventListener("kavault_nickname_updated", onNick);
+  }, []);
+
   useEffect(() => {
     const handleProfileUpdate = () => {
       setProfileCustom(loadProfileCustomization());
@@ -361,7 +376,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {nickname || "Мой профиль"}
+                  {localNick || nickname || "Мой профиль"}
                 </div>
                 <div
                   style={{
@@ -679,7 +694,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     textOverflow: "ellipsis",
                   }}
                 >
-                  {nickname || "Мой профиль"}
+                  {localNick || nickname || "Мой профиль"}
                 </div>
                 <div
                   style={{

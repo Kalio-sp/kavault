@@ -15,7 +15,6 @@ import {
   CheckCircle2,
   Clock,
   Circle,
-  Sparkles,
   Star,
   GitFork,
   Tag,
@@ -27,9 +26,6 @@ import { useAchievements } from "../context/AchievementContext";
 import { confirmModal } from "../context/DialogContext";
 import {
   STARTER_GITHUB_REPOSITORIES,
-  getMissingStarterCount,
-  isPackClaimed,
-  markPackClaimed,
   unmarkPackClaimed,
 } from "../data/starterPacks";
 import {
@@ -258,7 +254,6 @@ export function GitHubCollection() {
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [activeResource, setActiveResource] = useState<Resource | null>(null);
   const [noteText, setNoteText] = useState("");
-  const [isImporting, setIsImporting] = useState(false);
 
   const [metaMap, setMetaMap] = useState<Record<string, GitHubRepoMeta>>(loadMetaCache);
   const [syncingMeta, setSyncingMeta] = useState(false);
@@ -273,6 +268,20 @@ export function GitHubCollection() {
         const filteredRepos = allData.filter(
           (r: Resource) => r.type === "REPOSITORY",
         );
+        if (filteredRepos.length === 0) {
+          try {
+            await api.post("/resources/bulk", { items: STARTER_GITHUB_REPOSITORIES });
+            const retryResp = await api.get("/resources");
+            const retryData = (retryResp.data || []).filter(
+              (r: Resource) => r.type === "REPOSITORY",
+            );
+            setRepos(retryData);
+            if (evaluate) {
+              evaluateAchievements({ resources: retryResp.data || [] });
+            }
+            return;
+          } catch {}
+        }
         setRepos(filteredRepos);
         if (evaluate) {
           evaluateAchievements({ resources: allData });
@@ -353,29 +362,6 @@ export function GitHubCollection() {
       void enrichGitHubMeta(repos, false);
     }
   }, [repos]);
-
-  const missingStarterCount = useMemo(
-    () => getMissingStarterCount("github", undefined, repos),
-    [repos],
-  );
-
-  const isStarterClaimed = useMemo(
-    () => isPackClaimed("github", undefined, repos),
-    [repos],
-  );
-
-  const handleLoadStarterRepos = async () => {
-    try {
-      setIsImporting(true);
-      await api.post("/resources/bulk", { items: STARTER_GITHUB_REPOSITORIES });
-      markPackClaimed("github");
-      await fetchRepos(true);
-    } catch (err) {
-      console.error("Ошибка загрузки GitHub стартера", err);
-    } finally {
-      setIsImporting(false);
-    }
-  };
 
   const stats = useMemo(() => {
     const active = repos.filter((r) => r.status !== "COMPLETED").length;
@@ -638,25 +624,6 @@ export function GitHubCollection() {
                   }
                 />
                 {ui.syncStarsBtn}
-              </Button>
-            )}
-            {!isStarterClaimed && (
-              <Button
-                onClick={handleLoadStarterRepos}
-                disabled={isImporting}
-                style={{
-                  gap: "8px",
-                  background: "linear-gradient(135deg, #10b981 0%, #3b82f6 100%)",
-                  color: "#ffffff",
-                  boxShadow: "0 8px 22px -8px rgba(16, 185, 129, 0.55)",
-                }}
-              >
-                <Sparkles size={16} />
-                {isImporting
-                  ? ui.importingBtn
-                  : repos.length > 0 && missingStarterCount > 0
-                    ? `${ui.loadStarterBtn} (+${missingStarterCount})`
-                    : ui.loadStarterBtn}
               </Button>
             )}
           </div>
@@ -950,21 +917,6 @@ export function GitHubCollection() {
             <p style={{ margin: 0, fontSize: "15px" }}>
               {hasActiveFilters ? t.git.noRepos : ui.emptyVaultDesc}
             </p>
-            {!hasActiveFilters && !isStarterClaimed && (
-              <Button
-                onClick={handleLoadStarterRepos}
-                disabled={isImporting}
-                style={{
-                  gap: "8px",
-                  marginTop: "6px",
-                  background: "linear-gradient(135deg, #10b981 0%, #3b82f6 100%)",
-                  color: "#ffffff",
-                }}
-              >
-                <Sparkles size={16} />
-                {isImporting ? ui.importingBtn : ui.loadStarterFullBtn}
-              </Button>
-            )}
           </Card>
         ) : (
           <div

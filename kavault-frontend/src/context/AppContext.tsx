@@ -78,6 +78,34 @@ interface AppContextType {
   updateStudyPreferences: (prefs: StudyPreferencesUpdate) => Promise<void>;
 }
 
+export function syncNicknameEverywhere(newNick: string, email?: string) {
+  const clean = newNick.trim();
+  if (!clean) return;
+  localStorage.setItem("kavault_username", clean);
+
+  try {
+    const raw = localStorage.getItem("kavault_saved_accounts");
+    if (raw) {
+      const accs = JSON.parse(raw);
+      if (Array.isArray(accs)) {
+        let changed = false;
+        const nextAccs = accs.map((a: any) => {
+          if (!email || (a.email && a.email.toLowerCase() === email.toLowerCase())) {
+            changed = true;
+            return { ...a, nickname: clean };
+          }
+          return a;
+        });
+        if (changed) {
+          localStorage.setItem("kavault_saved_accounts", JSON.stringify(nextAccs));
+        }
+      }
+    }
+  } catch {}
+
+  window.dispatchEvent(new CustomEvent("kavault_nickname_updated", { detail: clean }));
+}
+
 const CREATOR_EMAIL = "zerkalovandrey@kavoult.dev";
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -131,10 +159,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const setLocalNickname = useCallback((nick: string) => {
-    setNickname(nick);
-    if (nick.trim()) {
-      localStorage.setItem("kavault_username", nick.trim());
+    const clean = nick.trim();
+    if (clean) {
+      setNickname(clean);
+      syncNicknameEverywhere(clean, userEmail);
     }
+  }, [userEmail]);
+
+  useEffect(() => {
+    const onNickUpdate = (e: any) => {
+      if (e.detail && typeof e.detail === "string") {
+        setNickname(e.detail.trim());
+      }
+    };
+    window.addEventListener("kavault_nickname_updated", onNickUpdate);
+    return () => window.removeEventListener("kavault_nickname_updated", onNickUpdate);
   }, []);
 
   const setLocalMmr = useCallback((nextMmr: number) => {
@@ -184,8 +223,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (typeof resp.data?.nickname === "string" && resp.data.nickname.trim()) {
-        setNickname(resp.data.nickname.trim());
-        localStorage.setItem("kavault_username", resp.data.nickname.trim());
+        const cleanNick = resp.data.nickname.trim();
+        setNickname(cleanNick);
+        syncNicknameEverywhere(cleanNick, resp.data.email);
       }
       if (typeof resp.data?.mmr === "number") {
         setMmr(resp.data.mmr);
