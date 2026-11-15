@@ -112,9 +112,6 @@ export function Settings() {
   const [soundEffects, setSoundEffects] = useState(() => {
     return localStorage.getItem("kavault_sound_fx") !== "false";
   });
-  const [splashEnabled, setSplashEnabled] = useState(() => {
-    return localStorage.getItem("kavault_splash_enabled") !== "false";
-  });
   const [splashSound, setSplashSound] = useState(() => {
     return localStorage.getItem("kavault_splash_sound") || "splash_cyber_master";
   });
@@ -1275,39 +1272,6 @@ export function Settings() {
                     );
                   })}
                 </div>
-              </div>
-
-              {/* Переключатель показа при каждом старте */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "10px 14px",
-                  borderRadius: "10px",
-                  backgroundColor: "rgba(255, 255, 255, 0.02)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
-                    Показывать заставку при запуске
-                  </div>
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                    Воспроизводить экран загрузки перед входом в приложение
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={splashEnabled}
-                  onChange={(e) => {
-                    const val = e.target.checked;
-                    setSplashEnabled(val);
-                    localStorage.setItem("kavault_splash_enabled", String(val));
-                    showToast(val ? "Заставка включена при старте" : "Заставка выключена");
-                  }}
-                  style={{ width: "18px", height: "18px", accentColor: "#a855f7", cursor: "pointer" }}
-                />
               </div>
             </div>
           </div>

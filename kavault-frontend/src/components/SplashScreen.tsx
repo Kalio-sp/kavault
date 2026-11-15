@@ -1,37 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Volume2, VolumeX, FastForward } from "lucide-react";
 
 interface SplashScreenProps {
   onFinish?: () => void;
-  forceShow?: boolean;
 }
 
-export const SplashScreen: React.FC<SplashScreenProps> = ({
-  onFinish,
-  forceShow = false,
-}) => {
-  const [visible, setVisible] = useState(() => {
-    if (forceShow) return true;
-    try {
-      const enabled = localStorage.getItem("kavault_splash_enabled");
-      if (enabled === "false") return false;
-      const seen = sessionStorage.getItem("kavault_splash_seen");
-      return !seen;
-    } catch {
-      return true;
-    }
-  });
-
+export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
+  // Обязательная заставка — показывается всегда при каждом входе и обновлении страницы
+  const [visible, setVisible] = useState(true);
   const [fading, setFading] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [audioBlocked, setAudioBlocked] = useState(false);
-  const [progress, setProgress] = useState(0);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [soundChoice, setSoundChoice] = useState(() => {
+  const [soundChoice] = useState(() => {
     try {
       return localStorage.getItem("kavault_splash_sound") || "splash_cyber_master";
     } catch {
@@ -44,9 +26,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   const handleComplete = () => {
     if (fading) return;
     setFading(true);
-    try {
-      sessionStorage.setItem("kavault_splash_seen", "true");
-    } catch {}
 
     setTimeout(() => {
       setVisible(false);
@@ -55,23 +34,23 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   };
 
   useEffect(() => {
-    const handleReplay = (e?: any) => {
-      const choice = e?.detail || localStorage.getItem("kavault_splash_sound") || "splash_cyber_master";
-      setSoundChoice(choice);
+    const handleReplay = () => {
       setFading(false);
       setVisible(true);
-      setProgress(0);
 
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.currentTime = 0;
-          if (choice !== "splash_cyber_master") {
+          if (isCustomAudio) {
             videoRef.current.muted = true;
+          } else {
+            videoRef.current.muted = false;
           }
           videoRef.current.play().catch(() => {});
         }
-        if (audioRef.current && choice !== "splash_cyber_master") {
+        if (audioRef.current && isCustomAudio) {
           audioRef.current.currentTime = 0;
+          audioRef.current.muted = false;
           audioRef.current.play().catch(() => {});
         }
       }, 50);
@@ -79,7 +58,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
     window.addEventListener("kavault_replay_splash", handleReplay);
     return () => window.removeEventListener("kavault_replay_splash", handleReplay);
-  }, []);
+  }, [isCustomAudio]);
 
   useEffect(() => {
     if (!visible) return;
@@ -88,41 +67,27 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
     if (!video) return;
 
     if (isCustomAudio) {
-      // Пользователь выбрал альтернативный трек — видео глушим, звук через <audio>
       video.muted = true;
       video.play().catch(() => {});
       if (audioRef.current) {
         audioRef.current.currentTime = 0;
         audioRef.current.muted = false;
-        audioRef.current
-          .play()
-          .then(() => {
-            setIsMuted(false);
-            setAudioBlocked(false);
-          })
-          .catch(() => {
-            if (audioRef.current) audioRef.current.muted = true;
-            setIsMuted(true);
-            setAudioBlocked(true);
-          });
+        audioRef.current.play().catch(() => {
+          // Если браузер ограничил автоплей звука без жеста — включаем muted
+          if (audioRef.current) audioRef.current.muted = true;
+        });
       }
     } else {
-      // Основной звук встроен прямо в видеофайл
       video.muted = false;
       const playPromise = video.play();
 
       if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setIsMuted(false);
-            setAudioBlocked(false);
-          })
-          .catch(() => {
-            video.muted = true;
-            setIsMuted(true);
-            setAudioBlocked(true);
-            video.play().catch(() => {});
-          });
+        playPromise.catch(() => {
+          // Если строгая политика браузера блокирует звук до первого взаимодействия —
+          // играем без зависания, а при первом тапе/клике разблокируем звук
+          video.muted = true;
+          video.play().catch(() => {});
+        });
       }
     }
 
@@ -136,57 +101,26 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
     };
   }, [visible, isCustomAudio, soundChoice]);
 
-  const toggleSound = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const video = videoRef.current;
-    const audio = audioRef.current;
-
-    if (isCustomAudio && audio) {
-      if (audio.muted || isMuted) {
-        audio.muted = false;
-        setIsMuted(false);
-        setAudioBlocked(false);
-        if (audio.paused) audio.play().catch(() => {});
-      } else {
-        audio.muted = true;
-        setIsMuted(true);
+  // Разблокировка звука при любом тапе/клике по экрану, если браузер потребовал жест
+  const handleUserInteract = () => {
+    if (isCustomAudio) {
+      if (audioRef.current && audioRef.current.muted) {
+        audioRef.current.muted = false;
+        if (audioRef.current.paused) audioRef.current.play().catch(() => {});
       }
-      return;
-    }
-
-    if (video) {
-      if (video.muted) {
-        video.muted = false;
-        setIsMuted(false);
-        setAudioBlocked(false);
-        if (video.paused) {
-          video.play().catch(() => {});
-        }
-      } else {
-        video.muted = true;
-        setIsMuted(true);
+    } else {
+      if (videoRef.current && videoRef.current.muted) {
+        videoRef.current.muted = false;
       }
     }
-  };
-
-  const handleScreenClick = () => {
-    if (audioBlocked) {
-      toggleSound();
-    }
-  };
-
-  const handleTimeUpdate = () => {
-    const video = videoRef.current;
-    if (!video || !video.duration) return;
-    const p = Math.min(100, Math.round((video.currentTime / video.duration) * 100));
-    setProgress(p);
   };
 
   if (!visible) return null;
 
   return (
     <div
-      onClick={handleScreenClick}
+      onClick={handleUserInteract}
+      onTouchStart={handleUserInteract}
       style={{
         position: "fixed",
         inset: 0,
@@ -198,8 +132,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         overflow: "hidden",
         opacity: fading ? 0 : 1,
         transition: "opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
-        cursor: audioBlocked ? "pointer" : "default",
         userSelect: "none",
+        cursor: "default",
       }}
     >
       {/* Альтернативный аудио-элемент при выборе дополнительного трека */}
@@ -211,14 +145,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         />
       )}
 
-      {/* Видео заставки (оригинальный 4K поток без сжатия) */}
+      {/* Оригинальный 4K видеопоток без потери качества */}
       <video
         ref={videoRef}
         playsInline
         autoPlay
         preload="auto"
         onEnded={handleComplete}
-        onTimeUpdate={handleTimeUpdate}
         style={{
           width: "100%",
           height: "100%",
@@ -232,123 +165,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       >
         <source src="/splash.mp4" type="video/mp4" />
       </video>
-
-      {/* Верхняя панель: Звук и Пропустить */}
-      <div
-        style={{
-          position: "absolute",
-          top: "env(safe-area-inset-top, 20px)",
-          left: 0,
-          right: 0,
-          padding: "20px 24px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          zIndex: 10,
-          pointerEvents: "auto",
-        }}
-      >
-        {/* Кнопка звука */}
-        <button
-          type="button"
-          onClick={toggleSound}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "8px 14px",
-            borderRadius: "20px",
-            backgroundColor: audioBlocked
-              ? "rgba(168, 85, 247, 0.25)"
-              : "rgba(255, 255, 255, 0.08)",
-            border: audioBlocked
-              ? "1px solid rgba(168, 85, 247, 0.6)"
-              : "1px solid rgba(255, 255, 255, 0.15)",
-            color: audioBlocked ? "#c084fc" : "#e2e8f0",
-            fontSize: "12px",
-            fontWeight: 600,
-            cursor: "pointer",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            transition: "all 0.2s ease",
-            boxShadow: audioBlocked ? "0 0 15px rgba(168, 85, 247, 0.4)" : "none",
-          }}
-          title={isMuted ? "Включить звук" : "Выключить звук"}
-        >
-          {isMuted ? (
-            <>
-              <VolumeX size={15} />
-              <span>{audioBlocked ? "Включить звук 🔊" : "Звук выкл"}</span>
-            </>
-          ) : (
-            <>
-              <Volume2 size={15} color="#38bdf8" />
-              <span>Звук вкл</span>
-            </>
-          )}
-        </button>
-
-        {/* Кнопка Пропустить */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleComplete();
-          }}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            padding: "8px 16px",
-            borderRadius: "20px",
-            backgroundColor: "rgba(255, 255, 255, 0.08)",
-            border: "1px solid rgba(255, 255, 255, 0.15)",
-            color: "#94a3b8",
-            fontSize: "12px",
-            fontWeight: 600,
-            cursor: "pointer",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            transition: "all 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = "#ffffff";
-            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.35)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = "#94a3b8";
-            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.15)";
-          }}
-        >
-          <span>Пропустить</span>
-          <FastForward size={13} />
-        </button>
-      </div>
-
-      {/* Нижняя полоска прогресса */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "env(safe-area-inset-bottom, 16px)",
-          left: "24px",
-          right: "24px",
-          height: "2px",
-          backgroundColor: "rgba(255, 255, 255, 0.1)",
-          borderRadius: "2px",
-          overflow: "hidden",
-          pointerEvents: "none",
-        }}
-      >
-        <div
-          style={{
-            height: "100%",
-            width: `${progress}%`,
-            background: "linear-gradient(90deg, #38bdf8, #a855f7, #f97316)",
-            transition: "width 0.1s linear",
-            boxShadow: "0 0 10px rgba(168, 85, 247, 0.7)",
-          }}
-        />
-      </div>
     </div>
   );
 };
