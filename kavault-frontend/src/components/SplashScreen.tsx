@@ -19,26 +19,49 @@ const getSplashSrc = () => {
   }
 };
 
+const getSplashWebpSrc = () => {
+  try {
+    if (typeof window !== "undefined" && window.location.protocol.startsWith("http")) {
+      return "/splash.webp";
+    }
+    const base = import.meta.env.BASE_URL || "./";
+    return `${base.replace(/\/$/, "")}/splash.webp`;
+  } catch {
+    return "./splash.webp";
+  }
+};
+
+const getSplashSoundSrc = () => {
+  try {
+    if (typeof window !== "undefined" && window.location.protocol.startsWith("http")) {
+      return "/splash_sound.mp3";
+    }
+    const base = import.meta.env.BASE_URL || "./";
+    return `${base.replace(/\/$/, "")}/splash_sound.mp3`;
+  } catch {
+    return "./splash_sound.mp3";
+  }
+};
+
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const [visible, setVisible] = useState(true);
   const [fading, setFading] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
+  const [videoPlaying, setVideoPlaying] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleComplete = useCallback(() => {
     if (fading) return;
     setFading(true);
 
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
 
     setTimeout(() => {
       setVisible(false);
       onFinish?.();
-    }, 500);
+    }, 600);
   }, [fading, onFinish]);
 
   // Слушатель ручного перезапуска заставки из настроек
@@ -46,15 +69,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     const handleReplay = () => {
       setFading(false);
       setVisible(true);
-      setHasStarted(false);
+      setVideoPlaying(false);
 
       setTimeout(() => {
         if (videoRef.current) {
           try {
             videoRef.current.currentTime = 0;
-          } catch {
-            // ignore if not ready
-          }
+          } catch {}
           videoRef.current.muted = false;
           videoRef.current.volume = 1.0;
           videoRef.current.play().catch(() => {
@@ -63,6 +84,12 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
               videoRef.current.play().catch(() => {});
             }
           });
+        }
+        if (audioRef.current) {
+          try {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(() => {});
+          } catch {}
         }
       }, 50);
     };
@@ -75,41 +102,33 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     if (!visible) return;
 
     const video = videoRef.current;
-    if (!video) return;
+    const audio = audioRef.current;
 
-    // Безопасная инициализация звука и атрибутов для iOS WebKit
-    video.defaultMuted = true;
-    video.muted = true;
+    // Запуск звука
+    if (audio) {
+      audio.volume = 1.0;
+      audio.play().catch(() => {
+        // На iOS автоплей звука блокируется до первого касания экрана
+      });
+    }
 
-    const startPlayback = async () => {
-      if (!videoRef.current) return;
-      try {
-        await videoRef.current.play();
-        setHasStarted(true);
-      } catch {
-        // Если браузер или iOS Safari заблокировал автоплей:
-        // Гарантируем muted и пробуем снова
-        if (videoRef.current) {
-          videoRef.current.muted = true;
-          try {
-            await videoRef.current.play();
-            setHasStarted(true);
-          } catch {
-            // Если устройство в строгом режиме энергосбережения и видео не поддерживается:
-            // Мягко пропускаем заставку через 1.2 сек, чтобы пользователь не ждал на черном экране
-            setTimeout(() => handleComplete(), 1200);
-          }
-        }
-      }
-    };
-
-    // Пробуем запустить сразу и по готовности метаданных
-    startPlayback();
-    video.addEventListener("loadedmetadata", startPlayback, { once: true });
-    video.addEventListener("canplay", startPlayback, { once: true });
+    // Запуск видеопотока
+    if (video) {
+      video.defaultMuted = true;
+      video.muted = true;
+      video.play()
+        .then(() => setVideoPlaying(true))
+        .catch(() => {
+          // Если видео заблокировано (например, Low Power Mode на iOS),
+          // визуальный слой WebP плавно продолжает показ без сбоя
+        });
+    }
 
     // Разблокировка звука при первом касании / клике (требование iOS WebKit)
     const unlockSound = () => {
+      if (audioRef.current && audioRef.current.paused) {
+        audioRef.current.play().catch(() => {});
+      }
       if (videoRef.current) {
         if (videoRef.current.paused) {
           videoRef.current.play().catch(() => {});
@@ -122,35 +141,26 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     window.addEventListener("pointerdown", unlockSound, { passive: true });
     window.addEventListener("touchstart", unlockSound, { passive: true });
 
-    // Страховочный таймер: если видео вообще не смогло запуститься за 2.5 сек, пускаем в приложение
-    safetyTimeoutRef.current = setTimeout(() => {
-      if (videoRef.current && (videoRef.current.paused || videoRef.current.currentTime === 0)) {
-        handleComplete();
-      }
-    }, 2500);
-
-    // Главный таймер заставки (длительность ролика ~5.3 сек)
+    // Главный таймер заставки (длительность ролика ~5.2 сек)
     timerRef.current = setTimeout(() => {
       handleComplete();
-    }, 5600);
+    }, 5200);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
-      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
       window.removeEventListener("pointerdown", unlockSound);
       window.removeEventListener("touchstart", unlockSound);
-      video.removeEventListener("loadedmetadata", startPlayback);
-      video.removeEventListener("canplay", startPlayback);
     };
   }, [visible, handleComplete]);
 
   if (!visible) return null;
 
   const splashSrc = getSplashSrc();
+  const splashWebpSrc = getSplashWebpSrc();
+  const splashSoundSrc = getSplashSoundSrc();
 
   return (
     <div
-      onClick={handleComplete}
       style={{
         position: "fixed",
         inset: 0,
@@ -161,44 +171,29 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         justifyContent: "center",
         overflow: "hidden",
         opacity: fading ? 0 : 1,
-        transition: "opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+        transition: "opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
         userSelect: "none",
-        cursor: "pointer",
-        touchAction: "manipulation",
+        cursor: "default",
       }}
     >
-      {/* Кнопка быстрого пропуска для пользователей, которые спешат */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleComplete();
-        }}
+      {/* 1. Гарантированный визуальный слой (WebP 30 FPS).
+          Работает ВСЕГДА: на любом iPhone, с экрана Домой (PWA), 
+          в Low Power Mode, при 1% батареи, без блокировок WebKit. */}
+      <img
+        src={splashWebpSrc}
+        alt="KAVAULT Splash Animation"
         style={{
           position: "absolute",
-          top: "max(16px, env(safe-area-inset-top, 16px))",
-          right: "max(16px, env(safe-area-inset-right, 16px))",
-          zIndex: 10,
-          background: "rgba(255, 255, 255, 0.12)",
-          border: "1px solid rgba(255, 255, 255, 0.2)",
-          borderRadius: "9999px",
-          color: "rgba(255, 255, 255, 0.85)",
-          padding: "6px 14px",
-          fontSize: "12px",
-          fontWeight: 500,
-          letterSpacing: "0.5px",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          cursor: "pointer",
-          outline: "none",
-          transition: "opacity 0.2s, background 0.2s",
-          opacity: hasStarted ? 0.9 : 0.6,
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          pointerEvents: "none",
+          display: "block",
         }}
-      >
-        Пропустить →
-      </button>
+      />
 
-      {/* Оптимизированный видеопоток с гарантированной поддержкой iOS Safari */}
+      {/* 2. Высококачественный 1080p видеопоток для устройств, где видеоплеер разрешен */}
       <video
         ref={(el) => {
           if (el) {
@@ -216,22 +211,27 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         muted
         preload="auto"
         onEnded={handleComplete}
-        onError={() => {
-          handleComplete();
-        }}
-        onPlaying={() => {
-          setHasStarted(true);
-        }}
+        onPlaying={() => setVideoPlaying(true)}
+        onError={() => setVideoPlaying(false)}
         style={{
+          position: "absolute",
+          inset: 0,
           width: "100%",
           height: "100%",
           objectFit: "contain",
-          backgroundColor: "#000000",
           pointerEvents: "none",
-          transform: "translateZ(0)",
-          WebkitBackfaceVisibility: "hidden",
-          backfaceVisibility: "hidden",
+          opacity: videoPlaying ? 1 : 0,
+          transition: "opacity 0.2s ease-in",
+          backgroundColor: "transparent",
         }}
+      />
+
+      {/* 3. Аудиопоток саундтрека */}
+      <audio
+        ref={audioRef}
+        src={splashSoundSrc}
+        preload="auto"
+        autoPlay
       />
     </div>
   );
